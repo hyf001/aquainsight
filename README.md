@@ -25,15 +25,16 @@ aquainsight
 │   │   ├── util                 # 领域工具
 │   │   └── dto                  # 领域DTO
 ├── aquainsight-infrastructure   # 基础设施层
+│   ├── config                   # 基础设施配置（MyBatis-Plus等）
+│   ├── converter                # MapStruct转换器（DO与Entity转换）
 │   ├── db                       # 数据库
-│   │   ├── model                # 数据库实体（DO）
+│   │   ├── model                # 数据库实体（PO）
 │   │   ├── dao                  # MyBatis Mapper
-│   │   └── converter            # DO与Entity转换
+│   │   └── converter            # 数据库相关转换
 │   ├── repository               # 仓储实现
-│   ├── external                 # 外部服务
-│   │   ├── feign                # Feign客户端
-│   │   └── rpc                  # RPC服务
-│   └── config                   # 基础设施配置
+│   └── external                 # 外部服务
+│       ├── feign                # Feign客户端
+│       └── rpc                  # RPC服务
 ├── aquainsight-application      # 应用层
 │   ├── manager                  # 应用服务
 │   │   ├── dto                  # 应用DTO
@@ -59,6 +60,8 @@ aquainsight
 - **数据库**: MySQL 8.0
 - **ORM**: MyBatis-Plus 3.5.3.1
 - **缓存**: Redis
+- **认证**: Sa-Token 1.37.0
+- **对象映射**: MapStruct 1.5.5
 - **工具库**: Hutool, FastJSON2, Guava
 - **构建工具**: Maven
 
@@ -171,11 +174,12 @@ java -jar aquainsight-deploy-1.0.0-SNAPSHOT.jar --spring.profiles.active=prod
 
 ### 命名规范
 
-- **DO（Data Object）**: 数据库实体，如 `UserDO`
+- **PO（Persistent Object）**: 持久化对象，如 `UserPO`
 - **Entity**: 领域实体，如 `User`
 - **DTO（Data Transfer Object）**: 数据传输对象，如 `UserDTO`
 - **VO（View Object）**: 视图对象，如 `UserVO`
 - **BO（Business Object）**: 业务对象，如 `UserBO`
+- **Converter**: MapStruct转换器，如 `UserConverter`
 
 ### 分层调用规则
 
