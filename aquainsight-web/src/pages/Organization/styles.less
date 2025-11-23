@@ -1,0 +1,34 @@
+.tree-node-title {
+  display: inline-flex;
+  align-items: center;
+
+  .dept-name {
+    margin-right: 8px;
+  }
+
+  .dept-actions {
+    display: none;
+    font-size: 12px;
+
+    a {
+      margin-left: 8px;
+      color: #1890ff;
+
+      &:first-child {
+        margin-left: 0;
+      }
+    }
+  }
+}
+
+.ant-tree-treenode:hover {
+  .dept-actions {
+    display: inline;
+  }
+}
+
+.ant-tree-treenode-selected {
+  .dept-actions {
+    display: inline;
+  }
+}

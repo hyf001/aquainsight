@@ -1,85 +1,213 @@
-import React from 'react'
+import React, { useState, useMemo } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { Layout as AntLayout, Menu, theme } from 'antd'
+import { Layout as AntLayout, Menu, theme, Avatar, Dropdown, Badge } from 'antd'
+import type { MenuProps } from 'antd'
 import {
-  DashboardOutlined,
-  CheckSquareOutlined,
-  InboxOutlined,
-  BarChartOutlined,
-  BookOutlined,
-  MonitorOutlined,
-  SettingOutlined,
+  BankOutlined,
   TeamOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
+  EnvironmentOutlined,
+  ToolOutlined,
+  ExperimentOutlined,
+  DesktopOutlined,
+  BellOutlined,
+  MailOutlined,
+  SettingOutlined,
+  LogoutOutlined,
+  UserOutlined,
 } from '@ant-design/icons'
-import { useAppStore } from '@/stores/useAppStore'
 import { useUserStore } from '@/stores/useUserStore'
 import './styles.less'
 
 const { Header, Sider, Content } = AntLayout
 
-const menuItems = [
-  { key: '/dashboard', icon: <DashboardOutlined />, label: '工作台' },
-  { key: '/task', icon: <CheckSquareOutlined />, label: '任务管理' },
-  { key: '/material', icon: <InboxOutlined />, label: '物料管理' },
-  { key: '/analysis', icon: <BarChartOutlined />, label: '数据分析' },
-  { key: '/knowledge', icon: <BookOutlined />, label: '知识库' },
-  { key: '/monitor', icon: <MonitorOutlined />, label: '监控告警' },
-  { key: '/organization', icon: <TeamOutlined />, label: '组织管理' },
-  { key: '/system', icon: <SettingOutlined />, label: '系统管理' },
+// 顶部导航菜单配置
+const topMenuItems = [
+  { key: 'operation', label: '运维' },
+  { key: 'task', label: '任务' },
+  { key: 'material', label: '物资' },
+  { key: 'maintenance', label: '运维' },
+  { key: 'knowledge', label: '知' },
+  { key: 'online', label: '在线' },
+  { key: 'comprehensive', label: '综合' },
 ]
+
+// 左侧菜单配置 - 根据顶部菜单动态显示
+const sideMenuConfig: Record<string, MenuProps['items']> = {
+  comprehensive: [
+    {
+      key: 'organization-management',
+      icon: <BankOutlined />,
+      label: '机构管理',
+      children: [
+        { key: '/organization', icon: <BankOutlined />, label: '部门管理' },
+        { key: '/personnel', icon: <TeamOutlined />, label: '人员管理' },
+      ],
+    },
+    { key: '/enterprise', icon: <BankOutlined />, label: '运维企业' },
+    { key: '/sites', icon: <EnvironmentOutlined />, label: '运维站点' },
+    { key: '/device-models', icon: <ToolOutlined />, label: '设备管理' },
+    {
+      key: 'site-equipment',
+      icon: <DesktopOutlined />,
+      label: '站点设备',
+      children: [
+        { key: '/site-devices', icon: <DesktopOutlined />, label: '设备信息' },
+        { key: '/detection-factors', icon: <ExperimentOutlined />, label: '检测因子' },
+      ],
+    },
+  ],
+  operation: [
+    { key: '/dashboard', icon: <DesktopOutlined />, label: '工作台' },
+  ],
+  task: [
+    { key: '/task', icon: <ToolOutlined />, label: '任务管理' },
+  ],
+  material: [
+    { key: '/material', icon: <ToolOutlined />, label: '物料管理' },
+  ],
+  maintenance: [
+    { key: '/monitor', icon: <DesktopOutlined />, label: '监控告警' },
+  ],
+  knowledge: [
+    { key: '/knowledge', icon: <DesktopOutlined />, label: '知识库' },
+  ],
+  online: [
+    { key: '/analysis', icon: <DesktopOutlined />, label: '数据分析' },
+  ],
+}
 
 const LayoutComponent: React.FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { collapsed, toggleCollapsed } = useAppStore()
-  const { user } = useUserStore()
+  const { user, logout } = useUserStore()
+  const [activeTopMenu, setActiveTopMenu] = useState('comprehensive')
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken()
 
-  const handleMenuClick = ({ key }: { key: string }) => {
-    navigate(key)
+  // 当前左侧菜单项
+  const currentSideMenu = useMemo(() => {
+    return sideMenuConfig[activeTopMenu] || []
+  }, [activeTopMenu])
+
+  // 获取当前选中的菜单key
+  const selectedKeys = useMemo(() => {
+    return [location.pathname]
+  }, [location.pathname])
+
+  // 获取展开的菜单key
+  const defaultOpenKeys = useMemo(() => {
+    const openKeys: string[] = []
+    currentSideMenu?.forEach((item: any) => {
+      if (item?.children) {
+        const hasSelected = item.children.some((child: any) => child.key === location.pathname)
+        if (hasSelected) {
+          openKeys.push(item.key)
+        }
+      }
+    })
+    return openKeys
+  }, [currentSideMenu, location.pathname])
+
+  const handleTopMenuClick = ({ key }: { key: string }) => {
+    setActiveTopMenu(key)
   }
+
+  const handleSideMenuClick = ({ key }: { key: string }) => {
+    if (key.startsWith('/')) {
+      navigate(key)
+    }
+  }
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
+
+  const userDropdownItems: MenuProps['items'] = [
+    {
+      key: 'profile',
+      icon: <UserOutlined />,
+      label: '个人中心',
+    },
+    {
+      key: 'settings',
+      icon: <SettingOutlined />,
+      label: '设置',
+    },
+    {
+      type: 'divider',
+    },
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: '退出登录',
+      onClick: handleLogout,
+    },
+  ]
 
   return (
     <AntLayout className="layout-container">
-      <Sider trigger={null} collapsible collapsed={collapsed} className="layout-sider">
-        <div className="logo">
-          <h1>{collapsed ? 'AI' : 'AquaInsight'}</h1>
+      {/* 顶部导航栏 */}
+      <Header className="layout-header-top">
+        <div className="header-logo">
+          <img src="/logo.png" alt="logo" className="logo-img" />
+          <span className="logo-text">远畅环境运维管理系统</span>
         </div>
-        <Menu
-          theme="dark"
-          mode="inline"
-          selectedKeys={[location.pathname]}
-          items={menuItems}
-          onClick={handleMenuClick}
-        />
-      </Sider>
+        <div className="header-menu">
+          <Menu
+            mode="horizontal"
+            selectedKeys={[activeTopMenu]}
+            items={topMenuItems}
+            onClick={handleTopMenuClick}
+            className="top-menu"
+          />
+        </div>
+        <div className="header-right">
+          <Badge count={0} className="header-icon">
+            <MailOutlined />
+          </Badge>
+          <Badge count={2} className="header-icon">
+            <BellOutlined />
+          </Badge>
+          <SettingOutlined className="header-icon" />
+          <Dropdown menu={{ items: userDropdownItems }} placement="bottomRight">
+            <div className="user-info">
+              <span className="user-company">平台演示(江苏远畅环保)</span>
+              <Avatar size="small" icon={<UserOutlined />} />
+            </div>
+          </Dropdown>
+          <LogoutOutlined className="header-icon logout-icon" onClick={handleLogout} />
+        </div>
+      </Header>
+
       <AntLayout>
-        <Header style={{ padding: 0, background: colorBgContainer }} className="layout-header">
-          <div className="header-left">
-            {React.createElement(collapsed ? MenuUnfoldOutlined : MenuFoldOutlined, {
-              className: 'trigger',
-              onClick: toggleCollapsed,
-            })}
-          </div>
-          <div className="header-right">
-            <span className="user-name">{user?.name || '用户'}</span>
-          </div>
-        </Header>
-        <Content
-          style={{
-            margin: '24px 16px',
-            padding: 24,
-            minHeight: 280,
-            background: colorBgContainer,
-            borderRadius: borderRadiusLG,
-          }}
-        >
-          <Outlet />
-        </Content>
+        {/* 左侧菜单 */}
+        <Sider width={200} className="layout-sider" style={{ background: colorBgContainer }}>
+          <Menu
+            mode="inline"
+            selectedKeys={selectedKeys}
+            defaultOpenKeys={defaultOpenKeys}
+            items={currentSideMenu}
+            onClick={handleSideMenuClick}
+            style={{ height: '100%', borderRight: 0 }}
+          />
+        </Sider>
+
+        {/* 内容区域 */}
+        <AntLayout style={{ padding: '0 24px 24px' }}>
+          <Content
+            style={{
+              padding: 24,
+              margin: '24px 0 0',
+              minHeight: 280,
+              background: colorBgContainer,
+              borderRadius: borderRadiusLG,
+            }}
+          >
+            <Outlet />
+          </Content>
+        </AntLayout>
       </AntLayout>
     </AntLayout>
   )

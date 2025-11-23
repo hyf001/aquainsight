@@ -79,11 +79,91 @@ export const updateEmployeeStatus = (userId: number, status: number) => {
 }
 
 // 从部门移除员工
-export const removeEmployeeFromDepartment = (userId: number) => {
-  return request.delete<any, Employee>(`/organization/employees/${userId}/department`)
+export const removeEmployeeFromDepartment = (userId: number, departmentId: number) => {
+  return request.delete<any, Employee>(`/organization/employees/${userId}/department/${departmentId}`)
 }
 
 // 取消负责人
-export const unsetLeader = (userId: number) => {
-  return request.put<any, Employee>(`/organization/employees/${userId}/unset-leader`)
+export const unsetLeader = (userId: number, departmentId: number) => {
+  return request.put<any, Employee>(`/organization/employees/${userId}/unset-leader/${departmentId}`)
+}
+
+// ==================== 人员管理接口 ====================
+
+export type UserInfo = {
+  id: number
+  name: string
+  gender: string
+  phone: string
+  email: string
+  avatar: string | null
+  role: string
+  status: number
+  createTime: string
+}
+
+export type PageResult<T> = {
+  list: T[]
+  total: number
+  pageNum: number
+  pageSize: number
+  pages: number
+}
+
+export type CreateUserRequest = {
+  name: string
+  password: string
+  gender?: string
+  phone: string
+  email?: string
+  role?: string
+}
+
+export type UpdateUserRequest = {
+  name?: string
+  gender?: string
+  phone?: string
+  email?: string
+  avatar?: string
+}
+
+// 获取人员列表（分页）
+export const getUserList = (pageNum: number = 1, pageSize: number = 10) => {
+  return request.get<any, PageResult<UserInfo>>('/user/list', { params: { pageNum, pageSize } })
+}
+
+// 创建人员
+export const createUser = (data: CreateUserRequest) => {
+  return request.post<any, UserInfo>('/user', data)
+}
+
+// 更新人员信息
+export const updateUser = (id: number, data: UpdateUserRequest) => {
+  return request.put<any, UserInfo>(`/user/${id}`, data)
+}
+
+// 删除人员
+export const deleteUser = (id: number) => {
+  return request.delete(`/user/${id}`)
+}
+
+// 设置角色
+export const setUserRole = (id: number, role: string) => {
+  return request.put<any, UserInfo>(`/user/${id}/role`, { role })
+}
+
+// 重置密码
+export const resetUserPassword = (id: number) => {
+  return request.put<any, void>(`/user/${id}/reset-password`)
+}
+
+// 上传头像
+export const uploadAvatar = (id: number, file: File) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request.post<any, { url: string }>(`/user/${id}/avatar`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
 }

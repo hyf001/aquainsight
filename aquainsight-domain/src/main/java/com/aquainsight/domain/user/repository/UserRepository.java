@@ -1,6 +1,7 @@
 package com.aquainsight.domain.user.repository;
 
 import com.aquainsight.domain.user.entity.User;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 
 import java.util.List;
 import java.util.Optional;
@@ -90,4 +91,13 @@ public interface UserRepository {
      * @return 是否存在
      */
     boolean existsByEmail(String email);
+
+    /**
+     * 分页查询用户
+     *
+     * @param pageNum  页码
+     * @param pageSize 每页大小
+     * @return 分页结果
+     */
+    IPage<User> findPage(Integer pageNum, Integer pageSize);
 }

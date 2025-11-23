@@ -11,6 +11,12 @@ const Knowledge = lazy(() => import('@/pages/Knowledge'))
 const Monitor = lazy(() => import('@/pages/Monitor'))
 const System = lazy(() => import('@/pages/System'))
 const Organization = lazy(() => import('@/pages/Organization'))
+const Personnel = lazy(() => import('@/pages/Personnel'))
+const Enterprise = lazy(() => import('@/pages/Enterprise'))
+const Sites = lazy(() => import('@/pages/Sites'))
+const DetectionFactors = lazy(() => import('@/pages/DetectionFactors'))
+const SiteDevices = lazy(() => import('@/pages/SiteDevices'))
+const DeviceModels = lazy(() => import('@/pages/DeviceModels'))
 const Login = lazy(() => import('@/pages/Login'))
 
 const PageLoading = () => (
@@ -38,7 +44,7 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <Navigate to="/dashboard" replace />,
+        element: <Navigate to="/organization" replace />,
       },
       {
         path: 'dashboard',
@@ -101,6 +107,54 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={<Spin />}>
             <Organization />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'personnel',
+        element: (
+          <Suspense fallback={<Spin />}>
+            <Personnel />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'enterprise',
+        element: (
+          <Suspense fallback={<Spin />}>
+            <Enterprise />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'sites',
+        element: (
+          <Suspense fallback={<Spin />}>
+            <Sites />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'detection-factors',
+        element: (
+          <Suspense fallback={<Spin />}>
+            <DetectionFactors />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'site-devices',
+        element: (
+          <Suspense fallback={<Spin />}>
+            <SiteDevices />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'device-models',
+        element: (
+          <Suspense fallback={<Spin />}>
+            <DeviceModels />
           </Suspense>
         ),
       },

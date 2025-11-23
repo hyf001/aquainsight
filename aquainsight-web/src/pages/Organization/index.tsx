@@ -21,6 +21,8 @@ import {
   DeleteOutlined,
   UserOutlined,
   SearchOutlined,
+  EditOutlined,
+  SubnodeOutlined,
 } from '@ant-design/icons'
 import type { DataNode } from 'antd/es/tree'
 import type { ColumnsType } from 'antd/es/table'
@@ -38,6 +40,7 @@ import {
   removeEmployeeFromDepartment,
 } from '@/services/organization'
 import type { Department, Employee } from '@/services/organization'
+import './styles.less'
 
 const Organization: React.FC = () => {
   const [departments, setDepartments] = useState<Department[]>([])
@@ -88,11 +91,48 @@ const Organization: React.FC = () => {
     loadEmployees()
   }, [])
 
+  // 根据ID查找部门
+  const findDepartmentById = (depts: Department[], id: number): Department | null => {
+    for (const dept of depts) {
+      if (dept.id === id) return dept
+      if (dept.children) {
+        const found = findDepartmentById(dept.children, id)
+        if (found) return found
+      }
+    }
+    return null
+  }
+
+  // 打开新建子部门弹窗
+  const openAddSubDeptModal = (parentDept: Department) => {
+    setEditingDept(null)
+    form.resetFields()
+    form.setFieldsValue({ parentId: parentDept.id })
+    setDeptModalVisible(true)
+  }
+
   // 转换为 Tree 数据
   const convertToTreeData = (depts: Department[]): DataNode[] => {
     return depts.map((dept) => ({
       key: dept.id,
-      title: dept.name,
+      title: (
+        <span className="tree-node-title">
+          <span className="dept-name">{dept.name}</span>
+          <span className="dept-actions" onClick={(e) => e.stopPropagation()}>
+            <a onClick={() => openDeptModal(dept)} title="编辑"><EditOutlined /></a>
+            <a onClick={() => openAddSubDeptModal(dept)} title="新建子部门"><SubnodeOutlined /></a>
+            <Popconfirm
+              title="确认删除"
+              description="确定要删除该部门吗？"
+              onConfirm={() => handleDeleteDept(dept.id)}
+              okText="确定"
+              cancelText="取消"
+            >
+              <a style={{ color: '#ff4d4f' }} title="删除部门"><DeleteOutlined /></a>
+            </Popconfirm>
+          </span>
+        </span>
+      ),
       children: dept.children ? convertToTreeData(dept.children) : undefined,
     }))
   }
@@ -174,6 +214,10 @@ const Organization: React.FC = () => {
       message.warning('只能选择一个人员')
       return
     }
+    if (!selectedDeptId) {
+      message.warning('请先选择部门')
+      return
+    }
 
     const selectedUserId = selectedRowKeys[0] as number
     const selectedUser = employees.find(emp => emp.id === selectedUserId)
@@ -183,23 +227,16 @@ const Organization: React.FC = () => {
       return
     }
 
-    // 检查用户是否有所属部门
-    if (!selectedUser.departmentId) {
-      message.warning('该人员未分配部门，无法设置为负责人')
-      return
-    }
-
     try {
       // 如果已经是负责人，则取消；否则设为负责人
       if (selectedUser.isLeader === 1) {
-        await unsetLeader(selectedUserId)
+        await unsetLeader(selectedUserId, selectedDeptId)
         message.success('已取消负责人')
       } else {
-        // 使用员工所属部门ID，而不是左侧选中的部门ID
-        await setLeader(selectedUserId, selectedUser.departmentId)
+        await setLeader(selectedUserId, selectedDeptId)
         message.success('设置成功')
       }
-      loadEmployees(selectedDeptId || undefined)
+      loadEmployees(selectedDeptId)
       setSelectedRowKeys([])
     } catch (error) {
       console.error('操作失败:', error)
@@ -212,12 +249,16 @@ const Organization: React.FC = () => {
       message.warning('请选择要移除的人员')
       return
     }
+    if (!selectedDeptId) {
+      message.warning('请先选择部门')
+      return
+    }
     try {
       for (const userId of selectedRowKeys) {
-        await removeEmployeeFromDepartment(userId as number)
+        await removeEmployeeFromDepartment(userId as number, selectedDeptId)
       }
       message.success('移除成功')
-      loadEmployees(selectedDeptId || undefined)
+      loadEmployees(selectedDeptId)
       setSelectedRowKeys([])
     } catch (error) {
       console.error('移除人员失败:', error)
@@ -324,8 +365,8 @@ const Organization: React.FC = () => {
     },
     {
       title: '所属部门',
-      dataIndex: 'departmentName',
       key: 'departmentName',
+      render: () => selectedDeptName || '-',
     },
     {
       title: '是否负责人',
@@ -535,11 +576,6 @@ const Organization: React.FC = () => {
               dataIndex: 'gender',
               key: 'gender',
               width: 80,
-            },
-            {
-              title: '所属部门',
-              dataIndex: 'departmentName',
-              key: 'departmentName',
             },
             {
               title: '所属机构',

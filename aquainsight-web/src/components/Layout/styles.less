@@ -1,46 +1,100 @@
 .layout-container {
   min-height: 100vh;
 
-  .layout-sider {
-    .logo {
-      height: 64px;
+  .layout-header-top {
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    background: #001529;
+    height: 48px;
+    line-height: 48px;
+
+    .header-logo {
       display: flex;
       align-items: center;
-      justify-content: center;
-      background: rgba(255, 255, 255, 0.1);
+      margin-right: 40px;
 
-      h1 {
-        margin: 0;
+      .logo-img {
+        width: 32px;
+        height: 32px;
+        margin-right: 10px;
+      }
+
+      .logo-text {
         color: #fff;
-        font-size: 20px;
+        font-size: 18px;
         font-weight: bold;
+        white-space: nowrap;
       }
     }
-  }
 
-  .layout-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 16px;
+    .header-menu {
+      flex: 1;
 
-    .header-left {
-      .trigger {
-        font-size: 18px;
-        padding: 0 24px;
-        cursor: pointer;
-        transition: color 0.3s;
+      .top-menu {
+        background: transparent;
+        border-bottom: none;
+        line-height: 48px;
 
-        &:hover {
-          color: #1890ff;
+        .ant-menu-item {
+          color: rgba(255, 255, 255, 0.85);
+          padding: 0 20px;
+
+          &:hover {
+            color: #fff;
+          }
+
+          &.ant-menu-item-selected {
+            color: #fff;
+            background: #1890ff;
+            border-radius: 4px;
+          }
         }
       }
     }
 
     .header-right {
-      .user-name {
-        margin-right: 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+
+      .header-icon {
+        color: rgba(255, 255, 255, 0.85);
+        font-size: 16px;
+        cursor: pointer;
+
+        &:hover {
+          color: #fff;
+        }
       }
+
+      .user-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        color: rgba(255, 255, 255, 0.85);
+
+        .user-company {
+          font-size: 14px;
+        }
+
+        &:hover {
+          color: #fff;
+        }
+      }
+
+      .logout-icon {
+        margin-left: 8px;
+      }
+    }
+  }
+
+  .layout-sider {
+    padding-top: 8px;
+
+    .ant-menu-inline {
+      border-right: none;
     }
   }
 }

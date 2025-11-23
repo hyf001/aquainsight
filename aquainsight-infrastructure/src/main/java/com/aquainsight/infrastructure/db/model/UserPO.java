@@ -1,6 +1,11 @@
 package com.aquainsight.infrastructure.db.model;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.FieldFill;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -60,17 +65,6 @@ public class UserPO {
      * 角色
      */
     private String role;
-
-    /**
-     * 所属部门ID
-     */
-    @TableField(value = "department_id", updateStrategy = FieldStrategy.IGNORED)
-    private Integer departmentId;
-
-    /**
-     * 是否负责人
-     */
-    private Integer isLeader;
 
     /**
      * 状态 (0-禁用, 1-启用)

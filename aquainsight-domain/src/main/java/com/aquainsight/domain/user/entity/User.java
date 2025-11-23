@@ -59,16 +59,6 @@ public class User {
     private String role;
 
     /**
-     * 所属部门ID
-     */
-    private Integer departmentId;
-
-    /**
-     * 是否负责人
-     */
-    private Integer isLeader;
-
-    /**
      * 状态 (0-禁用, 1-启用)
      */
     private Integer status;

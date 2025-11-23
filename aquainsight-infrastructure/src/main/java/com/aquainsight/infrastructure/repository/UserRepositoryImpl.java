@@ -6,6 +6,8 @@ import com.aquainsight.infrastructure.converter.UserConverter;
 import com.aquainsight.infrastructure.db.dao.UserDao;
 import com.aquainsight.infrastructure.db.model.UserPO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -94,5 +96,16 @@ public class UserRepositoryImpl implements UserRepository {
         LambdaQueryWrapper<UserPO> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(UserPO::getEmail, email);
         return userDao.selectCount(wrapper) > 0;
+    }
+
+    @Override
+    public IPage<User> findPage(Integer pageNum, Integer pageSize) {
+        Page<UserPO> page = new Page<>(pageNum, pageSize);
+        IPage<UserPO> poPage = userDao.selectPage(page, null);
+
+        // 转换为领域实体的分页结果
+        Page<User> userPage = new Page<>(poPage.getCurrent(), poPage.getSize(), poPage.getTotal());
+        userPage.setRecords(UserConverter.INSTANCE.toEntityList(poPage.getRecords()));
+        return userPage;
     }
 }

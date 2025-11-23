@@ -2,6 +2,7 @@ package com.aquainsight.domain.user.service;
 
 import com.aquainsight.domain.user.entity.User;
 import com.aquainsight.domain.user.repository.UserRepository;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -168,5 +169,72 @@ public class UserDomainService {
      */
     public Optional<User> getUserById(Integer userId) {
         return userRepository.findById(userId);
+    }
+
+    /**
+     * 分页查询用户
+     *
+     * @param pageNum  页码
+     * @param pageSize 每页大小
+     * @return 分页结果
+     */
+    public IPage<User> getUserPage(Integer pageNum, Integer pageSize) {
+        return userRepository.findPage(pageNum, pageSize);
+    }
+
+    /**
+     * 设置用户角色
+     *
+     * @param userId 用户ID
+     * @param role   角色
+     * @return 更新后的用户
+     */
+    public User setUserRole(Integer userId, String role) {
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (!userOpt.isPresent()) {
+            throw new IllegalArgumentException("用户不存在");
+        }
+
+        User user = userOpt.get();
+        user.setRole(role);
+        user.setUpdateTime(LocalDateTime.now());
+        return userRepository.update(user);
+    }
+
+    /**
+     * 重置用户密码
+     *
+     * @param userId 用户ID
+     * @return 更新后的用户
+     */
+    public User resetPassword(Integer userId) {
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (!userOpt.isPresent()) {
+            throw new IllegalArgumentException("用户不存在");
+        }
+
+        User user = userOpt.get();
+        user.setPassword("123456"); // TODO: 应该加密
+        user.setUpdateTime(LocalDateTime.now());
+        return userRepository.update(user);
+    }
+
+    /**
+     * 更新用户状态
+     *
+     * @param userId 用户ID
+     * @param status 状态
+     * @return 更新后的用户
+     */
+    public User updateUserStatus(Integer userId, Integer status) {
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (!userOpt.isPresent()) {
+            throw new IllegalArgumentException("用户不存在");
+        }
+
+        User user = userOpt.get();
+        user.setStatus(status);
+        user.setUpdateTime(LocalDateTime.now());
+        return userRepository.update(user);
     }
 }
