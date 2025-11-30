@@ -227,13 +227,15 @@ const SiteDevices: React.FC = () => {
     },
     {
       title: '量程',
+      dataIndex: 'range',
       key: 'range',
-      render: () => '-',
+      render: (text) => text || '-',
     },
     {
       title: '关联因子',
-      key: 'factors',
-      render: () => '-',
+      dataIndex: 'factorName',
+      key: 'factorName',
+      render: (text) => text || '-',
     },
     {
       title: '规格参数',
@@ -243,11 +245,9 @@ const SiteDevices: React.FC = () => {
     },
     {
       title: '制造商',
+      dataIndex: 'manufacturer',
       key: 'manufacturer',
-      render: (_, record) => {
-        const model = deviceModels.find(m => m.id === record.deviceModelId)
-        return model?.manufacturer || '-'
-      },
+      render: (text) => text || '-',
     },
   ]
 

@@ -1,6 +1,8 @@
 package com.aquainsight.domain.monitoring.service;
 
 import com.aquainsight.domain.monitoring.entity.Device;
+import com.aquainsight.domain.monitoring.entity.DeviceModel;
+import com.aquainsight.domain.monitoring.entity.Site;
 import com.aquainsight.domain.monitoring.repository.DeviceRepository;
 import com.aquainsight.domain.monitoring.repository.DeviceModelRepository;
 import com.aquainsight.domain.monitoring.repository.SiteRepository;
@@ -47,21 +49,19 @@ public class DeviceDomainService {
             throw new IllegalArgumentException("设备编码已存在");
         }
 
-        // 验证站点是否存在
-        if (!siteRepository.findById(siteId).isPresent()) {
-            throw new IllegalArgumentException("所属站点不存在");
-        }
+        // 获取站点领域对象
+        Site site = siteRepository.findById(siteId)
+                .orElseThrow(() -> new IllegalArgumentException("所属站点不存在"));
 
-        // 验证设备型号是否存在
-        if (!deviceModelRepository.findById(deviceModelId).isPresent()) {
-            throw new IllegalArgumentException("设备型号不存在");
-        }
+        // 获取设备型号领域对象
+        DeviceModel deviceModel = deviceModelRepository.findById(deviceModelId)
+                .orElseThrow(() -> new IllegalArgumentException("设备型号不存在"));
 
         Device device = Device.builder()
                 .deviceCode(deviceCode)
                 .deviceName(deviceName)
-                .siteId(siteId)
-                .deviceModelId(deviceModelId)
+                .site(site)
+                .deviceModel(deviceModel)
                 .serialNumber(serialNumber)
                 .installLocation(installLocation)
                 .status(status == null ? 1 : status)

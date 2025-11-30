@@ -32,17 +32,17 @@ public class MonitoringApplicationService {
     @Transactional(rollbackFor = Exception.class)
     public Site createSite(String siteCode, String siteName, String siteType, String siteTag,
                           BigDecimal longitude, BigDecimal latitude, String address,
-                          String enterpriseName, Integer isAutoUpload) {
+                          Integer enterpriseId, Integer isAutoUpload) {
         return siteDomainService.createSite(siteCode, siteName, siteType, siteTag,
-                longitude, latitude, address, enterpriseName, isAutoUpload);
+                longitude, latitude, address, enterpriseId, isAutoUpload);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public Site updateSiteInfo(Integer siteId, String siteName, String siteType, String siteTag,
                               BigDecimal longitude, BigDecimal latitude, String address,
-                              String enterpriseName, Integer isAutoUpload) {
+                              Integer enterpriseId, Integer isAutoUpload) {
         return siteDomainService.updateSiteInfo(siteId, siteName, siteType, siteTag,
-                longitude, latitude, address, enterpriseName, isAutoUpload);
+                longitude, latitude, address, enterpriseId, isAutoUpload);
     }
 
     public Optional<Site> getSiteById(Integer siteId) {
@@ -62,24 +62,26 @@ public class MonitoringApplicationService {
         return siteDomainService.deleteSite(siteId);
     }
 
-    public IPage<Site> getSitePage(Integer pageNum, Integer pageSize, String siteType, String enterpriseName) {
-        return siteDomainService.getSitePage(pageNum, pageSize, siteType, enterpriseName);
+    public IPage<Site> getSitePage(Integer pageNum, Integer pageSize, String siteType, Integer enterpriseId) {
+        return siteDomainService.getSitePage(pageNum, pageSize, siteType, enterpriseId);
     }
 
     // ==================== DeviceModel Methods ====================
 
     @Transactional(rollbackFor = Exception.class)
     public DeviceModel createDeviceModel(String modelCode, String modelName, String deviceType,
-                                        String manufacturer, String description) {
+                                        String manufacturer, String description, String specifications,
+                                        Integer factorId) {
         return deviceModelDomainService.createDeviceModel(modelCode, modelName, deviceType,
-                manufacturer, description);
+                manufacturer, description, specifications, factorId);
     }
 
     @Transactional(rollbackFor = Exception.class)
     public DeviceModel updateDeviceModelInfo(Integer deviceModelId, String modelName, String deviceType,
-                                            String manufacturer, String description) {
+                                            String manufacturer, String description, String specifications,
+                                            Integer factorId) {
         return deviceModelDomainService.updateDeviceModelInfo(deviceModelId, modelName, deviceType,
-                manufacturer, description);
+                manufacturer, description, specifications, factorId);
     }
 
     public Optional<DeviceModel> getDeviceModelById(Integer deviceModelId) {
@@ -186,16 +188,12 @@ public class MonitoringApplicationService {
         return factorDomainService.getFactorById(factorId);
     }
 
-    public List<Factor> getAllFactors() {
-        return factorDomainService.getAllFactors();
-    }
-
-    public List<Factor> getFactorsByDeviceModelId(Integer deviceModelId) {
-        return factorDomainService.getFactorsByDeviceModelId(deviceModelId);
-    }
-
     public List<Factor> getFactorsByCategory(String category) {
         return factorDomainService.getFactorsByCategory(category);
+    }
+
+    public List<Factor> getAllFactors() {
+        return factorDomainService.getAllFactors();
     }
 
     @Transactional(rollbackFor = Exception.class)
@@ -203,7 +201,7 @@ public class MonitoringApplicationService {
         return factorDomainService.deleteFactor(factorId);
     }
 
-    public IPage<Factor> getFactorPage(Integer pageNum, Integer pageSize, String category, Integer deviceModelId) {
-        return factorDomainService.getFactorPage(pageNum, pageSize, category, deviceModelId);
+    public IPage<Factor> getFactorPage(Integer pageNum, Integer pageSize, String category) {
+        return factorDomainService.getFactorPage(pageNum, pageSize, category);
     }
 }

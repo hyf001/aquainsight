@@ -47,6 +47,16 @@ public class DeviceModel {
     private String description;
 
     /**
+     * 规格参数
+     */
+    private String specifications;
+
+    /**
+     * 关联的监测因子
+     */
+    private Factor factor;
+
+    /**
      * 创建时间
      */
     private LocalDateTime createTime;
@@ -64,7 +74,8 @@ public class DeviceModel {
     /**
      * 更新设备型号信息
      */
-    public void updateInfo(String modelName, String deviceType, String manufacturer, String description) {
+    public void updateInfo(String modelName, String deviceType, String manufacturer,
+                          String description, String specifications, Factor factor) {
         if (modelName != null) {
             this.modelName = modelName;
         }
@@ -76,6 +87,12 @@ public class DeviceModel {
         }
         if (description != null) {
             this.description = description;
+        }
+        if (specifications != null) {
+            this.specifications = specifications;
+        }
+        if (factor != null) {
+            this.factor = factor;
         }
         this.updateTime = LocalDateTime.now();
     }

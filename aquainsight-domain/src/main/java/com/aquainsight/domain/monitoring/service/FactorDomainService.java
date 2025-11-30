@@ -1,5 +1,6 @@
 package com.aquainsight.domain.monitoring.service;
 
+import com.aquainsight.domain.monitoring.entity.DeviceModel;
 import com.aquainsight.domain.monitoring.entity.Factor;
 import com.aquainsight.domain.monitoring.repository.DeviceModelRepository;
 import com.aquainsight.domain.monitoring.repository.FactorRepository;
@@ -42,17 +43,16 @@ public class FactorDomainService {
             throw new IllegalArgumentException("因子代码已存在");
         }
 
-        // 验证设备型号是否存在
-        if (!deviceModelRepository.findById(deviceModelId).isPresent()) {
-            throw new IllegalArgumentException("所属设备型号不存在");
-        }
+        // 获取设备型号领域对象
+        DeviceModel deviceModel = deviceModelRepository.findById(deviceModelId)
+                .orElseThrow(() -> new IllegalArgumentException("所属设备型号不存在"));
 
         Factor factor = Factor.builder()
                 .factorCode(factorCode)
                 .nationalCode(nationalCode)
                 .factorName(factorName)
                 .shortName(shortName)
-                .deviceModelId(deviceModelId)
+                .deviceModel(deviceModel)
                 .category(category)
                 .unit(unit)
                 .upperLimit(upperLimit)
@@ -89,10 +89,10 @@ public class FactorDomainService {
     }
 
     /**
-     * 根据因子代码获取监测因子
+     * 根据类别获取监测因子
      */
-    public Optional<Factor> getFactorByFactorCode(String factorCode) {
-        return factorRepository.findByFactorCode(factorCode);
+    public List<Factor> getFactorsByCategory(String category) {
+        return factorRepository.findByCategory(category);
     }
 
     /**
@@ -100,20 +100,6 @@ public class FactorDomainService {
      */
     public List<Factor> getAllFactors() {
         return factorRepository.findAll();
-    }
-
-    /**
-     * 根据设备型号ID获取监测因子
-     */
-    public List<Factor> getFactorsByDeviceModelId(Integer deviceModelId) {
-        return factorRepository.findByDeviceModelId(deviceModelId);
-    }
-
-    /**
-     * 根据类别获取监测因子
-     */
-    public List<Factor> getFactorsByCategory(String category) {
-        return factorRepository.findByCategory(category);
     }
 
     /**
@@ -130,7 +116,7 @@ public class FactorDomainService {
     /**
      * 分页查询监测因子
      */
-    public IPage<Factor> getFactorPage(Integer pageNum, Integer pageSize, String category, Integer deviceModelId) {
-        return factorRepository.findPage(pageNum, pageSize, category, deviceModelId);
+    public IPage<Factor> getFactorPage(Integer pageNum, Integer pageSize, String category) {
+        return factorRepository.findPage(pageNum, pageSize, category);
     }
 }

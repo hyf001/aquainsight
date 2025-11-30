@@ -17,6 +17,9 @@ const Sites = lazy(() => import('@/pages/Sites'))
 const DetectionFactors = lazy(() => import('@/pages/DetectionFactors'))
 const SiteDevices = lazy(() => import('@/pages/SiteDevices'))
 const DeviceModels = lazy(() => import('@/pages/DeviceModels'))
+const JobCategories = lazy(() => import('@/pages/JobCategories'))
+const Schemes = lazy(() => import('@/pages/Schemes'))
+const SiteConfiguration = lazy(() => import('@/pages/SiteConfiguration'))
 const Login = lazy(() => import('@/pages/Login'))
 
 const PageLoading = () => (
@@ -155,6 +158,30 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={<Spin />}>
             <DeviceModels />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'job-categories',
+        element: (
+          <Suspense fallback={<Spin />}>
+            <JobCategories />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'schemes',
+        element: (
+          <Suspense fallback={<Spin />}>
+            <Schemes />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'site-configuration',
+        element: (
+          <Suspense fallback={<Spin />}>
+            <SiteConfiguration />
           </Suspense>
         ),
       },

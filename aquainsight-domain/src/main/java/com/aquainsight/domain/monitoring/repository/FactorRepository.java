@@ -22,21 +22,6 @@ public interface FactorRepository {
     Optional<Factor> findById(Integer id);
 
     /**
-     * 根据因子代码查找监测因子
-     */
-    Optional<Factor> findByFactorCode(String factorCode);
-
-    /**
-     * 查找所有监测因子
-     */
-    List<Factor> findAll();
-
-    /**
-     * 根据设备型号ID查找监测因子
-     */
-    List<Factor> findByDeviceModelId(Integer deviceModelId);
-
-    /**
      * 根据类别查找监测因子
      */
     List<Factor> findByCategory(String category);
@@ -59,5 +44,10 @@ public interface FactorRepository {
     /**
      * 分页查询监测因子
      */
-    IPage<Factor> findPage(Integer pageNum, Integer pageSize, String category, Integer deviceModelId);
+    IPage<Factor> findPage(Integer pageNum, Integer pageSize, String category);
+
+    /**
+     * 查询所有监测因子
+     */
+    List<Factor> findAll();
 }

@@ -37,9 +37,9 @@ public interface SiteRepository {
     List<Site> findBySiteType(String siteType);
 
     /**
-     * 根据企业名称查找站点
+     * 根据企业ID查找站点
      */
-    List<Site> findByEnterpriseName(String enterpriseName);
+    List<Site> findByEnterpriseId(Integer enterpriseId);
 
     /**
      * 更新站点
@@ -59,5 +59,5 @@ public interface SiteRepository {
     /**
      * 分页查询站点
      */
-    IPage<Site> findPage(Integer pageNum, Integer pageSize, String siteType, String enterpriseName);
+    IPage<Site> findPage(Integer pageNum, Integer pageSize, String siteType, Integer enterpriseId);
 }

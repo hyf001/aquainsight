@@ -29,6 +29,7 @@ import {
   type Site,
   type PageResult,
 } from '@/services/monitoring'
+import { getAllEnterprises, type Enterprise } from '@/services/enterprise'
 
 const SITE_TYPES = [
   { label: '污水', value: 'wastewater' },
@@ -44,15 +45,16 @@ const Sites: React.FC = () => {
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10 })
   const [filters, setFilters] = useState({
     siteType: undefined as string | undefined,
-    enterpriseName: '',
+    enterpriseId: undefined as number | undefined,
   })
+  const [enterprises, setEnterprises] = useState<Enterprise[]>([])
   const [form] = Form.useForm()
 
   // Load sites
   const loadSites = async (pageNum: number = 1, pageSize: number = 10) => {
     setLoading(true)
     try {
-      const data = await getSiteList(pageNum, pageSize, filters.siteType, filters.enterpriseName)
+      const data = await getSiteList(pageNum, pageSize, filters.siteType, filters.enterpriseId)
       setSites(data.list)
       setPagination({ current: data.pageNum, pageSize: data.pageSize })
     } catch (error) {
@@ -63,8 +65,19 @@ const Sites: React.FC = () => {
     }
   }
 
+  // Load enterprises
+  const loadEnterprises = async () => {
+    try {
+      const data = await getAllEnterprises()
+      setEnterprises(data)
+    } catch (error) {
+      console.error('加载企业列表失败:', error)
+    }
+  }
+
   useEffect(() => {
     loadSites(1, 10)
+    loadEnterprises()
   }, [])
 
   // Open create/edit modal
@@ -79,7 +92,7 @@ const Sites: React.FC = () => {
         longitude: site.longitude || undefined,
         latitude: site.latitude || undefined,
         address: site.address || undefined,
-        enterpriseName: site.enterpriseName || undefined,
+        enterpriseId: site.enterpriseId || undefined,
         isAutoUpload: site.isAutoUpload === 1,
       })
     } else {
@@ -204,6 +217,12 @@ const Sites: React.FC = () => {
       render: (text) => text || '-',
     },
     {
+      title: '所属企业',
+      dataIndex: 'enterpriseName',
+      key: 'enterpriseName',
+      render: (text) => text || '-',
+    },
+    {
       title: '经度',
       dataIndex: 'longitude',
       key: 'longitude',
@@ -245,10 +264,19 @@ const Sites: React.FC = () => {
             />
           </Col>
           <Col span={6}>
-            <Input
-              placeholder="企业名称"
-              value={filters.enterpriseName}
-              onChange={(e) => setFilters({ ...filters, enterpriseName: e.target.value })}
+            <Select
+              placeholder="选择企业"
+              allowClear
+              showSearch
+              value={filters.enterpriseId}
+              onChange={(value) => setFilters({ ...filters, enterpriseId: value })}
+              filterOption={(input, option) =>
+                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+              }
+              options={enterprises.map((e) => ({
+                label: e.enterpriseName,
+                value: e.id,
+              }))}
             />
           </Col>
           <Col span={12}>
@@ -342,8 +370,19 @@ const Sites: React.FC = () => {
           <Form.Item name="address" label="地址">
             <Input placeholder="请输入地址" />
           </Form.Item>
-          <Form.Item name="enterpriseName" label="企业名称">
-            <Input placeholder="请输入企业名称" />
+          <Form.Item name="enterpriseId" label="所属企业">
+            <Select
+              placeholder="请选择企业"
+              allowClear
+              showSearch
+              filterOption={(input, option) =>
+                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+              }
+              options={enterprises.map((e) => ({
+                label: e.enterpriseName,
+                value: e.id,
+              }))}
+            />
           </Form.Item>
           <Form.Item name="isAutoUpload" valuePropName="checked" initialValue={false}>
             <Checkbox>启用自动上传</Checkbox>

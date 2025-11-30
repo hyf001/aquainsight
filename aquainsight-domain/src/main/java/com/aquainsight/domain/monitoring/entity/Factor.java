@@ -43,9 +43,9 @@ public class Factor {
     private String shortName;
 
     /**
-     * 所属设备型号ID
+     * 所属设备型号
      */
-    private Integer deviceModelId;
+    private DeviceModel deviceModel;
 
     /**
      * 所属类别(水环境质量/大气环境质量)

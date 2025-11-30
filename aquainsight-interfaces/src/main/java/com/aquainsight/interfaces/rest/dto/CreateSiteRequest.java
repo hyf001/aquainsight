@@ -26,7 +26,7 @@ public class CreateSiteRequest {
 
     private String address;
 
-    private String enterpriseName;
+    private Integer enterpriseId;
 
     private Boolean isAutoUpload;
 }

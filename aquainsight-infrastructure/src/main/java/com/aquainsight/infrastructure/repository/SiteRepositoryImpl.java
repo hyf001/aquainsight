@@ -32,37 +32,37 @@ public class SiteRepositoryImpl implements SiteRepository {
 
     @Override
     public Optional<Site> findById(Integer id) {
-        SitePO sitePO = siteDao.selectById(id);
-        return Optional.ofNullable(sitePO).map(SiteConverter.INSTANCE::toEntity);
+        SitePO sitePO = siteDao.selectByIdWithEnterprise(id);
+        if (sitePO == null) {
+            return Optional.empty();
+        }
+        return Optional.of(SiteConverter.INSTANCE.toEntity(sitePO));
     }
 
     @Override
     public Optional<Site> findBySiteCode(String siteCode) {
-        LambdaQueryWrapper<SitePO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(SitePO::getSiteCode, siteCode);
-        SitePO sitePO = siteDao.selectOne(wrapper);
-        return Optional.ofNullable(sitePO).map(SiteConverter.INSTANCE::toEntity);
+        SitePO sitePO = siteDao.selectBySiteCodeWithEnterprise(siteCode);
+        if (sitePO == null) {
+            return Optional.empty();
+        }
+        return Optional.of(SiteConverter.INSTANCE.toEntity(sitePO));
     }
 
     @Override
     public List<Site> findAll() {
-        List<SitePO> sitePOList = siteDao.selectList(null);
+        List<SitePO> sitePOList = siteDao.selectAllWithEnterprise();
         return SiteConverter.INSTANCE.toEntityList(sitePOList);
     }
 
     @Override
     public List<Site> findBySiteType(String siteType) {
-        LambdaQueryWrapper<SitePO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(SitePO::getSiteType, siteType);
-        List<SitePO> sitePOList = siteDao.selectList(wrapper);
+        List<SitePO> sitePOList = siteDao.selectBySiteTypeWithEnterprise(siteType);
         return SiteConverter.INSTANCE.toEntityList(sitePOList);
     }
 
     @Override
-    public List<Site> findByEnterpriseName(String enterpriseName) {
-        LambdaQueryWrapper<SitePO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(SitePO::getEnterpriseName, enterpriseName);
-        List<SitePO> sitePOList = siteDao.selectList(wrapper);
+    public List<Site> findByEnterpriseId(Integer enterpriseId) {
+        List<SitePO> sitePOList = siteDao.selectByEnterpriseIdWithEnterprise(enterpriseId);
         return SiteConverter.INSTANCE.toEntityList(sitePOList);
     }
 
@@ -70,7 +70,7 @@ public class SiteRepositoryImpl implements SiteRepository {
     public Site update(Site site) {
         SitePO sitePO = SiteConverter.INSTANCE.toPO(site);
         siteDao.updateById(sitePO);
-        return SiteConverter.INSTANCE.toEntity(sitePO);
+        return findById(site.getId()).orElse(site);
     }
 
     @Override
@@ -86,18 +86,10 @@ public class SiteRepositoryImpl implements SiteRepository {
     }
 
     @Override
-    public IPage<Site> findPage(Integer pageNum, Integer pageSize, String siteType, String enterpriseName) {
+    public IPage<Site> findPage(Integer pageNum, Integer pageSize, String siteType, Integer enterpriseId) {
         Page<SitePO> page = new Page<>(pageNum, pageSize);
-        LambdaQueryWrapper<SitePO> wrapper = new LambdaQueryWrapper<>();
-
-        if (siteType != null && !siteType.trim().isEmpty()) {
-            wrapper.eq(SitePO::getSiteType, siteType);
-        }
-        if (enterpriseName != null && !enterpriseName.trim().isEmpty()) {
-            wrapper.like(SitePO::getEnterpriseName, enterpriseName);
-        }
-
-        IPage<SitePO> poPage = siteDao.selectPage(page, wrapper);
+        // 使用带企业信息的分页查询
+        IPage<SitePO> poPage = siteDao.selectPageWithEnterprise(page, siteType, enterpriseId);
         Page<Site> sitePage = new Page<>(poPage.getCurrent(), poPage.getSize(), poPage.getTotal());
         sitePage.setRecords(SiteConverter.INSTANCE.toEntityList(poPage.getRecords()));
         return sitePage;

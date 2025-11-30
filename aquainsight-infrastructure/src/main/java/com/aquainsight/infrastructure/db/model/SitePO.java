@@ -36,7 +36,13 @@ public class SitePO {
 
     private String address;
 
-    private String enterpriseName;
+    private Integer enterpriseId;
+
+    /**
+     * 关联的企业对象（用于关联查询）
+     */
+    @TableField(exist = false)
+    private EnterprisePO enterprise;
 
     private Integer isAutoUpload;
 

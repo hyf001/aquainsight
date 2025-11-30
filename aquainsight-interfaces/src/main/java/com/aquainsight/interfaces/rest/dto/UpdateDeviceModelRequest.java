@@ -15,4 +15,14 @@ public class UpdateDeviceModelRequest {
     private String manufacturer;
 
     private String description;
+
+    /**
+     * 规格参数
+     */
+    private String specifications;
+
+    /**
+     * 关联的因子ID (多对一关系)
+     */
+    private Integer factorId;
 }

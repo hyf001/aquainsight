@@ -30,8 +30,6 @@ public class FactorPO {
 
     private String shortName;
 
-    private Integer deviceModelId;
-
     private String category;
 
     private String unit;

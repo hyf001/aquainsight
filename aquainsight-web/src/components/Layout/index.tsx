@@ -61,6 +61,16 @@ const sideMenuConfig: Record<string, MenuProps['items']> = {
   ],
   task: [
     { key: '/task', icon: <ToolOutlined />, label: '任务管理' },
+    {
+      key: 'task-settings',
+      icon: <SettingOutlined />,
+      label: '设置',
+      children: [
+        { key: '/job-categories', icon: <ToolOutlined />, label: '任务类别' },
+        { key: '/schemes', icon: <ToolOutlined />, label: '方案管理' },
+        { key: '/site-configuration', icon: <SettingOutlined />, label: '站点计划配置' },
+      ],
+    },
   ],
   material: [
     { key: '/material', icon: <ToolOutlined />, label: '物料管理' },

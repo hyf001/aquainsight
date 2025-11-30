@@ -24,4 +24,10 @@ public class DeviceVO {
     private String maintenanceDate;
     private String createTime;
     private String updateTime;
+
+    // 通过设备型号关联的信息
+    private String manufacturer;  // 制造商
+    private String range;  // 量程（基于关联因子的上下限）
+    private Integer factorId;  // 关联因子ID
+    private String factorName;  // 关联因子名称
 }

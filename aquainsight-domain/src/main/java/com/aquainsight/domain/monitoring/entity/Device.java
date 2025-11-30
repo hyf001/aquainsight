@@ -33,14 +33,14 @@ public class Device {
     private String deviceName;
 
     /**
-     * 所属站点ID
+     * 所属站点
      */
-    private Integer siteId;
+    private Site site;
 
     /**
-     * 设备型号ID
+     * 设备型号
      */
-    private Integer deviceModelId;
+    private DeviceModel deviceModel;
 
     /**
      * 设备序列号

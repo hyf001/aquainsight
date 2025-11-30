@@ -37,15 +37,15 @@ const Login: React.FC = () => {
         </div>
         <Form
           name="login"
-          initialValues={{ username: 'admin', password: 'admin123' }}
+          initialValues={{ phone: '', password: '' }}
           onFinish={onFinish}
           size="large"
         >
           <Form.Item
-            name="username"
-            rules={[{ required: true, message: '请输入用户名' }]}
+            name="phone"
+            rules={[{ required: true, message: '请输入手机号' }]}
           >
-            <Input prefix={<UserOutlined />} placeholder="用户名" />
+            <Input prefix={<UserOutlined />} placeholder="手机号" />
           </Form.Item>
           <Form.Item
             name="password"

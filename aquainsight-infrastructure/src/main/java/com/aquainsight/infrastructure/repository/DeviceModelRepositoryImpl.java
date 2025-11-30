@@ -32,21 +32,31 @@ public class DeviceModelRepositoryImpl implements DeviceModelRepository {
 
     @Override
     public Optional<DeviceModel> findById(Integer id) {
-        DeviceModelPO deviceModelPO = deviceModelDao.selectById(id);
-        return Optional.ofNullable(deviceModelPO).map(DeviceModelConverter.INSTANCE::toEntity);
+        // 使用带因子关联的查询
+        DeviceModelPO deviceModelPO = deviceModelDao.selectByIdWithFactor(id);
+        if (deviceModelPO == null) {
+            return Optional.empty();
+        }
+        // MapStruct 自动处理嵌套的 factor 转换
+        return Optional.of(DeviceModelConverter.INSTANCE.toEntity(deviceModelPO));
     }
 
     @Override
     public Optional<DeviceModel> findByModelCode(String modelCode) {
-        LambdaQueryWrapper<DeviceModelPO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(DeviceModelPO::getModelCode, modelCode);
-        DeviceModelPO deviceModelPO = deviceModelDao.selectOne(wrapper);
-        return Optional.ofNullable(deviceModelPO).map(DeviceModelConverter.INSTANCE::toEntity);
+        // 使用带因子关联的查询
+        DeviceModelPO deviceModelPO = deviceModelDao.selectByModelCodeWithFactor(modelCode);
+        if (deviceModelPO == null) {
+            return Optional.empty();
+        }
+        // MapStruct 自动处理嵌套的 factor 转换
+        return Optional.of(DeviceModelConverter.INSTANCE.toEntity(deviceModelPO));
     }
 
     @Override
     public List<DeviceModel> findAll() {
-        List<DeviceModelPO> deviceModelPOList = deviceModelDao.selectList(null);
+        // 使用带因子关联的查询
+        List<DeviceModelPO> deviceModelPOList = deviceModelDao.selectAllWithFactor();
+        // MapStruct 自动处理嵌套的 factor 转换
         return DeviceModelConverter.INSTANCE.toEntityList(deviceModelPOList);
     }
 
@@ -88,14 +98,10 @@ public class DeviceModelRepositoryImpl implements DeviceModelRepository {
     @Override
     public IPage<DeviceModel> findPage(Integer pageNum, Integer pageSize, String deviceType) {
         Page<DeviceModelPO> page = new Page<>(pageNum, pageSize);
-        LambdaQueryWrapper<DeviceModelPO> wrapper = new LambdaQueryWrapper<>();
-
-        if (deviceType != null && !deviceType.trim().isEmpty()) {
-            wrapper.eq(DeviceModelPO::getDeviceType, deviceType);
-        }
-
-        IPage<DeviceModelPO> poPage = deviceModelDao.selectPage(page, wrapper);
+        // 使用带因子关联的分页查询
+        IPage<DeviceModelPO> poPage = deviceModelDao.selectPageWithFactor(page, deviceType);
         Page<DeviceModel> deviceModelPage = new Page<>(poPage.getCurrent(), poPage.getSize(), poPage.getTotal());
+        // MapStruct 自动处理嵌套的 factor 转换
         deviceModelPage.setRecords(DeviceModelConverter.INSTANCE.toEntityList(poPage.getRecords()));
         return deviceModelPage;
     }

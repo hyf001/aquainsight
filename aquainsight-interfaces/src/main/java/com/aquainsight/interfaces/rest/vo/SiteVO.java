@@ -26,6 +26,8 @@ public class SiteVO {
 
     private String address;
 
+    private Integer enterpriseId;
+
     private String enterpriseName;
 
     private Boolean isAutoUpload;

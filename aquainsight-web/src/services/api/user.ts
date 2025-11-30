@@ -1,7 +1,7 @@
 import request from '../request'
 
 export interface LoginRequest {
-  username: string
+  phone: string
   password: string
 }
 
@@ -12,9 +12,9 @@ export interface LoginResponse {
 
 export interface User {
   id: string
-  username: string
   name: string
   avatar?: string
+  role?: string
 }
 
 export const userApi = {

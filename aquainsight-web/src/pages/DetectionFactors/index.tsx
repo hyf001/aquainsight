@@ -26,10 +26,7 @@ import {
   createFactor,
   updateFactor,
   deleteFactor,
-  getAllDeviceModels,
   type Factor,
-  type DeviceModel,
-  type PageResult,
 } from '@/services/monitoring'
 
 const CATEGORIES = [
@@ -39,7 +36,6 @@ const CATEGORIES = [
 
 const DetectionFactors: React.FC = () => {
   const [factors, setFactors] = useState<Factor[]>([])
-  const [deviceModels, setDeviceModels] = useState<DeviceModel[]>([])
   const [loading, setLoading] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [editingFactor, setEditingFactor] = useState<Factor | null>(null)
@@ -64,19 +60,8 @@ const DetectionFactors: React.FC = () => {
     }
   }
 
-  // Load device models
-  const loadDeviceModels = async () => {
-    try {
-      const data = await getAllDeviceModels()
-      setDeviceModels(data)
-    } catch (error) {
-      console.error('加载设备型号失败:', error)
-    }
-  }
-
   useEffect(() => {
     loadFactors(1, 10)
-    loadDeviceModels()
   }, [])
 
   // Change category
@@ -96,7 +81,6 @@ const DetectionFactors: React.FC = () => {
         nationalCode: factor.nationalCode || undefined,
         factorName: factor.factorName,
         shortName: factor.shortName || undefined,
-        deviceModelId: factor.deviceModelId,
         category: factor.category || selectedCategory,
         unit: factor.unit || undefined,
         upperLimit: factor.upperLimit || undefined,
@@ -359,19 +343,6 @@ const DetectionFactors: React.FC = () => {
           </Form.Item>
           <Form.Item name="shortName" label="简称">
             <Input placeholder="请输入简称" />
-          </Form.Item>
-          <Form.Item
-            name="deviceModelId"
-            label="关联设备型号"
-            rules={[{ required: true, message: '请选择设备型号' }]}
-          >
-            <Select
-              placeholder="请选择设备型号"
-              options={deviceModels.map(m => ({
-                label: m.modelName,
-                value: m.id,
-              }))}
-            />
           </Form.Item>
           <Form.Item name="category" label="类别">
             <Select

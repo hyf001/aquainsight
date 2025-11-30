@@ -31,6 +31,22 @@ public class DeviceModelPO {
 
     private String description;
 
+    /**
+     * 规格参数
+     */
+    private String specifications;
+
+    /**
+     * 关联的因子ID (多对一关系)
+     */
+    private Integer factorId;
+
+    /**
+     * 关联的因子对象 (不存储在数据库，用于查询时关联)
+     */
+    @TableField(exist = false)
+    private FactorPO factor;
+
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 

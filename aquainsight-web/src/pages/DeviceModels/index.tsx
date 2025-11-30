@@ -12,6 +12,7 @@ import {
   Popconfirm,
   Row,
   Col,
+  Tag,
 } from 'antd'
 import {
   PlusOutlined,
@@ -25,12 +26,14 @@ import {
   createDeviceModel,
   updateDeviceModel,
   deleteDeviceModel,
+  getAllFactors,
   type DeviceModel,
-  type PageResult,
+  type Factor,
 } from '@/services/monitoring'
 
 const DeviceModels: React.FC = () => {
   const [deviceModels, setDeviceModels] = useState<DeviceModel[]>([])
+  const [allFactors, setAllFactors] = useState<Factor[]>([])
   const [loading, setLoading] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [editingModel, setEditingModel] = useState<DeviceModel | null>(null)
@@ -41,6 +44,16 @@ const DeviceModels: React.FC = () => {
     deviceType: '',
   })
   const [form] = Form.useForm()
+
+  // Load all factors for selection
+  const loadAllFactors = async () => {
+    try {
+      const data = await getAllFactors()
+      setAllFactors(data)
+    } catch (error) {
+      console.error('加载监测因子失败:', error)
+    }
+  }
 
   // Load device models
   const loadDeviceModels = async (pageNum: number = 1, pageSize: number = 10) => {
@@ -59,6 +72,7 @@ const DeviceModels: React.FC = () => {
 
   useEffect(() => {
     loadDeviceModels(1, 10)
+    loadAllFactors()
   }, [])
 
   // Open create/edit modal
@@ -71,6 +85,8 @@ const DeviceModels: React.FC = () => {
         deviceType: model.deviceType || undefined,
         manufacturer: model.manufacturer || undefined,
         description: model.description || undefined,
+        specifications: model.specifications || undefined,
+        factorId: model.factorId || undefined,
       })
     } else {
       form.resetFields()
@@ -188,13 +204,24 @@ const DeviceModels: React.FC = () => {
     },
     {
       title: '规格参数',
-      key: 'specs',
-      render: () => '-',
+      key: 'specifications',
+      dataIndex: 'specifications',
+      ellipsis: true,
+      render: (text) => text || '-',
     },
     {
       title: '关联因子',
-      key: 'factors',
-      render: () => '-',
+      key: 'factor',
+      render: (_, record) => {
+        if (!record.factor) {
+          return '-'
+        }
+        return (
+          <Tag color="blue">
+            {record.factor.factorName}
+          </Tag>
+        )
+      },
     },
     {
       title: '生产厂商',
@@ -285,7 +312,9 @@ const DeviceModels: React.FC = () => {
         open={modalVisible}
         onOk={handleSaveModel}
         onCancel={() => setModalVisible(false)}
-        width={600}
+        width={800}
+        cancelText="取消"
+        okText="确定"
       >
         <Form form={form} layout="vertical">
           <Form.Item
@@ -293,23 +322,46 @@ const DeviceModels: React.FC = () => {
             label="设备代码(简称)"
             rules={[{ required: true, message: '请输入设备代码' }]}
           >
-            <Input placeholder="请输入设备代码" />
+            <Input placeholder="请输入设备代码，如：WQ-2000" />
           </Form.Item>
           <Form.Item
             name="modelName"
             label="型号名称"
             rules={[{ required: true, message: '请输入型号名称' }]}
           >
-            <Input placeholder="请输入型号名称" />
+            <Input placeholder="请输入型号名称，如：水质在线监测仪-2000型" />
           </Form.Item>
           <Form.Item name="deviceType" label="设备类别">
-            <Input placeholder="请输入设备类别" />
+            <Input placeholder="请输入设备类别，如：水质监测" />
           </Form.Item>
           <Form.Item name="manufacturer" label="生产厂商">
-            <Input placeholder="请输入生产厂商" />
+            <Input placeholder="请输入生产厂商，如：XX环保科技" />
+          </Form.Item>
+          <Form.Item name="specifications" label="规格参数">
+            <Input.TextArea
+              placeholder="请输入规格参数，如：测量范围：0-100mg/L；精度：±2%；供电：220V AC"
+              rows={3}
+            />
+          </Form.Item>
+          <Form.Item name="factorId" label="关联因子">
+            <Select
+              placeholder="请选择关联的监测因子"
+              showSearch
+              allowClear
+              filterOption={(input, option) =>
+                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+              }
+              options={allFactors.map((factor) => ({
+                value: factor.id,
+                label: `${factor.factorName}（${factor.factorCode}）`,
+              }))}
+            />
           </Form.Item>
           <Form.Item name="description" label="描述">
-            <Input.TextArea placeholder="请输入描述" rows={3} />
+            <Input.TextArea
+              placeholder="请输入设备描述，如：可监测PH、COD、TOC、TP、氨氮、总镍等水质指标"
+              rows={3}
+            />
           </Form.Item>
         </Form>
       </Modal>

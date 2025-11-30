@@ -11,6 +11,7 @@ export type Site = {
   longitude: string | null
   latitude: string | null
   address: string | null
+  enterpriseId: number | null
   enterpriseName: string | null
   isAutoUpload: number
   createTime: string
@@ -25,7 +26,7 @@ export type CreateSiteRequest = {
   longitude?: string
   latitude?: string
   address?: string
-  enterpriseName?: string
+  enterpriseId?: number
   isAutoUpload?: number
 }
 
@@ -36,7 +37,7 @@ export type UpdateSiteRequest = {
   longitude?: string
   latitude?: string
   address?: string
-  enterpriseName?: string
+  enterpriseId?: number
   isAutoUpload?: number
 }
 
@@ -49,9 +50,9 @@ export type PageResult<T> = {
 }
 
 // 获取站点列表（分页）
-export const getSiteList = (pageNum: number = 1, pageSize: number = 10, siteType?: string, enterpriseName?: string) => {
+export const getSiteList = (pageNum: number = 1, pageSize: number = 10, siteType?: string, enterpriseId?: number) => {
   return request.get<any, PageResult<Site>>('/monitoring/sites', {
-    params: { pageNum, pageSize, siteType, enterpriseName }
+    params: { pageNum, pageSize, siteType, enterpriseId }
   })
 }
 
@@ -84,6 +85,9 @@ export type DeviceModel = {
   deviceType: string | null
   manufacturer: string | null
   description: string | null
+  specifications?: string | null  // 规格参数
+  factorId?: number  // 关联的因子ID (多对一关系)
+  factor?: Factor  // 关联的因子对象（用于显示）
   createTime: string
   updateTime: string
 }
@@ -94,6 +98,8 @@ export type CreateDeviceModelRequest = {
   deviceType?: string
   manufacturer?: string
   description?: string
+  specifications?: string  // 规格参数
+  factorId?: number  // 关联因子ID (多对一关系)
 }
 
 export type UpdateDeviceModelRequest = {
@@ -101,6 +107,8 @@ export type UpdateDeviceModelRequest = {
   deviceType?: string
   manufacturer?: string
   description?: string
+  specifications?: string  // 规格参数
+  factorId?: number  // 关联因子ID (多对一关系)
 }
 
 // 获取设备型号列表（分页）
@@ -147,6 +155,10 @@ export type Device = {
   maintenanceDate: string | null
   createTime: string
   updateTime: string
+  manufacturer: string | null  // 制造商
+  range: string | null  // 量程
+  factorId: number | null  // 关联因子ID
+  factorName: string | null  // 关联因子名称
 }
 
 export type CreateDeviceRequest = {
@@ -253,6 +265,11 @@ export const getFactorList = (pageNum: number = 1, pageSize: number = 10, catego
   return request.get<any, PageResult<Factor>>('/monitoring/factors', {
     params: { pageNum, pageSize, category, deviceModelId }
   })
+}
+
+// 获取所有监测因子（不分页）
+export const getAllFactors = () => {
+  return request.get<any, Factor[]>('/monitoring/factors/all')
 }
 
 // 创建监测因子

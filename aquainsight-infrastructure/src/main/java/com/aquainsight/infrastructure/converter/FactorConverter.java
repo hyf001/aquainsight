@@ -3,6 +3,7 @@ package com.aquainsight.infrastructure.converter;
 import com.aquainsight.domain.monitoring.entity.Factor;
 import com.aquainsight.infrastructure.db.model.FactorPO;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
 
 import java.util.List;
@@ -26,7 +27,7 @@ public interface FactorConverter {
     FactorPO toPO(Factor factor);
 
     /**
-     * PO列表转Entity列表
+     * PO列表转Entity列表 (自动使用 DeviceModelConverter 转换 deviceModel 字段)
      */
     List<Factor> toEntityList(List<FactorPO> factorPOList);
 

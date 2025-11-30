@@ -73,7 +73,7 @@ public class MonitoringController {
                     request.getLongitude() != null ? new BigDecimal(request.getLongitude()) : null,
                     request.getLatitude() != null ? new BigDecimal(request.getLatitude()) : null,
                     request.getAddress(),
-                    request.getEnterpriseName(),
+                    request.getEnterpriseId(),
                     request.getIsAutoUpload() != null ? (request.getIsAutoUpload() ? 1 : 0) : 0
             );
             return Response.success(convertToSiteVO(createdSite));
@@ -106,7 +106,7 @@ public class MonitoringController {
                     request.getLongitude() != null ? new BigDecimal(request.getLongitude()) : site.getLongitude(),
                     request.getLatitude() != null ? new BigDecimal(request.getLatitude()) : site.getLatitude(),
                     request.getAddress(),
-                    request.getEnterpriseName(),
+                    request.getEnterpriseId() != null ? request.getEnterpriseId() : (site.getEnterprise() != null ? site.getEnterprise().getId() : null),
                     request.getIsAutoUpload() != null ? (request.getIsAutoUpload() ? 1 : 0) : site.getIsAutoUpload()
             );
             return Response.success(convertToSiteVO(updatedSite));
@@ -140,7 +140,7 @@ public class MonitoringController {
      * @param pageNum       页码
      * @param pageSize      每页大小
      * @param siteType      站点类型
-     * @param enterpriseName 企业名称
+     * @param enterpriseId  企业ID
      * @return 分页站点列表
      */
     @GetMapping("/sites")
@@ -148,9 +148,9 @@ public class MonitoringController {
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize,
             @RequestParam(required = false) String siteType,
-            @RequestParam(required = false) String enterpriseName) {
+            @RequestParam(required = false) Integer enterpriseId) {
         try {
-            IPage<Site> page = monitoringApplicationService.getSitePage(pageNum, pageSize, siteType, enterpriseName);
+            IPage<Site> page = monitoringApplicationService.getSitePage(pageNum, pageSize, siteType, enterpriseId);
 
             List<SiteVO> voList = page.getRecords().stream()
                     .map(this::convertToSiteVO)
@@ -195,7 +195,9 @@ public class MonitoringController {
                     request.getModelName(),
                     request.getDeviceType(),
                     request.getManufacturer(),
-                    request.getDescription()
+                    request.getDescription(),
+                    request.getSpecifications(),
+                    request.getFactorId()
             );
             return Response.success(convertToDeviceModelVO(createdDeviceModel));
         } catch (Exception e) {
@@ -223,7 +225,9 @@ public class MonitoringController {
                     request.getModelName(),
                     request.getDeviceType(),
                     request.getManufacturer(),
-                    request.getDescription()
+                    request.getDescription(),
+                    request.getSpecifications(),
+                    request.getFactorId()
             );
             return Response.success(convertToDeviceModelVO(updatedDeviceModel));
         } catch (Exception e) {
@@ -566,17 +570,15 @@ public class MonitoringController {
      * @param pageNum      页码
      * @param pageSize     每页大小
      * @param category     类别
-     * @param deviceModelId 设备型号ID
      * @return 分页因子列表
      */
     @GetMapping("/factors")
     public Response<PageResult<FactorVO>> listFactors(
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize,
-            @RequestParam(required = false) String category,
-            @RequestParam(required = false) Integer deviceModelId) {
+            @RequestParam(required = false) String category) {
         try {
-            IPage<Factor> page = monitoringApplicationService.getFactorPage(pageNum, pageSize, category, deviceModelId);
+            IPage<Factor> page = monitoringApplicationService.getFactorPage(pageNum, pageSize, category);
 
             List<FactorVO> voList = page.getRecords().stream()
                     .map(this::convertToFactorVO)
@@ -584,6 +586,24 @@ public class MonitoringController {
 
             PageResult<FactorVO> result = PageResult.of(voList, page.getTotal(), pageNum, pageSize);
             return Response.success(result);
+        } catch (Exception e) {
+            return Response.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 获取所有因子（不分页）
+     *
+     * @return 因子列表
+     */
+    @GetMapping("/factors/all")
+    public Response<List<FactorVO>> getAllFactors() {
+        try {
+            List<Factor> factors = monitoringApplicationService.getAllFactors();
+            List<FactorVO> voList = factors.stream()
+                    .map(this::convertToFactorVO)
+                    .collect(Collectors.toList());
+            return Response.success(voList);
         } catch (Exception e) {
             return Response.error(e.getMessage());
         }
@@ -620,7 +640,8 @@ public class MonitoringController {
                 .longitude(site.getLongitude() != null ? site.getLongitude().toPlainString() : null)
                 .latitude(site.getLatitude() != null ? site.getLatitude().toPlainString() : null)
                 .address(site.getAddress())
-                .enterpriseName(site.getEnterpriseName())
+                .enterpriseId(site.getEnterprise() != null ? site.getEnterprise().getId() : null)
+                .enterpriseName(site.getEnterprise() != null ? site.getEnterprise().getEnterpriseName() : null)
                 .isAutoUpload(site.getIsAutoUpload() != null && site.getIsAutoUpload() == 1)
                 .createTime(site.getCreateTime() != null ? site.getCreateTime().format(DATE_FORMATTER) : null)
                 .updateTime(site.getUpdateTime() != null ? site.getUpdateTime().format(DATE_FORMATTER) : null)
@@ -638,6 +659,9 @@ public class MonitoringController {
                 .deviceType(deviceModel.getDeviceType())
                 .manufacturer(deviceModel.getManufacturer())
                 .description(deviceModel.getDescription())
+                .specifications(deviceModel.getSpecifications())
+                .factorId(deviceModel.getFactor() != null ? deviceModel.getFactor().getId() : null)
+                .factor(deviceModel.getFactor() != null ? convertToFactorVO(deviceModel.getFactor()) : null)
                 .createTime(deviceModel.getCreateTime() != null ? deviceModel.getCreateTime().format(DATE_FORMATTER) : null)
                 .updateTime(deviceModel.getUpdateTime() != null ? deviceModel.getUpdateTime().format(DATE_FORMATTER) : null)
                 .build();
@@ -647,60 +671,59 @@ public class MonitoringController {
      * 将设备实体转换为VO
      */
     private DeviceVO convertToDeviceVO(Device device) {
-        DeviceVO.DeviceVOBuilder builder = DeviceVO.builder()
+        DeviceModel deviceModel = device.getDeviceModel();
+        Factor factor = deviceModel != null ? deviceModel.getFactor() : null;
+
+        // 构建量程字符串（基于因子的上下限）
+        String range = null;
+        if (factor != null && factor.getLowerLimit() != null && factor.getUpperLimit() != null) {
+            range = factor.getLowerLimit().toPlainString() + "-" + factor.getUpperLimit().toPlainString();
+            if (factor.getUnit() != null && !factor.getUnit().trim().isEmpty()) {
+                range += factor.getUnit();
+            }
+        }
+
+        return DeviceVO.builder()
                 .id(device.getId())
                 .deviceCode(device.getDeviceCode())
                 .deviceName(device.getDeviceName())
-                .siteId(device.getSiteId())
-                .deviceModelId(device.getDeviceModelId())
+                .siteId(device.getSite() != null ? device.getSite().getId() : null)
+                .siteName(device.getSite() != null ? device.getSite().getSiteName() : null)
+                .deviceModelId(deviceModel != null ? deviceModel.getId() : null)
+                .modelName(deviceModel != null ? deviceModel.getModelName() : null)
                 .serialNumber(device.getSerialNumber())
                 .installLocation(device.getInstallLocation())
                 .status(device.getStatus())
                 .installDate(device.getInstallDate() != null ? device.getInstallDate().toString() : null)
                 .maintenanceDate(device.getMaintenanceDate() != null ? device.getMaintenanceDate().toString() : null)
                 .createTime(device.getCreateTime() != null ? device.getCreateTime().format(DATE_FORMATTER) : null)
-                .updateTime(device.getUpdateTime() != null ? device.getUpdateTime().format(DATE_FORMATTER) : null);
-
-        // 填充站点名称
-        if (device.getSiteId() != null) {
-            monitoringApplicationService.getSiteById(device.getSiteId())
-                    .ifPresent(site -> builder.siteName(site.getSiteName()));
-        }
-
-        // 填充设备型号名称
-        if (device.getDeviceModelId() != null) {
-            monitoringApplicationService.getDeviceModelById(device.getDeviceModelId())
-                    .ifPresent(model -> builder.modelName(model.getModelName()));
-        }
-
-        return builder.build();
+                .updateTime(device.getUpdateTime() != null ? device.getUpdateTime().format(DATE_FORMATTER) : null)
+                .manufacturer(deviceModel != null ? deviceModel.getManufacturer() : null)
+                .range(range)
+                .factorId(factor != null ? factor.getId() : null)
+                .factorName(factor != null ? factor.getFactorName() : null)
+                .build();
     }
 
     /**
      * 将因子实体转换为VO
      */
     private FactorVO convertToFactorVO(Factor factor) {
-        FactorVO.FactorVOBuilder builder = FactorVO.builder()
+        return FactorVO.builder()
                 .id(factor.getId())
                 .factorCode(factor.getFactorCode())
                 .nationalCode(factor.getNationalCode())
                 .factorName(factor.getFactorName())
                 .shortName(factor.getShortName())
-                .deviceModelId(factor.getDeviceModelId())
+                .deviceModelId(factor.getDeviceModel() != null ? factor.getDeviceModel().getId() : null)
+                .modelName(factor.getDeviceModel() != null ? factor.getDeviceModel().getModelName() : null)
                 .category(factor.getCategory())
                 .unit(factor.getUnit())
                 .upperLimit(factor.getUpperLimit())
                 .lowerLimit(factor.getLowerLimit())
                 .precisionDigits(factor.getPrecisionDigits())
                 .createTime(factor.getCreateTime() != null ? factor.getCreateTime().format(DATE_FORMATTER) : null)
-                .updateTime(factor.getUpdateTime() != null ? factor.getUpdateTime().format(DATE_FORMATTER) : null);
-
-        // 填充设备型号名称
-        if (factor.getDeviceModelId() != null) {
-            monitoringApplicationService.getDeviceModelById(factor.getDeviceModelId())
-                    .ifPresent(model -> builder.modelName(model.getModelName()));
-        }
-
-        return builder.build();
+                .updateTime(factor.getUpdateTime() != null ? factor.getUpdateTime().format(DATE_FORMATTER) : null)
+                .build();
     }
 }

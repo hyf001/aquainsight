@@ -58,9 +58,9 @@ public class Site {
     private String address;
 
     /**
-     * 企业名称
+     * 所属企业
      */
-    private String enterpriseName;
+    private Enterprise enterprise;
 
     /**
      * 是否需要自动填报(0-否,1-是)
@@ -87,7 +87,7 @@ public class Site {
      */
     public void updateInfo(String siteName, String siteType, String siteTag,
                           BigDecimal longitude, BigDecimal latitude, String address,
-                          String enterpriseName, Integer isAutoUpload) {
+                          Enterprise enterprise, Integer isAutoUpload) {
         if (siteName != null) {
             this.siteName = siteName;
         }
@@ -106,8 +106,8 @@ public class Site {
         if (address != null) {
             this.address = address;
         }
-        if (enterpriseName != null) {
-            this.enterpriseName = enterpriseName;
+        if (enterprise != null) {
+            this.enterprise = enterprise;
         }
         if (isAutoUpload != null) {
             this.isAutoUpload = isAutoUpload;

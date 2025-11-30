@@ -33,36 +33,19 @@ public class FactorRepositoryImpl implements FactorRepository {
     @Override
     public Optional<Factor> findById(Integer id) {
         FactorPO factorPO = factorDao.selectById(id);
-        return Optional.ofNullable(factorPO).map(FactorConverter.INSTANCE::toEntity);
-    }
-
-    @Override
-    public Optional<Factor> findByFactorCode(String factorCode) {
-        LambdaQueryWrapper<FactorPO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(FactorPO::getFactorCode, factorCode);
-        FactorPO factorPO = factorDao.selectOne(wrapper);
-        return Optional.ofNullable(factorPO).map(FactorConverter.INSTANCE::toEntity);
-    }
-
-    @Override
-    public List<Factor> findAll() {
-        List<FactorPO> factorPOList = factorDao.selectList(null);
-        return FactorConverter.INSTANCE.toEntityList(factorPOList);
-    }
-
-    @Override
-    public List<Factor> findByDeviceModelId(Integer deviceModelId) {
-        LambdaQueryWrapper<FactorPO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(FactorPO::getDeviceModelId, deviceModelId);
-        List<FactorPO> factorPOList = factorDao.selectList(wrapper);
-        return FactorConverter.INSTANCE.toEntityList(factorPOList);
+        if (factorPO == null) {
+            return Optional.empty();
+        }
+        // MapStruct 自动处理嵌套的 deviceModel 转换
+        return Optional.of(FactorConverter.INSTANCE.toEntity(factorPO));
     }
 
     @Override
     public List<Factor> findByCategory(String category) {
-        LambdaQueryWrapper<FactorPO> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(FactorPO::getCategory, category);
-        List<FactorPO> factorPOList = factorDao.selectList(wrapper);
+        LambdaQueryWrapper<FactorPO> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(FactorPO::getCategory,category);
+        List<FactorPO> factorPOList = factorDao.selectList(lambdaQueryWrapper);
+        // MapStruct 自动处理嵌套的 deviceModel 转换
         return FactorConverter.INSTANCE.toEntityList(factorPOList);
     }
 
@@ -70,7 +53,8 @@ public class FactorRepositoryImpl implements FactorRepository {
     public Factor update(Factor factor) {
         FactorPO factorPO = FactorConverter.INSTANCE.toPO(factor);
         factorDao.updateById(factorPO);
-        return FactorConverter.INSTANCE.toEntity(factorPO);
+        // 重新查询以获取完整的关联对象
+        return findById(factor.getId()).orElse(factor);
     }
 
     @Override
@@ -86,20 +70,23 @@ public class FactorRepositoryImpl implements FactorRepository {
     }
 
     @Override
-    public IPage<Factor> findPage(Integer pageNum, Integer pageSize, String category, Integer deviceModelId) {
+    public IPage<Factor> findPage(Integer pageNum, Integer pageSize, String category) {
         Page<FactorPO> page = new Page<>(pageNum, pageSize);
         LambdaQueryWrapper<FactorPO> wrapper = new LambdaQueryWrapper<>();
 
         if (category != null && !category.trim().isEmpty()) {
             wrapper.eq(FactorPO::getCategory, category);
         }
-        if (deviceModelId != null) {
-            wrapper.eq(FactorPO::getDeviceModelId, deviceModelId);
-        }
 
         IPage<FactorPO> poPage = factorDao.selectPage(page, wrapper);
         Page<Factor> factorPage = new Page<>(poPage.getCurrent(), poPage.getSize(), poPage.getTotal());
         factorPage.setRecords(FactorConverter.INSTANCE.toEntityList(poPage.getRecords()));
         return factorPage;
+    }
+
+    @Override
+    public List<Factor> findAll() {
+        List<FactorPO> factorPOList = factorDao.selectList(null);
+        return FactorConverter.INSTANCE.toEntityList(factorPOList);
     }
 }

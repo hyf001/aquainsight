@@ -20,7 +20,7 @@ public class UpdateSiteRequest {
 
     private String address;
 
-    private String enterpriseName;
+    private Integer enterpriseId;
 
     private Boolean isAutoUpload;
 }

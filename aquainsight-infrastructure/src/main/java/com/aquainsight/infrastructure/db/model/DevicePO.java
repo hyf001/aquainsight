@@ -28,7 +28,19 @@ public class DevicePO {
 
     private Integer siteId;
 
+    /**
+     * 关联的站点对象（用于关联查询）
+     */
+    @TableField(exist = false)
+    private SitePO site;
+
     private Integer deviceModelId;
+
+    /**
+     * 关联的设备型号对象（用于关联查询）
+     */
+    @TableField(exist = false)
+    private DeviceModelPO deviceModel;
 
     private String serialNumber;
 
