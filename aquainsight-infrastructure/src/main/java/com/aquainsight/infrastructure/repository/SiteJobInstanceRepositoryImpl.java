@@ -131,4 +131,20 @@ public class SiteJobInstanceRepositoryImpl implements SiteJobInstanceRepository 
         }
         return SiteJobInstanceConverter.INSTANCE.toEntity(siteJobInstancePO);
     }
+
+    @Override
+    public com.baomidou.mybatisplus.core.metadata.IPage<SiteJobInstance> findPageWithDetails(
+            Integer pageNum, Integer pageSize,
+            String siteName, String status, LocalDateTime startTime, LocalDateTime endTime,
+            String creator, Integer departmentId) {
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<SiteJobInstancePO> page =
+                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(pageNum, pageSize);
+        com.baomidou.mybatisplus.core.metadata.IPage<SiteJobInstancePO> poPage =
+                siteJobInstanceDao.selectPageWithDetails(page, siteName, status, startTime, endTime, creator, departmentId);
+
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<SiteJobInstance> siteJobInstancePage =
+                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(poPage.getCurrent(), poPage.getSize(), poPage.getTotal());
+        siteJobInstancePage.setRecords(SiteJobInstanceConverter.INSTANCE.toEntityList(poPage.getRecords()));
+        return siteJobInstancePage;
+    }
 }

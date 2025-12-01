@@ -6,6 +6,8 @@ import com.aquainsight.infrastructure.converter.SiteJobPlanConverter;
 import com.aquainsight.infrastructure.db.dao.SiteJobPlanDao;
 import com.aquainsight.infrastructure.db.model.SiteJobPlanPO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -83,5 +85,24 @@ public class SiteJobPlanRepositoryImpl implements SiteJobPlanRepository {
     @Override
     public void deleteByIds(List<Integer> ids) {
         siteJobPlanDao.deleteBatchIds(ids);
+    }
+
+    @Override
+    public IPage<SiteJobPlan> findPageWithDetails(Integer pageNum, Integer pageSize,
+                                                   String siteName, List<Integer> siteIds,
+                                                   Integer departmentId) {
+        Page<SiteJobPlanPO> page = new Page<>(pageNum, pageSize);
+        IPage<SiteJobPlanPO> poPage = siteJobPlanDao.selectPageWithDetails(
+                page, siteName, siteIds, departmentId);
+
+        Page<SiteJobPlan> siteJobPlanPage = new Page<>(poPage.getCurrent(), poPage.getSize(), poPage.getTotal());
+        siteJobPlanPage.setRecords(SiteJobPlanConverter.INSTANCE.toEntityList(poPage.getRecords()));
+        return siteJobPlanPage;
+    }
+
+    @Override
+    public List<SiteJobPlan> findActiveJobPlansWithDetails() {
+        List<SiteJobPlanPO> siteJobPlanPOList = siteJobPlanDao.selectActiveJobPlansWithDetails();
+        return SiteJobPlanConverter.INSTANCE.toEntityList(siteJobPlanPOList);
     }
 }

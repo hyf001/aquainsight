@@ -3,18 +3,25 @@ package com.aquainsight.application.service;
 import com.aquainsight.domain.maintenance.entity.JobCategory;
 import com.aquainsight.domain.maintenance.entity.Scheme;
 import com.aquainsight.domain.maintenance.entity.SchemeItem;
+import com.aquainsight.domain.maintenance.entity.SiteJobInstance;
 import com.aquainsight.domain.maintenance.entity.SiteJobPlan;
+import com.aquainsight.domain.maintenance.repository.SiteJobPlanRepository;
 import com.aquainsight.domain.maintenance.service.JobCategoryDomainService;
 import com.aquainsight.domain.maintenance.service.SchemeDomainService;
+import com.aquainsight.domain.maintenance.service.SiteJobInstanceDomainService;
 import com.aquainsight.domain.maintenance.service.SiteJobPlanDomainService;
 import com.aquainsight.domain.maintenance.types.PeriodConfig;
 import com.aquainsight.domain.monitoring.entity.Site;
+import com.aquainsight.domain.monitoring.repository.SiteRepository;
 import com.aquainsight.domain.organization.entity.Department;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 维护管理应用服务
@@ -26,6 +33,9 @@ public class MaintenanceApplicationService {
     private final JobCategoryDomainService jobCategoryDomainService;
     private final SchemeDomainService schemeDomainService;
     private final SiteJobPlanDomainService siteJobPlanDomainService;
+    private final SiteJobInstanceDomainService siteJobInstanceDomainService;
+    private final SiteJobPlanRepository siteJobPlanRepository;
+    private final SiteRepository siteRepository;
 
     /**
      * 创建作业类别
@@ -222,5 +232,131 @@ public class MaintenanceApplicationService {
     @Transactional(rollbackFor = Exception.class)
     public void deleteSiteJobPlanBySiteId(Integer siteId) {
         siteJobPlanDomainService.deleteBySiteId(siteId);
+    }
+
+    /**
+     * 分页查询站点任务计划
+     *
+     * @param pageNum 页码
+     * @param pageSize 每页大小
+     * @param siteName 站点名称（模糊查询）
+     * @param enterpriseId 企业ID（查询该企业下所有站点的任务计划）
+     * @param siteId 站点ID（精确查询）
+     * @param departmentId 部门ID（运维小组）
+     * @return 分页结果
+     */
+    public IPage<SiteJobPlan> getSiteJobPlanPage(Integer pageNum, Integer pageSize,
+                                                  String siteName, Integer enterpriseId,
+                                                  Integer siteId, Integer departmentId) {
+        // 构建站点ID列表
+        List<Integer> siteIds = null;
+
+        // 如果有企业ID，先查询该企业下所有站点
+        if (enterpriseId != null) {
+            List<Site> sites = siteRepository.findByEnterpriseId(enterpriseId);
+            siteIds = sites.stream()
+                    .map(Site::getId)
+                    .collect(Collectors.toList());
+
+            // 如果企业下没有站点，返回空结果
+            if (siteIds.isEmpty()) {
+                siteIds = new ArrayList<>();
+                siteIds.add(-1); // 添加一个不存在的ID，确保查询结果为空
+            }
+        }
+        // 如果有站点ID，直接使用
+        else if (siteId != null) {
+            siteIds = new ArrayList<>();
+            siteIds.add(siteId);
+        }
+
+        return siteJobPlanRepository.findPageWithDetails(pageNum, pageSize, siteName, siteIds, departmentId);
+    }
+
+    // ========== 定时任务相关 ==========
+
+    /**
+     * 生成所有启用中的任务计划的下一周期实例
+     * 供定时任务调用
+     *
+     * @param creator 创建人（通常是"SYSTEM"）
+     * @return 成功生成的任务实例列表
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public List<SiteJobInstance> generateNextInstancesForAllActivePlans(String creator) {
+        // 查询所有启用中的任务计划
+        List<SiteJobPlan> activeJobPlans = siteJobPlanRepository.findActiveJobPlansWithDetails();
+
+        List<SiteJobInstance> generatedInstances = new ArrayList<>();
+
+        for (SiteJobPlan jobPlan : activeJobPlans) {
+            try {
+                // 为每个计划生成下一周期的任务实例
+                SiteJobInstance instance = siteJobInstanceDomainService.generateNextInstanceForPlan(jobPlan, creator);
+                generatedInstances.add(instance);
+            } catch (IllegalArgumentException e) {
+                // 任务实例已存在或其他业务异常，跳过
+                // 这里不抛出异常，继续处理其他计划
+            }
+        }
+
+        return generatedInstances;
+    }
+
+    /**
+     * 检查并标记所有逾期的任务实例
+     * 供定时任务调用
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void checkAndMarkAllOverdueInstances() {
+        siteJobInstanceDomainService.checkAndMarkOverdueInstances();
+    }
+
+    /**
+     * 分页查询任务实例
+     *
+     * @param pageNum 页码
+     * @param pageSize 每页大小
+     * @param siteName 站点名称（模糊查询）
+     * @param status 任务状态
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @param creator 创建人（模糊查询）
+     * @param departmentId 运维小组（部门ID）
+     * @return 分页结果
+     */
+    public IPage<SiteJobInstance> getSiteJobInstancePage(Integer pageNum, Integer pageSize,
+                                                          String siteName, String status,
+                                                          java.time.LocalDateTime startTime,
+                                                          java.time.LocalDateTime endTime,
+                                                          String creator, Integer departmentId) {
+        return siteJobInstanceDomainService.getInstancePage(
+                pageNum, pageSize, siteName, status, startTime, endTime, creator, departmentId);
+    }
+
+    /**
+     * 根据任务计划补齐指定时间范围内缺失的任务实例
+     *
+     * @param siteJobPlanId 任务计划ID
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @param operator 操作人
+     * @return 补齐的任务实例列表
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public List<SiteJobInstance> backfillJobInstancesForPlan(Integer siteJobPlanId,
+                                                              java.time.LocalDateTime startTime,
+                                                              java.time.LocalDateTime endTime,
+                                                              String operator) {
+        // 查询任务计划（包含关联信息）
+        SiteJobPlan siteJobPlan = siteJobPlanDomainService.getPlanByIdWithDetails(siteJobPlanId);
+
+        if (siteJobPlan == null) {
+            throw new IllegalArgumentException("任务计划不存在");
+        }
+
+        // 调用领域服务补齐任务实例
+        return siteJobInstanceDomainService.backfillInstancesForPlan(
+                siteJobPlan, startTime, endTime, operator);
     }
 }

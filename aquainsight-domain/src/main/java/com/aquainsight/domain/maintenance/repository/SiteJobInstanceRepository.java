@@ -80,4 +80,12 @@ public interface SiteJobInstanceRepository {
      * 根据任务计划ID和派发时间查询任务实例
      */
     SiteJobInstance findBySiteJobPlanIdAndTriggerTime(Integer siteJobPlanId, LocalDateTime triggerTime);
+
+    /**
+     * 分页查询任务实例（包含关联的任务计划详情）
+     */
+    com.baomidou.mybatisplus.core.metadata.IPage<SiteJobInstance> findPageWithDetails(
+            Integer pageNum, Integer pageSize,
+            String siteName, String status, LocalDateTime startTime, LocalDateTime endTime,
+            String creator, Integer departmentId);
 }

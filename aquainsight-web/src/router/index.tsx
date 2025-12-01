@@ -5,6 +5,7 @@ import { Spin } from 'antd'
 const Layout = lazy(() => import('@/components/Layout'))
 const Dashboard = lazy(() => import('@/pages/Dashboard'))
 const Task = lazy(() => import('@/pages/Task'))
+const TaskExecution = lazy(() => import('@/pages/TaskExecution'))
 const Material = lazy(() => import('@/pages/Material'))
 const Analysis = lazy(() => import('@/pages/Analysis'))
 const Knowledge = lazy(() => import('@/pages/Knowledge'))
@@ -62,6 +63,14 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={<Spin />}>
             <Task />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'task-execution',
+        element: (
+          <Suspense fallback={<Spin />}>
+            <TaskExecution />
           </Suspense>
         ),
       },

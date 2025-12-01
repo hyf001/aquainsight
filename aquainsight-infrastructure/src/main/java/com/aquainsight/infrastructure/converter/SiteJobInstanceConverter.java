@@ -22,7 +22,6 @@ public interface SiteJobInstanceConverter {
      * PO转Entity
      */
     @Mapping(target = "status", source = "status", qualifiedByName = "stringToStatus")
-    @Mapping(target = "siteJobPlan", ignore = true)
     SiteJobInstance toEntity(SiteJobInstancePO siteJobInstancePO);
 
     /**
@@ -30,6 +29,7 @@ public interface SiteJobInstanceConverter {
      */
     @Mapping(target = "status", source = "status", qualifiedByName = "statusToString")
     @Mapping(target = "siteJobPlanId", expression = "java(siteJobInstance.getSiteJobPlan() != null ? siteJobInstance.getSiteJobPlan().getId() : null)")
+    @Mapping(target = "siteJobPlan", ignore = true)
     SiteJobInstancePO toPO(SiteJobInstance siteJobInstance);
 
     /**

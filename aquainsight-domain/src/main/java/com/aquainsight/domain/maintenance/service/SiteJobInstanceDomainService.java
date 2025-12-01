@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -230,6 +231,144 @@ public class SiteJobInstanceDomainService {
     }
 
     /**
+     * 根据任务计划生成下一周期的任务实例
+     * 用于定时任务周期性调用
+     */
+    public SiteJobInstance generateNextInstanceForPlan(SiteJobPlan siteJobPlan, String creator) {
+        if (siteJobPlan == null) {
+            throw new IllegalArgumentException("任务计划不能为空");
+        }
+
+        // 查询该计划的最后一个任务实例
+        List<SiteJobInstance> instances = siteJobInstanceRepository.findBySiteJobPlanId(siteJobPlan.getId());
+
+        LocalDateTime triggerTime;
+        if (instances.isEmpty()) {
+            // 如果没有任务实例，使用当前时间作为第一次派发时间
+            triggerTime = LocalDateTime.now();
+        } else {
+            // 找到最后一个任务实例的派发时间
+            LocalDateTime lastTriggerTime = instances.stream()
+                    .map(SiteJobInstance::getTriggerTime)
+                    .max(LocalDateTime::compareTo)
+                    .orElse(LocalDateTime.now());
+
+            // 根据周期配置计算下一次派发时间
+            triggerTime = siteJobPlan.calculateNextMaintenanceTime(lastTriggerTime);
+
+            if (triggerTime == null) {
+                throw new IllegalStateException("无法计算下一次维护时间，请检查周期配置");
+            }
+        }
+
+        // 生成任务实例
+        return generateInstance(siteJobPlan, triggerTime, creator);
+    }
+
+    /**
+     * 根据任务计划和时间范围补齐缺失的任务实例
+     *
+     * @param siteJobPlan 任务计划
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @param creator 创建人
+     * @return 补齐的任务实例列表
+     */
+    public List<SiteJobInstance> backfillInstancesForPlan(SiteJobPlan siteJobPlan,
+                                                           LocalDateTime startTime,
+                                                           LocalDateTime endTime,
+                                                           String creator) {
+        if (siteJobPlan == null) {
+            throw new IllegalArgumentException("任务计划不能为空");
+        }
+        if (startTime == null || endTime == null) {
+            throw new IllegalArgumentException("开始时间和结束时间不能为空");
+        }
+        if (startTime.isAfter(endTime)) {
+            throw new IllegalArgumentException("开始时间不能晚于结束时间");
+        }
+        if (siteJobPlan.getPeriodConfig() == null) {
+            throw new IllegalArgumentException("任务计划的周期配置不能为空");
+        }
+
+        List<SiteJobInstance> backfilledInstances = new ArrayList<>();
+
+        // 计算该时间范围内应该存在的所有派发时间
+        List<LocalDateTime> expectedTriggerTimes = calculateTriggerTimesInRange(
+                siteJobPlan, startTime, endTime);
+
+        // 查询该计划已存在的任务实例
+        List<SiteJobInstance> existingInstances =
+                siteJobInstanceRepository.findBySiteJobPlanId(siteJobPlan.getId());
+
+        // 提取已存在实例的派发时间
+        java.util.Set<LocalDateTime> existingTriggerTimes = existingInstances.stream()
+                .map(SiteJobInstance::getTriggerTime)
+                .collect(java.util.stream.Collectors.toSet());
+
+        // 补齐缺失的任务实例
+        for (LocalDateTime triggerTime : expectedTriggerTimes) {
+            // 检查该派发时间的实例是否已存在
+            if (!existingTriggerTimes.contains(triggerTime)) {
+                try {
+                    SiteJobInstance instance = generateInstance(siteJobPlan, triggerTime, creator);
+                    backfilledInstances.add(instance);
+                } catch (IllegalArgumentException e) {
+                    // 如果生成失败（比如已存在），跳过
+                    continue;
+                }
+            }
+        }
+
+        return backfilledInstances;
+    }
+
+    /**
+     * 计算指定时间范围内应该存在的所有派发时间
+     *
+     * @param siteJobPlan 任务计划
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @return 派发时间列表
+     */
+    private List<LocalDateTime> calculateTriggerTimesInRange(SiteJobPlan siteJobPlan,
+                                                              LocalDateTime startTime,
+                                                              LocalDateTime endTime) {
+        List<LocalDateTime> triggerTimes = new ArrayList<>();
+
+        // 从开始时间开始计算第一个派发时间
+        LocalDateTime currentTriggerTime = startTime;
+
+        // 最多循环1000次，防止死循环
+        int maxIterations = 1000;
+        int iteration = 0;
+
+        while (currentTriggerTime.isBefore(endTime) || currentTriggerTime.isEqual(endTime)) {
+            if (iteration++ > maxIterations) {
+                throw new IllegalStateException("计算派发时间超过最大迭代次数，请检查周期配置");
+            }
+
+            triggerTimes.add(currentTriggerTime);
+
+            // 计算下一个派发时间
+            LocalDateTime nextTriggerTime = siteJobPlan.calculateNextMaintenanceTime(currentTriggerTime);
+
+            if (nextTriggerTime == null) {
+                break;
+            }
+
+            // 防止计算结果不向前推进导致死循环
+            if (!nextTriggerTime.isAfter(currentTriggerTime)) {
+                throw new IllegalStateException("周期配置异常：下一次维护时间不晚于当前时间");
+            }
+
+            currentTriggerTime = nextTriggerTime;
+        }
+
+        return triggerTimes;
+    }
+
+    /**
      * 计算任务过期时间
      * 根据方案中所有作业类别的最大逾期天数计算
      */
@@ -251,5 +390,16 @@ public class SiteJobInstanceDomainService {
                 .orElse(7); // 默认7天
 
         return triggerTime.plusDays(maxOverdueDays);
+    }
+
+    /**
+     * 分页查询任务实例
+     */
+    public com.baomidou.mybatisplus.core.metadata.IPage<SiteJobInstance> getInstancePage(
+            Integer pageNum, Integer pageSize,
+            String siteName, String status, LocalDateTime startTime, LocalDateTime endTime,
+            String creator, Integer departmentId) {
+        return siteJobInstanceRepository.findPageWithDetails(
+                pageNum, pageSize, siteName, status, startTime, endTime, creator, departmentId);
     }
 }

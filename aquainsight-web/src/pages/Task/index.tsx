@@ -1,12 +1,8 @@
 import React from 'react'
+import JobPlan from './JobPlan'
 
 const Task: React.FC = () => {
-  return (
-    <div>
-      <h2>任务管理</h2>
-      <p>功能开发中...</p>
-    </div>
-  )
+  return <JobPlan />
 }
 
 export default Task

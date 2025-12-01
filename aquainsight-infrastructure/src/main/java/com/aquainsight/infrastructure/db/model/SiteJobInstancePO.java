@@ -27,6 +27,12 @@ public class SiteJobInstancePO {
     private Integer siteJobPlanId;
 
     /**
+     * 任务计划（用于关联查询）
+     */
+    @TableField(exist = false)
+    private SiteJobPlanPO siteJobPlan;
+
+    /**
      * 任务派发时间
      */
     private LocalDateTime triggerTime;

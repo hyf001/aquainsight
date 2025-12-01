@@ -19,6 +19,7 @@ import com.aquainsight.interfaces.rest.vo.*;
 import com.aquainsight.common.util.PageResult;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -440,7 +441,7 @@ public class MaintenanceController {
     /**
      * 获取所有站点任务计划
      */
-    @GetMapping("/site-job-plans")
+    @GetMapping("/site-job-plans/all")
     public Response<List<SiteJobPlanVO>> getAllSiteJobPlans() {
         try {
             List<SiteJobPlan> plans = maintenanceApplicationService.getAllSiteJobPlans();
@@ -448,6 +449,40 @@ public class MaintenanceController {
                     .map(this::convertSiteJobPlanToVO)
                     .collect(Collectors.toList());
             return Response.success(voList);
+        } catch (Exception e) {
+            return Response.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 分页查询站点任务计划
+     *
+     * @param pageNum 页码
+     * @param pageSize 每页大小
+     * @param siteName 站点名称（模糊查询）
+     * @param enterpriseId 企业ID
+     * @param siteId 站点ID
+     * @param departmentId 运维小组（部门ID）
+     * @return 分页结果
+     */
+    @GetMapping("/site-job-plans")
+    public Response<PageResult<SiteJobPlanVO>> getSiteJobPlanPage(
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "10") Integer pageSize,
+            @RequestParam(required = false) String siteName,
+            @RequestParam(required = false) Integer enterpriseId,
+            @RequestParam(required = false) Integer siteId,
+            @RequestParam(required = false) Integer departmentId) {
+        try {
+            IPage<SiteJobPlan> page = maintenanceApplicationService.getSiteJobPlanPage(
+                    pageNum, pageSize, siteName, enterpriseId, siteId, departmentId);
+
+            List<SiteJobPlanVO> voList = page.getRecords().stream()
+                    .map(this::convertSiteJobPlanToVO)
+                    .collect(Collectors.toList());
+
+            PageResult<SiteJobPlanVO> result = PageResult.of(voList, page.getTotal(), pageNum, pageSize);
+            return Response.success(result);
         } catch (Exception e) {
             return Response.error(e.getMessage());
         }
@@ -588,6 +623,12 @@ public class MaintenanceController {
             vo.setSiteId(plan.getSite().getId());
             vo.setSiteName(plan.getSite().getSiteName());
             vo.setSiteCode(plan.getSite().getSiteCode());
+
+            // 企业信息
+            if (plan.getSite().getEnterprise() != null) {
+                vo.setEnterpriseId(plan.getSite().getEnterprise().getId());
+                vo.setEnterpriseName(plan.getSite().getEnterprise().getEnterpriseName());
+            }
         }
 
         // 方案信息
@@ -603,5 +644,150 @@ public class MaintenanceController {
         }
 
         return vo;
+    }
+
+    // ========== 任务实例查询接口 ==========
+
+    /**
+     * 分页查询任务实例
+     *
+     * @param pageNum 页码
+     * @param pageSize 每页大小
+     * @param siteName 站点名称（模糊查询）
+     * @param status 任务状态
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @param creator 创建人（模糊查询）
+     * @param departmentId 运维小组（部门ID）
+     * @return 分页结果
+     */
+    @GetMapping("/job-instances")
+    public Response<PageResult<SiteJobInstanceVO>> getSiteJobInstancePage(
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "10") Integer pageSize,
+            @RequestParam(required = false) String siteName,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") java.time.LocalDateTime startTime,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") java.time.LocalDateTime endTime,
+            @RequestParam(required = false) String creator,
+            @RequestParam(required = false) Integer departmentId) {
+        try {
+            IPage<com.aquainsight.domain.maintenance.entity.SiteJobInstance> page =
+                    maintenanceApplicationService.getSiteJobInstancePage(
+                            pageNum, pageSize, siteName, status, startTime, endTime, creator, departmentId);
+
+            List<SiteJobInstanceVO> voList = page.getRecords().stream()
+                    .map(this::convertSiteJobInstanceToVO)
+                    .collect(Collectors.toList());
+
+            PageResult<SiteJobInstanceVO> result = PageResult.of(voList, page.getTotal(), pageNum, pageSize);
+            return Response.success(result);
+        } catch (Exception e) {
+            return Response.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 将站点任务实例实体转换为VO
+     */
+    private SiteJobInstanceVO convertSiteJobInstanceToVO(com.aquainsight.domain.maintenance.entity.SiteJobInstance instance) {
+        SiteJobInstanceVO vo = SiteJobInstanceVO.builder()
+                .id(instance.getId())
+                .triggerTime(instance.getTriggerTime())
+                .startTime(instance.getStartTime())
+                .endTime(instance.getEndTime())
+                .status(instance.getStatus() != null ? instance.getStatus().name() : null)
+                .expiredTime(instance.getExpiredTime())
+                .creator(instance.getCreator())
+                .operator(instance.getOperator())
+                .createTime(instance.getCreateTime())
+                .updateTime(instance.getUpdateTime())
+                .build();
+
+        // 填充任务计划相关信息
+        if (instance.getSiteJobPlan() != null) {
+            com.aquainsight.domain.maintenance.entity.SiteJobPlan plan = instance.getSiteJobPlan();
+            vo.setSiteJobPlanId(plan.getId());
+
+            // 填充站点信息
+            if (plan.getSite() != null) {
+                vo.setSiteId(plan.getSite().getId());
+                vo.setSiteName(plan.getSite().getSiteName());
+                vo.setSiteCode(plan.getSite().getSiteCode());
+
+                // 填充企业信息
+                if (plan.getSite().getEnterprise() != null) {
+                    vo.setEnterpriseId(plan.getSite().getEnterprise().getId());
+                    vo.setEnterpriseName(plan.getSite().getEnterprise().getEnterpriseName());
+                }
+            }
+
+            // 填充方案信息
+            if (plan.getScheme() != null) {
+                vo.setSchemeId(plan.getScheme().getId());
+                vo.setSchemeName(plan.getScheme().getName());
+
+                // 计算任务项量
+                if (plan.getScheme().getItems() != null) {
+                    vo.setTaskItemCount(plan.getScheme().getItems().size());
+                } else {
+                    vo.setTaskItemCount(0);
+                }
+            }
+
+            // 填充部门信息
+            if (plan.getDepartment() != null) {
+                vo.setDepartmentId(plan.getDepartment().getId());
+                vo.setDepartmentName(plan.getDepartment().getName());
+            }
+        }
+
+        return vo;
+    }
+
+    // ========== 任务实例补齐接口 ==========
+
+    /**
+     * 补齐任务实例
+     * 根据任务计划和时间范围，自动补齐缺失的任务实例
+     */
+    @PostMapping("/job-instances/backfill")
+    public Response<BackfillResultVO> backfillJobInstances(@Valid @RequestBody BackfillJobInstancesRequest request) {
+        try {
+            // 获取当前用户
+            User currentUser = ThreadLocalUtil.getUser();
+
+            // 调用应用服务补齐任务实例
+            List<com.aquainsight.domain.maintenance.entity.SiteJobInstance> backfilledInstances =
+                    maintenanceApplicationService.backfillJobInstancesForPlan(
+                            request.getSiteJobPlanId(),
+                            request.getStartTime(),
+                            request.getEndTime(),
+                            currentUser.getName()
+                    );
+
+            // 转换为VO
+            List<BackfillResultVO.JobInstanceInfo> instanceInfos = backfilledInstances.stream()
+                    .map(instance -> BackfillResultVO.JobInstanceInfo.builder()
+                            .id(instance.getId())
+                            .triggerTime(instance.getTriggerTime())
+                            .expiredTime(instance.getExpiredTime())
+                            .status(instance.getStatus() != null ? instance.getStatus().name() : null)
+                            .createTime(instance.getCreateTime())
+                            .build())
+                    .collect(Collectors.toList());
+
+            BackfillResultVO resultVO = BackfillResultVO.builder()
+                    .totalCount(backfilledInstances.size())
+                    .instances(instanceInfos)
+                    .build();
+
+            return Response.success(resultVO);
+
+        } catch (IllegalArgumentException e) {
+            return Response.error(e.getMessage());
+        } catch (Exception e) {
+            return Response.error("补齐任务实例失败: " + e.getMessage());
+        }
     }
 }

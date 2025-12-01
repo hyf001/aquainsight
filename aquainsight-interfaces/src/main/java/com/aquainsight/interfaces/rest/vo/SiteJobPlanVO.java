@@ -24,6 +24,10 @@ public class SiteJobPlanVO {
 
     private String siteCode;
 
+    private Integer enterpriseId;
+
+    private String enterpriseName;
+
     private PeriodConfigVO periodConfig;
 
     private Integer schemeId;

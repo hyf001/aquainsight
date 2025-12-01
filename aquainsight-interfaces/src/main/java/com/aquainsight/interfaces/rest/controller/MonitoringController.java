@@ -4,6 +4,7 @@ import com.aquainsight.common.util.PageResult;
 import com.aquainsight.common.util.Response;
 import com.aquainsight.domain.monitoring.entity.Device;
 import com.aquainsight.domain.monitoring.entity.DeviceModel;
+import com.aquainsight.domain.monitoring.entity.Enterprise;
 import com.aquainsight.domain.monitoring.entity.Factor;
 import com.aquainsight.domain.monitoring.entity.Site;
 import com.aquainsight.application.service.MonitoringApplicationService;
@@ -17,6 +18,7 @@ import com.aquainsight.interfaces.rest.dto.UpdateFactorRequest;
 import com.aquainsight.interfaces.rest.dto.UpdateSiteRequest;
 import com.aquainsight.interfaces.rest.vo.DeviceModelVO;
 import com.aquainsight.interfaces.rest.vo.DeviceVO;
+import com.aquainsight.interfaces.rest.vo.EnterpriseSiteTreeVO;
 import com.aquainsight.interfaces.rest.vo.FactorVO;
 import com.aquainsight.interfaces.rest.vo.SiteVO;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -36,6 +38,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -174,6 +177,49 @@ public class MonitoringController {
         try {
             monitoringApplicationService.deleteSite(id);
             return Response.success();
+        } catch (Exception e) {
+            return Response.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 获取企业-站点树形结构
+     *
+     * @param enterpriseName 企业名称（可选，支持模糊查询）
+     * @param siteName 站点名称（可选，支持模糊查询）
+     * @return 按企业分组的站点树
+     */
+    @GetMapping("/sites/tree")
+    public Response<List<EnterpriseSiteTreeVO>> getEnterpriseSiteTree(
+            @RequestParam(required = false) String enterpriseName,
+            @RequestParam(required = false) String siteName) {
+        try {
+            Map<Enterprise, List<Site>> enterpriseSiteMap = monitoringApplicationService.getEnterpriseSiteTree(enterpriseName, siteName);
+
+            // 转换为VO列表
+            List<EnterpriseSiteTreeVO> treeVOList = enterpriseSiteMap.entrySet().stream()
+                    .map(entry -> {
+                        Enterprise enterprise = entry.getKey();
+                        List<Site> sites = entry.getValue();
+
+                        // 转换站点为VO
+                        List<SiteVO> siteVOList = sites.stream()
+                                .map(this::convertToSiteVO)
+                                .collect(Collectors.toList());
+
+                        // 构建企业-站点树VO
+                        return EnterpriseSiteTreeVO.builder()
+                                .enterpriseId(enterprise.getId())
+                                .enterpriseName(enterprise.getEnterpriseName())
+                                .enterpriseCode(enterprise.getEnterpriseCode())
+                                .enterpriseTag(enterprise.getEnterpriseTag())
+                                .sites(siteVOList)
+                                .siteCount(siteVOList.size())
+                                .build();
+                    })
+                    .collect(Collectors.toList());
+
+            return Response.success(treeVOList);
         } catch (Exception e) {
             return Response.error(e.getMessage());
         }

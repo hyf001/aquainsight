@@ -2,8 +2,11 @@ package com.aquainsight.application.service;
 
 import com.aquainsight.domain.monitoring.entity.Device;
 import com.aquainsight.domain.monitoring.entity.DeviceModel;
+import com.aquainsight.domain.monitoring.entity.Enterprise;
 import com.aquainsight.domain.monitoring.entity.Factor;
 import com.aquainsight.domain.monitoring.entity.Site;
+import com.aquainsight.domain.monitoring.repository.EnterpriseRepository;
+import com.aquainsight.domain.monitoring.repository.SiteRepository;
 import com.aquainsight.domain.monitoring.service.DeviceDomainService;
 import com.aquainsight.domain.monitoring.service.DeviceModelDomainService;
 import com.aquainsight.domain.monitoring.service.FactorDomainService;
@@ -15,8 +18,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +32,8 @@ public class MonitoringApplicationService {
     private final DeviceModelDomainService deviceModelDomainService;
     private final DeviceDomainService deviceDomainService;
     private final FactorDomainService factorDomainService;
+    private final EnterpriseRepository enterpriseRepository;
+    private final SiteRepository siteRepository;
 
     // ==================== Site Methods ====================
 
@@ -64,6 +72,38 @@ public class MonitoringApplicationService {
 
     public IPage<Site> getSitePage(Integer pageNum, Integer pageSize, String siteType, Integer enterpriseId) {
         return siteDomainService.getSitePage(pageNum, pageSize, siteType, enterpriseId);
+    }
+
+    /**
+     * 获取按企业分组的站点树
+     *
+     * @param enterpriseName 企业名称（支持模糊查询）
+     * @param siteName 站点名称（支持模糊查询）
+     * @return 企业-站点树形结构Map，key为企业，value为该企业下的站点列表
+     */
+    public Map<Enterprise, List<Site>> getEnterpriseSiteTree(String enterpriseName, String siteName) {
+        // 1. 根据企业名称查询企业列表
+        List<Enterprise> enterprises;
+        if (enterpriseName != null && !enterpriseName.trim().isEmpty()) {
+            enterprises = enterpriseRepository.findByEnterpriseName(enterpriseName);
+        } else {
+            enterprises = enterpriseRepository.findAll();
+        }
+
+        // 2. 构建企业-站点映射
+        Map<Enterprise, List<Site>> enterpriseSiteMap = enterprises.stream()
+                .collect(Collectors.toMap(
+                        enterprise -> enterprise,
+                        enterprise -> {
+                            // 根据企业ID和站点名称查询站点
+                            return siteRepository.findByEnterpriseIdAndSiteName(enterprise.getId(), siteName);
+                        }
+                ));
+
+        // 3. 过滤掉没有站点的企业
+        return enterpriseSiteMap.entrySet().stream()
+                .filter(entry -> !entry.getValue().isEmpty())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     // ==================== DeviceModel Methods ====================

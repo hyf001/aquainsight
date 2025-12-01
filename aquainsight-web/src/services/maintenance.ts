@@ -219,3 +219,85 @@ export const getSitesWithJobPlans = (
     params: { pageNum, pageSize, siteType, enterpriseId },
   })
 }
+
+// 分页查询站点任务计划
+export const getSiteJobPlanPage = (params: {
+  pageNum?: number
+  pageSize?: number
+  siteName?: string
+  enterpriseId?: number
+  siteId?: number
+  departmentId?: number
+}) => {
+  return request.get<any, any>('/maintenance/site-job-plans', {
+    params,
+  })
+}
+
+// ========== 任务实例补齐 ==========
+
+export type BackfillJobInstancesRequest = {
+  siteJobPlanId: number
+  startTime: string // 格式: yyyy-MM-dd HH:mm:ss
+  endTime: string   // 格式: yyyy-MM-dd HH:mm:ss
+}
+
+export type JobInstanceInfo = {
+  id: number
+  triggerTime: string
+  expiredTime: string
+  status: string
+  createTime: string
+}
+
+export type BackfillResultVO = {
+  totalCount: number
+  instances: JobInstanceInfo[]
+}
+
+// 补齐任务实例
+export const backfillJobInstances = (data: BackfillJobInstancesRequest) => {
+  return request.post<any, BackfillResultVO>('/maintenance/job-instances/backfill', data)
+}
+
+// ========== 任务实例查询 ==========
+
+export type SiteJobInstance = {
+  id: number
+  siteJobPlanId: number
+  siteId: number
+  siteName: string
+  siteCode: string
+  enterpriseId: number
+  enterpriseName: string
+  triggerTime: string
+  startTime: string | null
+  endTime: string | null
+  status: string
+  expiredTime: string
+  schemeId: number
+  schemeName: string
+  taskItemCount: number
+  departmentId: number
+  departmentName: string
+  creator: string
+  operator: string | null
+  createTime: string
+  updateTime: string
+}
+
+// 分页查询任务实例
+export const getSiteJobInstancePage = (params: {
+  pageNum?: number
+  pageSize?: number
+  siteName?: string
+  status?: string
+  startTime?: string
+  endTime?: string
+  creator?: string
+  departmentId?: number
+}) => {
+  return request.get<any, any>('/maintenance/job-instances', {
+    params,
+  })
+}

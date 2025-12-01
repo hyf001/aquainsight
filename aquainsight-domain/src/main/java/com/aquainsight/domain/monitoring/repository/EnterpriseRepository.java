@@ -55,4 +55,9 @@ public interface EnterpriseRepository {
      * 分页查询企业
      */
     IPage<Enterprise> findPage(Integer pageNum, Integer pageSize, String enterpriseName, String enterpriseTag);
+
+    /**
+     * 根据企业名称查询企业（支持模糊查询）
+     */
+    List<Enterprise> findByEnterpriseName(String enterpriseName);
 }

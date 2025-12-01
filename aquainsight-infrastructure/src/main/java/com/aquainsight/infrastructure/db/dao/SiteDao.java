@@ -153,6 +153,29 @@ public interface SiteDao extends BaseMapper<SitePO> {
     IPage<SitePO> selectPageWithEnterprise(Page<SitePO> page, @Param("siteType") String siteType, @Param("enterpriseId") Integer enterpriseId);
 
     /**
+     * 根据企业ID和站点名称查询站点（包含企业信息）
+     */
+    @SelectProvider(type = SiteSqlProvider.class, method = "selectByEnterpriseIdAndSiteNameWithEnterprise")
+    @Results({
+            @Result(property = "id", column = "id"),
+            @Result(property = "siteCode", column = "site_code"),
+            @Result(property = "siteName", column = "site_name"),
+            @Result(property = "siteType", column = "site_type"),
+            @Result(property = "siteTag", column = "site_tag"),
+            @Result(property = "longitude", column = "longitude"),
+            @Result(property = "latitude", column = "latitude"),
+            @Result(property = "address", column = "address"),
+            @Result(property = "enterpriseId", column = "enterprise_id"),
+            @Result(property = "isAutoUpload", column = "is_auto_upload"),
+            @Result(property = "createTime", column = "create_time"),
+            @Result(property = "updateTime", column = "update_time"),
+            @Result(property = "deleted", column = "deleted"),
+            @Result(property = "enterprise", column = "enterprise_id",
+                    one = @One(select = "com.aquainsight.infrastructure.db.dao.EnterpriseDao.selectById"))
+    })
+    List<SitePO> selectByEnterpriseIdAndSiteNameWithEnterprise(@Param("enterpriseId") Integer enterpriseId, @Param("siteName") String siteName);
+
+    /**
      * SQL Provider for dynamic queries
      */
     class SiteSqlProvider {
@@ -163,6 +186,17 @@ public interface SiteDao extends BaseMapper<SitePO> {
             }
             if (enterpriseId != null) {
                 sql.append(" AND enterprise_id = #{enterpriseId}");
+            }
+            return sql.toString();
+        }
+
+        public String selectByEnterpriseIdAndSiteNameWithEnterprise(@Param("enterpriseId") Integer enterpriseId, @Param("siteName") String siteName) {
+            StringBuilder sql = new StringBuilder("SELECT * FROM site WHERE deleted = 0");
+            if (enterpriseId != null) {
+                sql.append(" AND enterprise_id = #{enterpriseId}");
+            }
+            if (siteName != null && !siteName.trim().isEmpty()) {
+                sql.append(" AND site_name LIKE CONCAT('%', #{siteName}, '%')");
             }
             return sql.toString();
         }

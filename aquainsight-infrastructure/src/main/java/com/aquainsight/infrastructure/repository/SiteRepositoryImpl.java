@@ -94,4 +94,10 @@ public class SiteRepositoryImpl implements SiteRepository {
         sitePage.setRecords(SiteConverter.INSTANCE.toEntityList(poPage.getRecords()));
         return sitePage;
     }
+
+    @Override
+    public List<Site> findByEnterpriseIdAndSiteName(Integer enterpriseId, String siteName) {
+        List<SitePO> sitePOList = siteDao.selectByEnterpriseIdAndSiteNameWithEnterprise(enterpriseId, siteName);
+        return SiteConverter.INSTANCE.toEntityList(sitePOList);
+    }
 }

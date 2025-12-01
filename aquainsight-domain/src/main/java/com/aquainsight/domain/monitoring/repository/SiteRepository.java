@@ -60,4 +60,9 @@ public interface SiteRepository {
      * 分页查询站点
      */
     IPage<Site> findPage(Integer pageNum, Integer pageSize, String siteType, Integer enterpriseId);
+
+    /**
+     * 根据企业ID和站点名称查询站点（支持模糊查询）
+     */
+    List<Site> findByEnterpriseIdAndSiteName(Integer enterpriseId, String siteName);
 }

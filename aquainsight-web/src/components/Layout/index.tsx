@@ -60,7 +60,8 @@ const sideMenuConfig: Record<string, MenuProps['items']> = {
     { key: '/dashboard', icon: <DesktopOutlined />, label: '工作台' },
   ],
   task: [
-    { key: '/task', icon: <ToolOutlined />, label: '任务管理' },
+    { key: '/task', icon: <ToolOutlined />, label: '任务计划' },
+    { key: '/task-execution', icon: <DesktopOutlined />, label: '任务执行' },
     {
       key: 'task-settings',
       icon: <SettingOutlined />,

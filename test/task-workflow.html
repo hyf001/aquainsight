@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>方案项目 - 污水站标准维护方案</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 50px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .task-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            position: relative;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .task-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .task-card::before {
+            content: '';
+            position: absolute;
+            left: -47px;
+            top: 30px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: white;
+            border: 4px solid #667eea;
+            z-index: 1;
+        }
+
+        .task-card.completed::before {
+            background: #10b981;
+            border-color: #10b981;
+        }
+
+        .task-card.in-progress::before {
+            background: #f59e0b;
+            border-color: #f59e0b;
+        }
+
+        .task-card.pending::before {
+            background: #94a3b8;
+            border-color: #94a3b8;
+        }
+
+        .task-card.failed::before {
+            background: #ef4444;
+            border-color: #ef4444;
+        }
+
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .task-info {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .task-number {
+            color: #667eea;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .task-name {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .task-category {
+            display: inline-block;
+            background: #e0e7ff;
+            color: #667eea;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .task-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-badge {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-badge.completed {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .status-badge.in-progress {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .status-badge.pending {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        .status-badge.failed {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .task-description {
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .task-result {
+            border-top: 1px solid #e5e7eb;
+            padding-top: 20px;
+        }
+
+        .result-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 12px;
+        }
+
+        .result-content {
+            color: #4b5563;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .result-images {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .result-image {
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .result-image:hover {
+            transform: scale(1.05);
+        }
+
+        .result-image img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .result-image-caption {
+            padding: 8px;
+            background: #f9fafb;
+            font-size: 12px;
+            color: #6b7280;
+            text-align: center;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .metric {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .footer {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 30px;
+            text-align: center;
+            color: #6b7280;
+            font-size: 14px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            .timeline {
+                padding-left: 30px;
+            }
+
+            .task-card::before {
+                left: -27px;
+            }
+
+            .header h1 {
+                font-size: 22px;
+            }
+
+            .task-name {
+                font-size: 18px;
+            }
+        }
+
+        /* 模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            margin: auto;
+            display: block;
+            max-width: 90%;
+            max-height: 90%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .close {
+            position: absolute;
+            top: 20px;
+            right: 35px;
+            color: #f1f1f1;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .close:hover {
+            color: #bbb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>方案项目 - 污水站标准维护方案</h1>
+            <p class="subtitle">执行日期: 2025年11月30日 | 站点: 污水处理站A</p>
+        </div>
+
+        <div class="timeline">
+            <!-- 任务1: 污水站日常巡检 -->
+            <div class="task-card completed">
+                <div class="task-header">
+                    <div class="task-info">
+                        <div class="task-number">任务 #1</div>
+                        <h2 class="task-name">污水站日常巡检</h2>
+                        <span class="task-category">日常巡检</span>
+                    </div>
+                    <div class="task-status">
+                        <span class="status-badge completed">已完成</span>
+                    </div>
+                </div>
+                <div class="task-description">
+                    对污水站进行全面的日常巡检，检查设备运行状态、环境卫生、安全隐患等，确保污水处理系统正常运行。
+                </div>
+                <div class="task-result">
+                    <div class="result-title">处理结果</div>
+                    <div class="result-content">
+                        <p>✓ 所有设备运行正常</p>
+                        <p>✓ 发现并清理了进水口3处垃圾堆积</p>
+                        <p>✓ 补充添加了消毒剂储备</p>
+                        <p>✓ 记录了各项运行参数</p>
+                    </div>
+                    <div class="metrics">
+                        <div class="metric">
+                            <div class="metric-label">巡检耗时</div>
+                            <div class="metric-value">45分钟</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">发现问题</div>
+                            <div class="metric-value">3项</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">完成度</div>
+                            <div class="metric-value">100%</div>
+                        </div>
+                    </div>
+                    <div class="result-images">
+                        <div class="result-image" onclick="openModal('https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400')">
+                            <img src="https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=400" alt="设备巡检">
+                            <div class="result-image-caption">设备运行状态正常</div>
+                        </div>
+                        <div class="result-image" onclick="openModal('https://images.unsplash.com/photo-1583320508144-aa4c1e8e1b66?w=400')">
+                            <img src="https://images.unsplash.com/photo-1583320508144-aa4c1e8e1b66?w=400" alt="进水口清理">
+                            <div class="result-image-caption">进水口清理完成</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 任务2: 监测设备维护 -->
+            <div class="task-card completed">
+                <div class="task-header">
+                    <div class="task-info">
+                        <div class="task-number">任务 #2</div>
+                        <h2 class="task-name">监测设备维护</h2>
+                        <span class="task-category">设备维护</span>
+                    </div>
+                    <div class="task-status">
+                        <span class="status-badge completed">已完成</span>
+                    </div>
+                </div>
+                <div class="task-description">
+                    对水质监测设备、流量计、液位计等关键监测设备进行维护保养，确保数据采集准确可靠。
+                </div>
+                <div class="task-result">
+                    <div class="result-title">处理结果</div>
+                    <div class="result-content">
+                        <p>✓ 清洁了COD在线监测仪探头</p>
+                        <p>✓ 校准了pH计，偏差修正+0.2</p>
+                        <p>✓ 更换了流量计过滤网</p>
+                        <p>✓ 检查并紧固了液位计传感器</p>
+                    </div>
+                    <div class="metrics">
+                        <div class="metric">
+                            <div class="metric-label">维护设备数</div>
+                            <div class="metric-value">8台</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">更换部件</div>
+                            <div class="metric-value">2个</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">数据准确度</div>
+                            <div class="metric-value">99.5%</div>
+                        </div>
+                    </div>
+                    <div class="result-images">
+                        <div class="result-image" onclick="openModal('https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400')">
+                            <img src="https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=400" alt="设备维护">
+                            <div class="result-image-caption">COD监测仪维护</div>
+                        </div>
+                        <div class="result-image" onclick="openModal('https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=400')">
+                            <img src="https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?w=400" alt="校准记录">
+                            <div class="result-image-caption">校准数据记录</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 任务3: PH计校准 -->
+            <div class="task-card in-progress">
+                <div class="task-header">
+                    <div class="task-info">
+                        <div class="task-number">任务 #3</div>
+                        <h2 class="task-name">PH计校准</h2>
+                        <span class="task-category">设备校准</span>
+                    </div>
+                    <div class="task-status">
+                        <span class="status-badge in-progress">进行中</span>
+                    </div>
+                </div>
+                <div class="task-description">
+                    使用标准缓冲液对各测点的PH计进行精确校准，确保酸碱度监测数据的准确性。
+                </div>
+                <div class="task-result">
+                    <div class="result-title">当前进度</div>
+                    <div class="result-content">
+                        <p>⏳ 已完成进水口PH计校准</p>
+                        <p>⏳ 正在进行生化池PH计校准</p>
+                        <p>⏳ 待完成：出水口PH计校准</p>
+                    </div>
+                    <div class="metrics">
+                        <div class="metric">
+                            <div class="metric-label">完成进度</div>
+                            <div class="metric-value">60%</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">已校准</div>
+                            <div class="metric-value">2/3</div>
+                        </div>
+                    </div>
+                    <div class="result-images">
+                        <div class="result-image" onclick="openModal('https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400')">
+                            <img src="https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400" alt="校准中">
+                            <div class="result-image-caption">生化池PH计校准中</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 任务4: 设备清洁 -->
+            <div class="task-card pending">
+                <div class="task-header">
+                    <div class="task-info">
+                        <div class="task-number">任务 #4</div>
+                        <h2 class="task-name">设备清洁</h2>
+                        <span class="task-category">清洁保养</span>
+                    </div>
+                    <div class="task-status">
+                        <span class="status-badge pending">待执行</span>
+                    </div>
+                </div>
+                <div class="task-description">
+                    对污水处理设备进行深度清洁，包括泵体、管道、格栅等设施的清洁除垢工作。
+                </div>
+                <div class="task-result">
+                    <div class="result-title">计划内容</div>
+                    <div class="result-content">
+                        <p>○ 格栅除渣清洁</p>
+                        <p>○ 提升泵清洁除垢</p>
+                        <p>○ 曝气设备清洁</p>
+                        <p>○ 沉淀池刮泥机清洁</p>
+                    </div>
+                    <div class="metrics">
+                        <div class="metric">
+                            <div class="metric-label">计划设备数</div>
+                            <div class="metric-value">12台</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">预计耗时</div>
+                            <div class="metric-value">3小时</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>© 2025 AquaInsight 污水处理智能监控系统 | 方案执行跟踪</p>
+        </div>
+    </div>
+
+    <!-- 图片模态框 -->
+    <div id="imageModal" class="modal" onclick="closeModal()">
+        <span class="close">&times;</span>
+        <img class="modal-content" id="modalImage">
+    </div>
+
+    <script>
+        function openModal(imageSrc) {
+            const modal = document.getElementById('imageModal');
+            const modalImg = document.getElementById('modalImage');
+            modal.style.display = 'block';
+            modalImg.src = imageSrc;
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('imageModal');
+            modal.style.display = 'none';
+        }
+
+        // ESC键关闭模态框
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>

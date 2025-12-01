@@ -102,4 +102,16 @@ public class EnterpriseRepositoryImpl implements EnterpriseRepository {
         enterprisePage.setRecords(enterprises);
         return enterprisePage;
     }
+
+    @Override
+    public List<Enterprise> findByEnterpriseName(String enterpriseName) {
+        LambdaQueryWrapper<EnterprisePO> wrapper = new LambdaQueryWrapper<>();
+        if (enterpriseName != null && !enterpriseName.trim().isEmpty()) {
+            wrapper.like(EnterprisePO::getEnterpriseName, enterpriseName);
+        }
+        List<EnterprisePO> enterprisePOList = enterpriseDao.selectList(wrapper);
+        return enterprisePOList.stream()
+                .map(EnterpriseConverter.INSTANCE::toEntity)
+                .collect(Collectors.toList());
+    }
 }

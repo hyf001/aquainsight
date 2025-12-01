@@ -286,3 +286,21 @@ export const updateFactor = (id: number, data: UpdateFactorRequest) => {
 export const deleteFactor = (id: number) => {
   return request.delete(`/monitoring/factors/${id}`)
 }
+
+// ==================== 企业-站点树 ====================
+
+export type EnterpriseSiteTree = {
+  enterpriseId: number
+  enterpriseName: string
+  enterpriseCode: string
+  enterpriseTag: string | null
+  siteCount: number
+  sites: Site[]
+}
+
+// 获取企业-站点树（支持按企业名称和站点名称过滤）
+export const getEnterpriseSiteTree = (enterpriseName?: string, siteName?: string) => {
+  return request.get<any, EnterpriseSiteTree[]>('/monitoring/sites/tree', {
+    params: { enterpriseName, siteName }
+  })
+}
