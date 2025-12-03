@@ -1,15 +1,13 @@
 package com.aquainsight.domain.maintenance.entity;
 
-import com.aquainsight.domain.maintenance.types.PhotoType;
+import com.aquainsight.domain.maintenance.types.JobParameter;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 作业类别实体
@@ -36,14 +34,9 @@ public class JobCategory {
     private String code;
 
     /**
-     * 是否需要拍照(0-不需要,1-需要)
+     * 参数列表
      */
-    private Integer needPhoto;
-
-    /**
-     * 照片类型，多个之间逗号分隔
-     */
-    private String photoTypes;
+    private List<JobParameter> parameters;
 
     /**
      * 逾期天数
@@ -73,16 +66,13 @@ public class JobCategory {
     /**
      * 更新作业类别信息
      */
-    public void updateInfo(String name, Integer needPhoto, String photoTypes,
+    public void updateInfo(String name, List<JobParameter> parameters,
                           Integer overdueDays, String description) {
         if (name != null) {
             this.name = name;
         }
-        if (needPhoto != null) {
-            this.needPhoto = needPhoto;
-        }
-        if (photoTypes != null) {
-            this.photoTypes = photoTypes;
+        if (parameters != null) {
+            this.parameters = parameters;
         }
         if (overdueDays != null) {
             this.overdueDays = overdueDays;
@@ -91,26 +81,6 @@ public class JobCategory {
             this.description = description;
         }
         this.updateTime = LocalDateTime.now();
-    }
-
-    /**
-     * 是否需要拍照
-     */
-    public boolean isPhotoRequired() {
-        return Integer.valueOf(1).equals(this.needPhoto);
-    }
-
-    /**
-     * 获取照片类型列表
-     */
-    public List<PhotoType> getPhotoTypeList() {
-        if (photoTypes == null || photoTypes.trim().isEmpty()) {
-            return Arrays.asList();
-        }
-        return Arrays.stream(photoTypes.split(","))
-                .map(String::trim)
-                .map(PhotoType::valueOf)
-                .collect(Collectors.toList());
     }
 
     /**

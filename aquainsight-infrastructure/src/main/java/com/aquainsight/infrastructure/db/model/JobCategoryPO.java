@@ -25,9 +25,7 @@ public class JobCategoryPO {
 
     private String code;
 
-    private Integer needPhoto;
-
-    private String photoTypes;
+    private String parameters;
 
     private Integer overdueDays;
 

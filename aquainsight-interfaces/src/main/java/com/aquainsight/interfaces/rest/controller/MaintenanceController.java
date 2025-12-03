@@ -7,6 +7,8 @@ import com.aquainsight.domain.maintenance.entity.JobCategory;
 import com.aquainsight.domain.maintenance.entity.Scheme;
 import com.aquainsight.domain.maintenance.entity.SchemeItem;
 import com.aquainsight.domain.maintenance.entity.SiteJobPlan;
+import com.aquainsight.domain.maintenance.types.JobParameter;
+import com.aquainsight.domain.maintenance.types.ParameterType;
 import com.aquainsight.domain.maintenance.types.PeriodConfig;
 import com.aquainsight.domain.maintenance.types.PeriodType;
 import com.aquainsight.domain.monitoring.entity.Site;
@@ -49,11 +51,13 @@ public class MaintenanceController {
     @PostMapping("/job-categories")
     public Response<JobCategoryVO> createJobCategory(@Valid @RequestBody CreateJobCategoryRequest request) {
         try {
+            // 转换 DTO 为领域对象
+            List<JobParameter> parameters = convertToJobParameters(request.getParameters());
+
             JobCategory jobCategory = maintenanceApplicationService.createJobCategory(
                     request.getName(),
                     request.getCode(),
-                    request.getNeedPhoto(),
-                    request.getPhotoTypes(),
+                    parameters,
                     request.getOverdueDays(),
                     request.getDescription()
             );
@@ -70,11 +74,13 @@ public class MaintenanceController {
     public Response<JobCategoryVO> updateJobCategory(@PathVariable Integer id,
                                                      @RequestBody UpdateJobCategoryRequest request) {
         try {
+            // 转换 DTO 为领域对象
+            List<JobParameter> parameters = convertToJobParameters(request.getParameters());
+
             JobCategory jobCategory = maintenanceApplicationService.updateJobCategory(
                     id,
                     request.getName(),
-                    request.getNeedPhoto(),
-                    request.getPhotoTypes(),
+                    parameters,
                     request.getOverdueDays(),
                     request.getDescription()
             );
@@ -327,17 +333,43 @@ public class MaintenanceController {
      * 将作业类别实体转换为VO
      */
     private JobCategoryVO convertToVO(JobCategory jobCategory) {
+        List<JobParameterDTO> parameterDTOs = null;
+        if (jobCategory.getParameters() != null) {
+            parameterDTOs = jobCategory.getParameters().stream()
+                    .map(param -> JobParameterDTO.builder()
+                            .name(param.getName())
+                            .type(param.getType() != null ? param.getType().name() : null)
+                            .required(param.getRequired())
+                            .build())
+                    .collect(Collectors.toList());
+        }
+
         return JobCategoryVO.builder()
                 .id(jobCategory.getId())
                 .name(jobCategory.getName())
                 .code(jobCategory.getCode())
-                .needPhoto(jobCategory.getNeedPhoto())
-                .photoTypes(jobCategory.getPhotoTypes())
+                .parameters(parameterDTOs)
                 .overdueDays(jobCategory.getOverdueDays())
                 .description(jobCategory.getDescription())
                 .createTime(jobCategory.getCreateTime() != null ? jobCategory.getCreateTime().format(DATE_FORMATTER) : null)
                 .updateTime(jobCategory.getUpdateTime() != null ? jobCategory.getUpdateTime().format(DATE_FORMATTER) : null)
                 .build();
+    }
+
+    /**
+     * 将 DTO 列表转换为 JobParameter 列表
+     */
+    private List<JobParameter> convertToJobParameters(List<JobParameterDTO> dtos) {
+        if (dtos == null || dtos.isEmpty()) {
+            return null;
+        }
+        return dtos.stream()
+                .map(dto -> JobParameter.builder()
+                        .name(dto.getName())
+                        .type(ParameterType.valueOf(dto.getType()))
+                        .required(dto.getRequired())
+                        .build())
+                .collect(Collectors.toList());
     }
 
     /**

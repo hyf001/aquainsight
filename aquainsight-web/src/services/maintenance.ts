@@ -1,11 +1,16 @@
 import request from './request'
 
+export type JobParameter = {
+  name: string
+  type: 'TEXT' | 'IMAGE' | 'TEXT_LIST' | 'IMAGE_LIST'
+  required: boolean
+}
+
 export type JobCategory = {
   id: number
   name: string
   code: string
-  needPhoto: number
-  photoTypes: string | null
+  parameters: JobParameter[] | null
   overdueDays: number
   description: string | null
   createTime: string
@@ -15,16 +20,14 @@ export type JobCategory = {
 export type CreateJobCategoryRequest = {
   name: string
   code: string
-  needPhoto: number
-  photoTypes?: string
+  parameters?: JobParameter[]
   overdueDays: number
   description?: string
 }
 
 export type UpdateJobCategoryRequest = {
   name?: string
-  needPhoto?: number
-  photoTypes?: string
+  parameters?: JobParameter[]
   overdueDays?: number
   description?: string
 }

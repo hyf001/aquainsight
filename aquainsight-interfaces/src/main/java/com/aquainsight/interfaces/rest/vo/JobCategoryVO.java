@@ -1,9 +1,12 @@
 package com.aquainsight.interfaces.rest.vo;
 
+import com.aquainsight.interfaces.rest.dto.JobParameterDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 /**
  * 作业类别视图对象
@@ -20,9 +23,7 @@ public class JobCategoryVO {
 
     private String code;
 
-    private Integer needPhoto;
-
-    private String photoTypes;
+    private List<JobParameterDTO> parameters;
 
     private Integer overdueDays;
 

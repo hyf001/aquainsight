@@ -14,12 +14,14 @@ import {
   Row,
   Col,
   Tag,
+  Checkbox,
 } from 'antd'
 import {
   PlusOutlined,
   DeleteOutlined,
   EditOutlined,
   SearchOutlined,
+  MinusCircleOutlined,
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import {
@@ -29,21 +31,14 @@ import {
   deleteJobCategory,
   batchDeleteJobCategories,
   type JobCategory,
+  type JobParameter,
 } from '@/services/maintenance'
 
-const PHOTO_TYPE_OPTIONS = [
-  { label: '故障处理照片', value: '故障处理照片' },
-  { label: '仪器设备照片', value: '仪器设备照片' },
-  { label: '采样照片', value: '采样照片' },
-  { label: '数采仪数据照片', value: '数采仪数据照片' },
-  { label: '站点全景照片', value: '站点全景照片' },
-  { label: '台账本照片', value: '台账本照片' },
-  { label: '故障单照片', value: '故障单照片' },
-  { label: '更换配件前照片', value: '更换配件前照片' },
-  { label: '设备校准记录照片', value: '设备校准记录照片' },
-  { label: '对比记录单照片', value: '对比记录单照片' },
-  { label: '更换配件后照片', value: '更换配件后照片' },
-  { label: '核查记录照片', value: '核查记录照片' },
+const PARAMETER_TYPE_OPTIONS = [
+  { label: '文本', value: 'TEXT' },
+  { label: '图片', value: 'IMAGE' },
+  { label: '文本列表', value: 'TEXT_LIST' },
+  { label: '图片列表', value: 'IMAGE_LIST' },
 ]
 
 const JobCategories: React.FC = () => {
@@ -78,21 +73,19 @@ const JobCategories: React.FC = () => {
   const openModal = (jobCategory?: JobCategory) => {
     setEditingJobCategory(jobCategory || null)
     if (jobCategory) {
-      // 将逗号分隔的字符串转换为数组
-      const photoTypesArray = jobCategory.photoTypes
-        ? jobCategory.photoTypes.split(',').map((item) => item.trim())
-        : []
-
       form.setFieldsValue({
         name: jobCategory.name,
         code: jobCategory.code,
-        needPhoto: jobCategory.needPhoto,
-        photoTypes: photoTypesArray,
+        parameters: jobCategory.parameters || [],
         overdueDays: jobCategory.overdueDays,
         description: jobCategory.description || undefined,
       })
     } else {
       form.resetFields()
+      // 设置默认值：一个空参数
+      form.setFieldsValue({
+        parameters: [{ name: '', type: 'TEXT', required: false }],
+      })
     }
     setModalVisible(true)
   }
@@ -101,16 +94,7 @@ const JobCategories: React.FC = () => {
   const handleSaveJobCategory = async () => {
     try {
       const values = await form.validateFields()
-
-      // 将照片类型数组转换为逗号分隔的字符串
-      const photoTypesString = values.photoTypes
-        ? values.photoTypes.join(',')
-        : undefined
-
-      const requestData = {
-        ...values,
-        photoTypes: photoTypesString,
-      }
+      const requestData = { ...values }
 
       if (editingJobCategory) {
         await updateJobCategory(editingJobCategory.id, requestData)
@@ -173,6 +157,18 @@ const JobCategories: React.FC = () => {
     loadJobCategories()
   }
 
+  // 渲染参数类型标签
+  const renderParameterType = (type: string) => {
+    const typeMap: Record<string, { text: string; color: string }> = {
+      TEXT: { text: '文本', color: 'blue' },
+      IMAGE: { text: '图片', color: 'green' },
+      TEXT_LIST: { text: '文本列表', color: 'cyan' },
+      IMAGE_LIST: { text: '图片列表', color: 'purple' },
+    }
+    const config = typeMap[type] || { text: type, color: 'default' }
+    return <Tag color={config.color}>{config.text}</Tag>
+  }
+
   // 表格列定义
   const columns: ColumnsType<JobCategory> = [
     {
@@ -226,24 +222,24 @@ const JobCategories: React.FC = () => {
       width: 180,
     },
     {
-      title: '是否需要拍照',
-      dataIndex: 'needPhoto',
-      key: 'needPhoto',
-      width: 120,
-      align: 'center',
-      render: (needPhoto) => (
-        <Tag color={needPhoto === 1 ? 'green' : 'default'}>
-          {needPhoto === 1 ? '是' : '否'}
-        </Tag>
-      ),
-    },
-    {
-      title: '照片类型',
-      dataIndex: 'photoTypes',
-      key: 'photoTypes',
-      width: 200,
-      ellipsis: true,
-      render: (photoTypes) => photoTypes || '/',
+      title: '参数配置',
+      dataIndex: 'parameters',
+      key: 'parameters',
+      width: 300,
+      render: (parameters: JobParameter[] | null) => {
+        if (!parameters || parameters.length === 0) {
+          return <span style={{ color: '#999' }}>无</span>
+        }
+        return (
+          <Space size={4} wrap>
+            {parameters.map((param, index) => (
+              <Tag key={index} color={param.required ? 'red' : 'default'}>
+                {param.name} {renderParameterType(param.type)} {param.required && '(必填)'}
+              </Tag>
+            ))}
+          </Space>
+        )
+      },
     },
     {
       title: '逾期天数(天)',
@@ -328,31 +324,31 @@ const JobCategories: React.FC = () => {
         rowKey="id"
         loading={loading}
         pagination={false}
-        scroll={{ x: 1000 }}
+        scroll={{ x: 1200 }}
       />
 
       {/* 创建/编辑对话框 */}
       <Modal
-        title="编辑任务类别"
+        title={editingJobCategory ? '编辑任务类别' : '新增任务类别'}
         open={modalVisible}
         onOk={handleSaveJobCategory}
         onCancel={() => {
           setModalVisible(false)
           form.resetFields()
         }}
-        width={600}
+        width={700}
         okText="保存"
         cancelText="关闭"
       >
         <Form
           form={form}
           layout="horizontal"
-          labelCol={{ span: 6 }}
-          wrapperCol={{ span: 18 }}
+          labelCol={{ span: 5 }}
+          wrapperCol={{ span: 19 }}
           autoComplete="off"
         >
           <Form.Item
-            label="任务名称:"
+            label="任务名称"
             name="name"
             rules={[{ required: true, message: '请输入任务名称' }]}
           >
@@ -360,41 +356,59 @@ const JobCategories: React.FC = () => {
           </Form.Item>
 
           <Form.Item
-            label="任务类别编码:"
+            label="任务类别编码"
             name="code"
             rules={[{ required: true, message: '请输入任务类别编码' }]}
           >
             <Input placeholder="routine" disabled={!!editingJobCategory} />
           </Form.Item>
 
-          <Form.Item
-            label="是否需要拍照:"
-            name="needPhoto"
-            rules={[{ required: true, message: '请选择是否需要拍照' }]}
-          >
-            <Select
-              placeholder="是"
-              options={[
-                { label: '是', value: 1 },
-                { label: '否', value: 0 },
-              ]}
-            />
+          <Form.Item label="参数列表">
+            <Form.List name="parameters">
+              {(fields, { add, remove }) => (
+                <>
+                  {fields.map(({ key, name, ...restField }) => (
+                    <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="baseline">
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'name']}
+                        rules={[{ required: true, message: '请输入参数名称' }]}
+                        style={{ marginBottom: 0, width: 150 }}
+                      >
+                        <Input placeholder="参数名称" />
+                      </Form.Item>
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'type']}
+                        rules={[{ required: true, message: '请选择类型' }]}
+                        style={{ marginBottom: 0, width: 120 }}
+                      >
+                        <Select placeholder="类型" options={PARAMETER_TYPE_OPTIONS} />
+                      </Form.Item>
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'required']}
+                        valuePropName="checked"
+                        initialValue={false}
+                        style={{ marginBottom: 0 }}
+                      >
+                        <Checkbox>必填</Checkbox>
+                      </Form.Item>
+                      <MinusCircleOutlined onClick={() => remove(name)} />
+                    </Space>
+                  ))}
+                  <Form.Item style={{ marginBottom: 0 }}>
+                    <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
+                      添加参数
+                    </Button>
+                  </Form.Item>
+                </>
+              )}
+            </Form.List>
           </Form.Item>
 
           <Form.Item
-            label="照片类型:"
-            name="photoTypes"
-          >
-            <Select
-              mode="multiple"
-              placeholder="请选择照片类型"
-              options={PHOTO_TYPE_OPTIONS}
-              maxTagCount={2}
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="逾期天数(天):"
+            label="逾期天数(天)"
             name="overdueDays"
             rules={[{ required: true, message: '请输入逾期天数' }]}
           >
@@ -406,7 +420,7 @@ const JobCategories: React.FC = () => {
           </Form.Item>
 
           <Form.Item
-            label="项说明:"
+            label="项说明"
             name="description"
           >
             <Input.TextArea

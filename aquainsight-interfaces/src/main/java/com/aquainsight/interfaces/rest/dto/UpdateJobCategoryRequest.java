@@ -2,6 +2,9 @@ package com.aquainsight.interfaces.rest.dto;
 
 import lombok.Data;
 
+import javax.validation.Valid;
+import java.util.List;
+
 /**
  * 更新作业类别请求
  */
@@ -10,9 +13,8 @@ public class UpdateJobCategoryRequest {
 
     private String name;
 
-    private Integer needPhoto;
-
-    private String photoTypes;
+    @Valid
+    private List<JobParameterDTO> parameters;
 
     private Integer overdueDays;
 

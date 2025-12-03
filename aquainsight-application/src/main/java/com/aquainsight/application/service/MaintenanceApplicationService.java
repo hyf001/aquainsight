@@ -10,6 +10,7 @@ import com.aquainsight.domain.maintenance.service.JobCategoryDomainService;
 import com.aquainsight.domain.maintenance.service.SchemeDomainService;
 import com.aquainsight.domain.maintenance.service.SiteJobInstanceDomainService;
 import com.aquainsight.domain.maintenance.service.SiteJobPlanDomainService;
+import com.aquainsight.domain.maintenance.types.JobParameter;
 import com.aquainsight.domain.maintenance.types.PeriodConfig;
 import com.aquainsight.domain.monitoring.entity.Site;
 import com.aquainsight.domain.monitoring.repository.SiteRepository;
@@ -41,18 +42,18 @@ public class MaintenanceApplicationService {
      * 创建作业类别
      */
     @Transactional(rollbackFor = Exception.class)
-    public JobCategory createJobCategory(String name, String code, Integer needPhoto,
-                                        String photoTypes, Integer overdueDays, String description) {
-        return jobCategoryDomainService.createJobCategory(name, code, needPhoto, photoTypes, overdueDays, description);
+    public JobCategory createJobCategory(String name, String code, List<JobParameter> parameters,
+                                        Integer overdueDays, String description) {
+        return jobCategoryDomainService.createJobCategory(name, code, parameters, overdueDays, description);
     }
 
     /**
      * 更新作业类别
      */
     @Transactional(rollbackFor = Exception.class)
-    public JobCategory updateJobCategory(Integer id, String name, Integer needPhoto,
-                                        String photoTypes, Integer overdueDays, String description) {
-        return jobCategoryDomainService.updateJobCategoryInfo(id, name, needPhoto, photoTypes, overdueDays, description);
+    public JobCategory updateJobCategory(Integer id, String name, List<JobParameter> parameters,
+                                        Integer overdueDays, String description) {
+        return jobCategoryDomainService.updateJobCategoryInfo(id, name, parameters, overdueDays, description);
     }
 
     /**

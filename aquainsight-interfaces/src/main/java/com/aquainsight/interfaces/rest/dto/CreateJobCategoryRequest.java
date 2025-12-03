@@ -2,8 +2,10 @@ package com.aquainsight.interfaces.rest.dto;
 
 import lombok.Data;
 
+import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import java.util.List;
 
 /**
  * 创建作业类别请求
@@ -17,10 +19,8 @@ public class CreateJobCategoryRequest {
     @NotBlank(message = "类别编码不能为空")
     private String code;
 
-    @NotNull(message = "是否需要拍照不能为空")
-    private Integer needPhoto;
-
-    private String photoTypes;
+    @Valid
+    private List<JobParameterDTO> parameters;
 
     @NotNull(message = "逾期天数不能为空")
     private Integer overdueDays;

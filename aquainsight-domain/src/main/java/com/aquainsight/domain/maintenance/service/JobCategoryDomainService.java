@@ -2,6 +2,7 @@ package com.aquainsight.domain.maintenance.service;
 
 import com.aquainsight.domain.maintenance.entity.JobCategory;
 import com.aquainsight.domain.maintenance.repository.JobCategoryRepository;
+import com.aquainsight.domain.maintenance.types.JobParameter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -20,8 +21,8 @@ public class JobCategoryDomainService {
     /**
      * 创建作业类别
      */
-    public JobCategory createJobCategory(String name, String code, Integer needPhoto,
-                                        String photoTypes, Integer overdueDays, String description) {
+    public JobCategory createJobCategory(String name, String code, List<JobParameter> parameters,
+                                        Integer overdueDays, String description) {
         // 领域规则验证
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("类别名称不能为空");
@@ -39,8 +40,7 @@ public class JobCategoryDomainService {
         JobCategory jobCategory = JobCategory.builder()
                 .name(name)
                 .code(code)
-                .needPhoto(needPhoto == null ? 0 : needPhoto)
-                .photoTypes(photoTypes)
+                .parameters(parameters)
                 .overdueDays(overdueDays == null ? 0 : overdueDays)
                 .description(description)
                 .createTime(LocalDateTime.now())
@@ -54,14 +54,14 @@ public class JobCategoryDomainService {
     /**
      * 更新作业类别信息
      */
-    public JobCategory updateJobCategoryInfo(Integer jobCategoryId, String name, Integer needPhoto,
-                                            String photoTypes, Integer overdueDays, String description) {
+    public JobCategory updateJobCategoryInfo(Integer jobCategoryId, String name, List<JobParameter> parameters,
+                                            Integer overdueDays, String description) {
         JobCategory jobCategory = jobCategoryRepository.findById(jobCategoryId);
         if (jobCategory == null) {
             throw new IllegalArgumentException("作业类别不存在");
         }
 
-        jobCategory.updateInfo(name, needPhoto, photoTypes, overdueDays, description);
+        jobCategory.updateInfo(name, parameters, overdueDays, description);
         return jobCategoryRepository.save(jobCategory);
     }
 
