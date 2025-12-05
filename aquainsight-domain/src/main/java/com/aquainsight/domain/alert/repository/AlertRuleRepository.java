@@ -1,0 +1,69 @@
+package com.aquainsight.domain.alert.repository;
+
+import com.aquainsight.domain.alert.entity.AlertRule;
+import com.aquainsight.domain.alert.types.AlertRuleType;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * 告警规则仓储接口
+ */
+public interface AlertRuleRepository {
+
+    /**
+     * 保存告警规则
+     */
+    AlertRule save(AlertRule alertRule);
+
+    /**
+     * 根据ID查找告警规则
+     */
+    Optional<AlertRule> findById(Integer id);
+
+    /**
+     * 查找所有告警规则
+     */
+    List<AlertRule> findAll();
+
+    /**
+     * 查找所有启用的告警规则
+     */
+    List<AlertRule> findAllEnabled();
+
+    /**
+     * 根据规则类型查找启用的告警规则
+     */
+    List<AlertRule> findEnabledByRuleType(AlertRuleType ruleType);
+
+    /**
+     * 根据方案ID查找告警规则
+     */
+    List<AlertRule> findBySchemeId(Integer schemeId);
+
+    /**
+     * 更新告警规则
+     */
+    AlertRule update(AlertRule alertRule);
+
+    /**
+     * 根据ID删除告警规则
+     */
+    boolean deleteById(Integer id);
+
+    /**
+     * 分页查询告警规则
+     */
+    IPage<AlertRule> findPage(Integer pageNum, Integer pageSize, AlertRuleType ruleType, Integer enabled);
+
+    /**
+     * 检查规则名称是否存在
+     */
+    boolean existsByRuleName(String ruleName);
+
+    /**
+     * 根据规则名称查找
+     */
+    Optional<AlertRule> findByRuleName(String ruleName);
+}
