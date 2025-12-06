@@ -21,6 +21,11 @@ public enum JobInstanceStatus {
     COMPLETED("已完成"),
 
     /**
+     * 即将过期 - 任务即将到达过期时间
+     */
+    EXPIRING("即将过期"),
+
+    /**
      * 已逾期 - 任务超过预期时间未完成
      */
     OVERDUE("已逾期"),

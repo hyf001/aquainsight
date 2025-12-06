@@ -27,9 +27,9 @@ public interface AlertRecordConverter {
      */
     @Mapping(source = "ruleType", target = "ruleType", qualifiedByName = "stringToRuleType")
     @Mapping(source = "targetType", target = "targetType", qualifiedByName = "stringToTargetType")
-    @Mapping(source = "alertLevel", target = "alertLevel", qualifiedByName = "stringToAlertLevel")
-    @Mapping(source = "status", target = "status", qualifiedByName = "stringToAlertStatus")
-    @Mapping(source = "notifyStatus", target = "notifyStatus", qualifiedByName = "stringToNotifyStatus")
+    @Mapping(source = "alertLevel", target = "alertLevel", qualifiedByName = "integerToAlertLevel")
+    @Mapping(source = "status", target = "status", qualifiedByName = "integerToAlertStatus")
+    @Mapping(source = "notifyStatus", target = "notifyStatus", qualifiedByName = "integerToNotifyStatus")
     AlertRecord toEntity(AlertRecordPO alertRecordPO);
 
     /**
@@ -37,9 +37,9 @@ public interface AlertRecordConverter {
      */
     @Mapping(source = "ruleType", target = "ruleType", qualifiedByName = "ruleTypeToString")
     @Mapping(source = "targetType", target = "targetType", qualifiedByName = "targetTypeToString")
-    @Mapping(source = "alertLevel", target = "alertLevel", qualifiedByName = "alertLevelToString")
-    @Mapping(source = "status", target = "status", qualifiedByName = "alertStatusToString")
-    @Mapping(source = "notifyStatus", target = "notifyStatus", qualifiedByName = "notifyStatusToString")
+    @Mapping(source = "alertLevel", target = "alertLevel", qualifiedByName = "alertLevelToInteger")
+    @Mapping(source = "status", target = "status", qualifiedByName = "alertStatusToInteger")
+    @Mapping(source = "notifyStatus", target = "notifyStatus", qualifiedByName = "notifyStatusToInteger")
     AlertRecordPO toPO(AlertRecord alertRecord);
 
     /**
@@ -91,59 +91,59 @@ public interface AlertRecordConverter {
     }
 
     /**
-     * 字符串转告警级别
+     * Integer转告警级别
      */
-    @Named("stringToAlertLevel")
-    default AlertLevel stringToAlertLevel(String alertLevel) {
-        if (alertLevel == null || alertLevel.trim().isEmpty()) {
+    @Named("integerToAlertLevel")
+    default AlertLevel integerToAlertLevel(Integer alertLevel) {
+        if (alertLevel == null) {
             return null;
         }
-        return AlertLevel.valueOf(alertLevel);
+        return AlertLevel.fromCode(alertLevel);
     }
 
     /**
-     * 告警级别转字符串
+     * 告警级别转Integer
      */
-    @Named("alertLevelToString")
-    default String alertLevelToString(AlertLevel alertLevel) {
-        return alertLevel == null ? null : alertLevel.name();
+    @Named("alertLevelToInteger")
+    default Integer alertLevelToInteger(AlertLevel alertLevel) {
+        return alertLevel == null ? null : alertLevel.getCode();
     }
 
     /**
-     * 字符串转告警状态
+     * Integer转告警状态
      */
-    @Named("stringToAlertStatus")
-    default AlertStatus stringToAlertStatus(String status) {
-        if (status == null || status.trim().isEmpty()) {
+    @Named("integerToAlertStatus")
+    default AlertStatus integerToAlertStatus(Integer status) {
+        if (status == null) {
             return null;
         }
-        return AlertStatus.valueOf(status);
+        return AlertStatus.fromCode(status);
     }
 
     /**
-     * 告警状态转字符串
+     * 告警状态转Integer
      */
-    @Named("alertStatusToString")
-    default String alertStatusToString(AlertStatus status) {
-        return status == null ? null : status.name();
+    @Named("alertStatusToInteger")
+    default Integer alertStatusToInteger(AlertStatus status) {
+        return status == null ? null : status.getCode();
     }
 
     /**
-     * 字符串转通知状态
+     * Integer转通知状态
      */
-    @Named("stringToNotifyStatus")
-    default NotifyStatus stringToNotifyStatus(String notifyStatus) {
-        if (notifyStatus == null || notifyStatus.trim().isEmpty()) {
+    @Named("integerToNotifyStatus")
+    default NotifyStatus integerToNotifyStatus(Integer notifyStatus) {
+        if (notifyStatus == null) {
             return null;
         }
-        return NotifyStatus.valueOf(notifyStatus);
+        return NotifyStatus.fromCode(notifyStatus);
     }
 
     /**
-     * 通知状态转字符串
+     * 通知状态转Integer
      */
-    @Named("notifyStatusToString")
-    default String notifyStatusToString(NotifyStatus notifyStatus) {
-        return notifyStatus == null ? null : notifyStatus.name();
+    @Named("notifyStatusToInteger")
+    default Integer notifyStatusToInteger(NotifyStatus notifyStatus) {
+        return notifyStatus == null ? null : notifyStatus.getCode();
     }
 }

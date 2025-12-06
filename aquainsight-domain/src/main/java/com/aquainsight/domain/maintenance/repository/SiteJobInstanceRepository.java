@@ -37,9 +37,9 @@ public interface SiteJobInstanceRepository {
     List<SiteJobInstance> findByOperator(String operator);
 
     /**
-     * 查询逾期的任务实例
+     * 查询需要检查是否逾期的任务实例（待处理和进行中的任务）
      */
-    List<SiteJobInstance> findOverdueInstances(LocalDateTime currentTime);
+    List<SiteJobInstance> findInstancesToCheckOverdue(LocalDateTime currentTime);
 
     /**
      * 根据站点ID查询任务实例
@@ -75,6 +75,16 @@ public interface SiteJobInstanceRepository {
      * 查询进行中的任务实例
      */
     List<SiteJobInstance> findInProgressInstances();
+
+    /**
+     * 查询所有即将过期的任务实例（状态为EXPIRING）
+     */
+    List<SiteJobInstance> findExpiringInstances();
+
+    /**
+     * 查询所有已过期的任务实例（状态为OVERDUE）
+     */
+    List<SiteJobInstance> findOverdueInstances();
 
     /**
      * 根据任务计划ID和派发时间查询任务实例

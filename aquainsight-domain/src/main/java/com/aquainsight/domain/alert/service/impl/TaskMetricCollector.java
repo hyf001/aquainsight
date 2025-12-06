@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -32,34 +31,24 @@ public class TaskMetricCollector implements MetricCollector {
             "任务超时"
     );
 
-    /**
-     * 任务即将到期的阈值（小时）
-     */
-    private static final int TASK_DUE_SOON_THRESHOLD_HOURS = 24;
-
     @Override
     public List<Metric> collectAll(String metricName) {
         List<Metric> metrics = new ArrayList<>();
-
-        // 获取所有待处理和进行中的任务实例
-        List<SiteJobInstance> jobInstances = new ArrayList<>();
-        jobInstances.addAll(siteJobInstanceRepository.findPendingInstances());
-        jobInstances.addAll(siteJobInstanceRepository.findInProgressInstances());
-
-        if (jobInstances.isEmpty()) {
-            return metrics;
-        }
-
         LocalDateTime now = LocalDateTime.now();
 
-        // 根据指标名称批量采集
+        // 根据指标名称直接查询对应状态的任务实例
+        List<SiteJobInstance> jobInstances;
         switch (metricName) {
             case "任务即将到期":
+                // 直接查询即将过期状态的任务
+                jobInstances = siteJobInstanceRepository.findExpiringInstances();
                 for (SiteJobInstance jobInstance : jobInstances) {
                     metrics.add(collectTaskDueSoon(jobInstance, now));
                 }
                 break;
             case "任务超时":
+                // 直接查询已逾期状态的任务
+                jobInstances = siteJobInstanceRepository.findOverdueInstances();
                 for (SiteJobInstance jobInstance : jobInstances) {
                     metrics.add(collectTaskTimeout(jobInstance, now));
                 }
@@ -83,27 +72,8 @@ public class TaskMetricCollector implements MetricCollector {
         metric.setTargetId(jobInstance.getId());
         metric.setCollectTime(now);
 
-        // 如果任务已完成或已逾期，不需要告警
-        if (jobInstance.isCompleted() || jobInstance.isOverdue()) {
-            metric.setValue(BigDecimal.ZERO);
-            return metric;
-        }
-
-        // 如果没有过期时间，无法判断是否即将到期
-        if (jobInstance.getExpiredTime() == null) {
-            metric.setValue(BigDecimal.ZERO);
-            return metric;
-        }
-
-        // 计算距离过期时间的小时数
-        long hoursUntilDue = ChronoUnit.HOURS.between(now, jobInstance.getExpiredTime());
-
-        // 如果在阈值范围内且未超时，则即将到期
-        if (hoursUntilDue > 0 && hoursUntilDue <= TASK_DUE_SOON_THRESHOLD_HOURS) {
-            metric.setValue(BigDecimal.ONE);
-        } else {
-            metric.setValue(BigDecimal.ZERO);
-        }
+        // 由于已经通过状态筛选(EXPIRING),直接返回告警值
+        metric.setValue(BigDecimal.ONE);
 
         return metric;
     }
@@ -119,25 +89,8 @@ public class TaskMetricCollector implements MetricCollector {
         metric.setTargetId(jobInstance.getId());
         metric.setCollectTime(now);
 
-        // 如果任务已完成，不需要告警
-        if (jobInstance.isCompleted()) {
-            metric.setValue(BigDecimal.ZERO);
-            return metric;
-        }
-
-        // 如果没有过期时间，无法判断是否超时
-        if (jobInstance.getExpiredTime() == null) {
-            metric.setValue(BigDecimal.ZERO);
-            return metric;
-        }
-
-        // 如果当前时间已经超过过期时间，则超时
-        // 或者任务状态已经是逾期状态
-        if (now.isAfter(jobInstance.getExpiredTime()) || jobInstance.isOverdue()) {
-            metric.setValue(BigDecimal.ONE);
-        } else {
-            metric.setValue(BigDecimal.ZERO);
-        }
+        // 由于已经通过状态筛选(OVERDUE),直接返回告警值
+        metric.setValue(BigDecimal.ONE);
 
         return metric;
     }

@@ -82,13 +82,13 @@ public class SiteJobInstance {
      * 开始任务
      */
     public void start(String operator) {
-        if (this.status == JobInstanceStatus.PENDING) {
+        if (this.status == JobInstanceStatus.PENDING || this.status == JobInstanceStatus.EXPIRING) {
             this.status = JobInstanceStatus.IN_PROGRESS;
             this.startTime = LocalDateTime.now();
             this.operator = operator;
             this.updateTime = LocalDateTime.now();
         } else {
-            throw new IllegalStateException("只有待处理状态的任务才能开始执行");
+            throw new IllegalStateException("只有待处理或即将过期状态的任务才能开始执行");
         }
     }
 
@@ -109,25 +109,54 @@ public class SiteJobInstance {
      * 取消任务
      */
     public void cancel() {
-        if (this.status == JobInstanceStatus.PENDING || this.status == JobInstanceStatus.IN_PROGRESS) {
+        if (this.status == JobInstanceStatus.PENDING
+            || this.status == JobInstanceStatus.IN_PROGRESS
+            || this.status == JobInstanceStatus.EXPIRING) {
             this.status = JobInstanceStatus.CANCELLED;
             this.endTime = LocalDateTime.now();
             this.updateTime = LocalDateTime.now();
         } else {
-            throw new IllegalStateException("只有待处理或进行中的任务才能取消");
+            throw new IllegalStateException("只有待处理、进行中或即将过期的任务才能取消");
         }
     }
 
     /**
-     * 检查并标记为逾期
+     * 检查并更新过期状态（即将过期或已逾期）
+     * @param expiringThresholdHours 即将过期的阈值（小时数）
      */
-    public void checkAndMarkOverdue() {
-        if (this.expiredTime != null && LocalDateTime.now().isAfter(this.expiredTime)) {
-            if (this.status == JobInstanceStatus.PENDING || this.status == JobInstanceStatus.IN_PROGRESS) {
-                this.status = JobInstanceStatus.OVERDUE;
-                this.updateTime = LocalDateTime.now();
-            }
+    public void checkAndUpdateExpirationStatus(int expiringThresholdHours) {
+        if (this.expiredTime == null) {
+            return;
         }
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expiringThreshold = this.expiredTime.minusHours(expiringThresholdHours);
+
+        // 只处理待处理、进行中和即将过期的任务
+        if (this.status != JobInstanceStatus.PENDING
+            && this.status != JobInstanceStatus.IN_PROGRESS
+            && this.status != JobInstanceStatus.EXPIRING) {
+            return;
+        }
+
+        // 已经过期，标记为逾期
+        if (now.isAfter(this.expiredTime)) {
+            this.status = JobInstanceStatus.OVERDUE;
+            this.updateTime = now;
+        }
+        // 即将过期但还未过期
+        else if (now.isAfter(expiringThreshold)) {
+            this.status = JobInstanceStatus.EXPIRING;
+            this.updateTime = now;
+        }
+    }
+
+    /**
+     * 检查并标记为逾期（兼容旧方法）
+     */
+    @Deprecated
+    public void checkAndMarkOverdue() {
+        checkAndUpdateExpirationStatus(24);
     }
 
     /**
@@ -148,7 +177,7 @@ public class SiteJobInstance {
      * 是否可以开始
      */
     public boolean canStart() {
-        return this.status == JobInstanceStatus.PENDING;
+        return this.status == JobInstanceStatus.PENDING || this.status == JobInstanceStatus.EXPIRING;
     }
 
     /**
@@ -162,11 +191,13 @@ public class SiteJobInstance {
      * 更新处理人
      */
     public void updateOperator(String operator) {
-        if (this.status == JobInstanceStatus.PENDING || this.status == JobInstanceStatus.IN_PROGRESS) {
+        if (this.status == JobInstanceStatus.PENDING
+            || this.status == JobInstanceStatus.IN_PROGRESS
+            || this.status == JobInstanceStatus.EXPIRING) {
             this.operator = operator;
             this.updateTime = LocalDateTime.now();
         } else {
-            throw new IllegalStateException("只有待处理或进行中的任务才能更新处理人");
+            throw new IllegalStateException("只有待处理、进行中或即将过期的任务才能更新处理人");
         }
     }
 

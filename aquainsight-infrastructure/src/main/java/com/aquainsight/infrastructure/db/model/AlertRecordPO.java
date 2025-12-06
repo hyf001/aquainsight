@@ -55,9 +55,9 @@ public class AlertRecordPO {
     private String targetName;
 
     /**
-     * 告警级别
+     * 告警级别(1-紧急, 2-重要, 3-一般, 4-提示)
      */
-    private String alertLevel;
+    private Integer alertLevel;
 
     /**
      * 告警消息内容
@@ -80,14 +80,14 @@ public class AlertRecordPO {
     private Integer isSelfTask;
 
     /**
-     * 告警状态(PENDING-待处理,IN_PROGRESS-处理中,RESOLVED-已处理,RECOVERED-已恢复,IGNORED-已忽略)
+     * 告警状态(0-待处理,1-处理中,2-已处理,3-已忽略,4-已恢复)
      */
-    private String status;
+    private Integer status;
 
     /**
-     * 通知状态(PENDING-待通知,SUCCESS-通知成功,FAILED-通知失败)
+     * 通知状态(0-未通知,1-已通知,2-通知失败)
      */
-    private String notifyStatus;
+    private Integer notifyStatus;
 
     /**
      * 通知时间

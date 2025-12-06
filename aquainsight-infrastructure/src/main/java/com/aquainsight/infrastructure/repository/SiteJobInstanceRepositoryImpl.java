@@ -70,12 +70,22 @@ public class SiteJobInstanceRepositoryImpl implements SiteJobInstanceRepository 
     }
 
     @Override
-    public List<SiteJobInstance> findOverdueInstances(LocalDateTime currentTime) {
+    public List<SiteJobInstance> findInstancesToCheckOverdue(LocalDateTime currentTime) {
         LambdaQueryWrapper<SiteJobInstancePO> wrapper = new LambdaQueryWrapper<>();
         wrapper.le(SiteJobInstancePO::getExpiredTime, currentTime);
-        wrapper.in(SiteJobInstancePO::getStatus, JobInstanceStatus.PENDING.name(), JobInstanceStatus.IN_PROGRESS.name());
+        wrapper.in(SiteJobInstancePO::getStatus, JobInstanceStatus.PENDING.name(), JobInstanceStatus.IN_PROGRESS.name(), JobInstanceStatus.EXPIRING.name());
         List<SiteJobInstancePO> siteJobInstancePOList = siteJobInstanceDao.selectList(wrapper);
         return SiteJobInstanceConverter.INSTANCE.toEntityList(siteJobInstancePOList);
+    }
+
+    @Override
+    public List<SiteJobInstance> findExpiringInstances() {
+        return findByStatus(JobInstanceStatus.EXPIRING);
+    }
+
+    @Override
+    public List<SiteJobInstance> findOverdueInstances() {
+        return findByStatus(JobInstanceStatus.OVERDUE);
     }
 
     @Override

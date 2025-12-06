@@ -65,4 +65,22 @@ public class SiteJobInstanceGeneratorJob {
             log.error("逾期任务检查定时任务执行失败", e);
         }
     }
+
+    /**
+     * 每30分钟执行一次，检查并更新任务过期状态（即将过期和已逾期）
+     * 即将过期的阈值设置为24小时
+     */
+    @Scheduled(cron = "0 */30 * * * ?")
+    public void updateExpirationStatus() {
+        log.info("开始执行任务过期状态更新定时任务，时间: {}", LocalDateTime.now());
+
+        try {
+            // 即将过期阈值设置为24小时
+            int expiringThresholdHours = 24;
+            maintenanceApplicationService.checkAndUpdateExpirationStatus(expiringThresholdHours);
+            log.info("任务过期状态更新定时任务执行完成");
+        } catch (Exception e) {
+            log.error("任务过期状态更新定时任务执行失败", e);
+        }
+    }
 }

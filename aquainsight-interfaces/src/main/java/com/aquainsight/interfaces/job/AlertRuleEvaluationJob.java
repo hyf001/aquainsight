@@ -25,7 +25,7 @@ public class AlertRuleEvaluationJob {
      * 每5分钟执行一次告警规则扫描和评估
      * 检查所有启用的告警规则，对符合条件的目标对象生成告警记录
      */
-    @Scheduled(cron = "0 */5 * * * ?")
+    @Scheduled(cron = "0 */1 * * * ?")
     public void evaluateAlertRules() {
         log.info("开始执行告警规则评估定时任务，时间: {}", LocalDateTime.now());
 

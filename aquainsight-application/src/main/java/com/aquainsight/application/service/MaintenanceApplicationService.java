@@ -314,6 +314,17 @@ public class MaintenanceApplicationService {
     }
 
     /**
+     * 检查并更新所有任务实例的过期状态（即将过期和已逾期）
+     * 供定时任务调用
+     *
+     * @param expiringThresholdHours 即将过期的阈值（小时数）
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void checkAndUpdateExpirationStatus(int expiringThresholdHours) {
+        siteJobInstanceDomainService.checkAndUpdateExpirationStatus(expiringThresholdHours);
+    }
+
+    /**
      * 分页查询任务实例
      *
      * @param pageNum 页码

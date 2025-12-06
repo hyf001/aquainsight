@@ -138,10 +138,25 @@ public class SiteJobInstanceDomainService {
      */
     public void checkAndMarkOverdueInstances() {
         LocalDateTime now = LocalDateTime.now();
-        List<SiteJobInstance> overdueInstances = siteJobInstanceRepository.findOverdueInstances(now);
+        List<SiteJobInstance> overdueInstances = siteJobInstanceRepository.findInstancesToCheckOverdue(now);
 
         for (SiteJobInstance instance : overdueInstances) {
             instance.checkAndMarkOverdue();
+            siteJobInstanceRepository.save(instance);
+        }
+    }
+
+    /**
+     * 检查并更新所有任务的过期状态（即将过期和已逾期）
+     *
+     * @param expiringThresholdHours 即将过期的阈值（小时数）
+     */
+    public void checkAndUpdateExpirationStatus(int expiringThresholdHours) {
+        LocalDateTime now = LocalDateTime.now();
+        List<SiteJobInstance> instancesToCheck = siteJobInstanceRepository.findInstancesToCheckOverdue(now.plusHours(expiringThresholdHours));
+
+        for (SiteJobInstance instance : instancesToCheck) {
+            instance.checkAndUpdateExpirationStatus(expiringThresholdHours);
             siteJobInstanceRepository.save(instance);
         }
     }
