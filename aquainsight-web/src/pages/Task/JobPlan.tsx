@@ -16,14 +16,12 @@ import {
   Form,
 } from 'antd'
 import {
-  SearchOutlined,
   BuildOutlined,
   EnvironmentOutlined,
   PlusOutlined,
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import type { DataNode } from 'antd/es/tree'
-import dayjs from 'dayjs'
 import {
   getSiteJobPlanPage,
   backfillJobInstances,

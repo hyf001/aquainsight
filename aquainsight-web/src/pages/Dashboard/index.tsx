@@ -16,8 +16,8 @@ const Dashboard: React.FC = () => {
   const loadData = async () => {
     setLoading(true)
     try {
-      const result = await dashboardApi.getStats() as DashboardData
-      setData(result)
+      const response = await dashboardApi.getStats()
+      setData(response.data)
     } catch (error) {
       console.error('Failed to load dashboard data:', error)
     } finally {
@@ -56,7 +56,7 @@ const Dashboard: React.FC = () => {
               value={data?.alarmStat.total || 0}
               prefix={<ArrowDownOutlined style={{ color: '#cf1322' }} />}
               suffix={`今日 ${data?.alarmStat.today || 0}`}
-              styles={{ value: { color: '#cf1322' } }}
+              valueStyle={{ color: '#cf1322' }}
             />
           </Card>
         </Col>

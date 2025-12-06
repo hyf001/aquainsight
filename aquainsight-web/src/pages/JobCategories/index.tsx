@@ -150,12 +150,6 @@ const JobCategories: React.FC = () => {
     loadJobCategories(values.name)
   }
 
-  // 重置搜索
-  const handleReset = () => {
-    searchForm.resetFields()
-    setSearchName('')
-    loadJobCategories()
-  }
 
   // 渲染参数类型标签
   const renderParameterType = (type: string) => {

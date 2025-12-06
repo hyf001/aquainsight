@@ -11,14 +11,13 @@ import com.aquainsight.domain.alert.entity.Metric;
 public interface MetricCollector {
 
     /**
-     * 采集指标值
+     * 批量采集指标值
+     * 采集指定指标的所有目标对象的指标值
      *
      * @param metricName 指标名称
-     * @param targetType 目标对象类型(如: site, device等)
-     * @param targetId 目标对象ID
-     * @return 指标对象，包含指标名称和值
+     * @return 指标列表，包含所有目标对象的指标值
      */
-    List<Metric> collect(String metricName, String targetType, Integer targetId);
+    List<Metric> collectAll(String metricName);
 
     /**
      * 判断是否支持该指标的采集

@@ -1,7 +1,7 @@
 package com.aquainsight.domain.alert.entity;
 
 import com.aquainsight.domain.alert.types.AlertLevel;
-import com.aquainsight.domain.alert.types.AlertRuleType;
+import com.aquainsight.domain.alert.types.AlertTargetType;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -34,9 +34,9 @@ public class AlertRule {
     private String ruleName;
 
     /**
-     * 规则类型
+     * 告警对象类型
      */
-    private AlertRuleType ruleType;
+    private AlertTargetType alertTargetType;
 
     /**
      * 告警条件配置列表
@@ -117,15 +117,15 @@ public class AlertRule {
     /**
      * 更新规则信息
      */
-    public void updateInfo(String ruleName, AlertRuleType ruleType, List<RuleCondition> conditionConfigs,
+    public void updateInfo(String ruleName, AlertTargetType alertTargetType, List<RuleCondition> conditionConfigs,
                           AlertLevel alertLevel, String alertMessage, Integer schemeId,
                           String notifyTypes, String notifyUsers, String notifyDepartments,
                           Integer quietPeriod, String description, String updater) {
         if (ruleName != null) {
             this.ruleName = ruleName;
         }
-        if (ruleType != null) {
-            this.ruleType = ruleType;
+        if (alertTargetType != null) {
+            this.alertTargetType = alertTargetType;
         }
         if (conditionConfigs != null) {
             this.conditionConfigs = conditionConfigs;
@@ -320,16 +320,12 @@ public class AlertRule {
      * 验证条件配置是否有效
      */
     public boolean validateConditionConfigs() {
-        // 如果规则类型需要配置条件，则必须有有效的条件配置
-        if (this.ruleType != null && this.ruleType.needConditionConfig()) {
-            if (this.conditionConfigs == null || this.conditionConfigs.isEmpty()) {
-                return false;
-            }
-            // 所有条件配置都必须有效
-            return this.conditionConfigs.stream().allMatch(RuleCondition::isValid);
+        // 告警规则必须有有效的条件配置
+        if (this.conditionConfigs == null || this.conditionConfigs.isEmpty()) {
+            return false;
         }
-        // 不需要配置条件的规则类型，返回true
-        return true;
+        // 所有条件配置都必须有效
+        return this.conditionConfigs.stream().allMatch(RuleCondition::isValid);
     }
 
 }

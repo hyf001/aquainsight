@@ -27,6 +27,11 @@ spring:
         min-idle: 0
         max-wait: -1ms
 
+  # Jackson配置
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+
 # MyBatis Plus配置
 mybatis-plus:
   configuration:

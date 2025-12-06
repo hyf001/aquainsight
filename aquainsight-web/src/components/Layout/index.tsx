@@ -22,17 +22,30 @@ const { Header, Sider, Content } = AntLayout
 
 // 顶部导航菜单配置
 const topMenuItems = [
-  { key: 'operation', label: '运维' },
+  { key: 'dashboard', label: '首页' },
   { key: 'task', label: '任务' },
-  { key: 'material', label: '物资' },
-  { key: 'maintenance', label: '运维' },
-  { key: 'knowledge', label: '知' },
-  { key: 'online', label: '在线' },
   { key: 'comprehensive', label: '综合' },
 ]
 
 // 左侧菜单配置 - 根据顶部菜单动态显示
 const sideMenuConfig: Record<string, MenuProps['items']> = {
+  dashboard: [
+    { key: '/dashboard', icon: <DesktopOutlined />, label: '工作台' },
+  ],
+  task: [
+    { key: '/task', icon: <ToolOutlined />, label: '任务计划' },
+    { key: '/task-execution', icon: <DesktopOutlined />, label: '任务执行' },
+    {
+      key: 'task-settings',
+      icon: <SettingOutlined />,
+      label: '设置',
+      children: [
+        { key: '/job-categories', icon: <ToolOutlined />, label: '任务类别' },
+        { key: '/schemes', icon: <ToolOutlined />, label: '方案管理' },
+        { key: '/site-configuration', icon: <SettingOutlined />, label: '站点计划配置' },
+      ],
+    },
+  ],
   comprehensive: [
     {
       key: 'organization-management',
@@ -55,43 +68,24 @@ const sideMenuConfig: Record<string, MenuProps['items']> = {
         { key: '/detection-factors', icon: <ExperimentOutlined />, label: '检测因子' },
       ],
     },
-  ],
-  operation: [
-    { key: '/dashboard', icon: <DesktopOutlined />, label: '工作台' },
-  ],
-  task: [
-    { key: '/task', icon: <ToolOutlined />, label: '任务计划' },
-    { key: '/task-execution', icon: <DesktopOutlined />, label: '任务执行' },
     {
-      key: 'task-settings',
-      icon: <SettingOutlined />,
-      label: '设置',
+      key: 'alert-management',
+      icon: <BellOutlined />,
+      label: '告警',
       children: [
-        { key: '/job-categories', icon: <ToolOutlined />, label: '任务类别' },
-        { key: '/schemes', icon: <ToolOutlined />, label: '方案管理' },
-        { key: '/site-configuration', icon: <SettingOutlined />, label: '站点计划配置' },
+        { key: '/alert-rules', icon: <SettingOutlined />, label: '告警规则' },
+        { key: '/alert-records', icon: <BellOutlined />, label: '告警实例' },
+        { key: '/alert-notifications', icon: <MailOutlined />, label: '消息通知' },
       ],
     },
-  ],
-  material: [
-    { key: '/material', icon: <ToolOutlined />, label: '物料管理' },
-  ],
-  maintenance: [
-    { key: '/monitor', icon: <DesktopOutlined />, label: '监控告警' },
-  ],
-  knowledge: [
-    { key: '/knowledge', icon: <DesktopOutlined />, label: '知识库' },
-  ],
-  online: [
-    { key: '/analysis', icon: <DesktopOutlined />, label: '数据分析' },
   ],
 }
 
 const LayoutComponent: React.FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { user, logout } = useUserStore()
-  const [activeTopMenu, setActiveTopMenu] = useState('comprehensive')
+  const { logout } = useUserStore()
+  const [activeTopMenu, setActiveTopMenu] = useState('dashboard')
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken()
@@ -163,7 +157,7 @@ const LayoutComponent: React.FC = () => {
       <Header className="layout-header-top">
         <div className="header-logo">
           <img src="/logo.png" alt="logo" className="logo-img" />
-          <span className="logo-text">远畅环境运维管理系统</span>
+          <span className="logo-text">aquainsight环境运维系统</span>
         </div>
         <div className="header-menu">
           <Menu

@@ -22,12 +22,12 @@ public interface AlertNotifyLogRepository {
     /**
      * 根据ID查找通知日志
      */
-    Optional<AlertNotifyLog> findById(Long id);
+    Optional<AlertNotifyLog> findById(Integer id);
 
     /**
      * 根据告警记录ID查找所有通知日志
      */
-    List<AlertNotifyLog> findByAlertRecordId(Long alertRecordId);
+    List<AlertNotifyLog> findByAlertRecordId(Integer alertRecordId);
 
     /**
      * 根据通知状态查找通知日志
@@ -62,24 +62,24 @@ public interface AlertNotifyLogRepository {
     /**
      * 根据ID删除通知日志
      */
-    boolean deleteById(Long id);
+    boolean deleteById(Integer id);
 
     /**
      * 分页查询通知日志
      */
-    IPage<AlertNotifyLog> findPage(Integer pageNum, Integer pageSize, Long alertRecordId,
+    IPage<AlertNotifyLog> findPage(Integer pageNum, Integer pageSize, Integer alertRecordId,
                                     NotifyStatus notifyStatus, NotifyType notifyType,
                                     LocalDateTime startTime, LocalDateTime endTime);
 
     /**
      * 统计指定告警记录的通知成功数量
      */
-    long countSuccessByAlertRecordId(Long alertRecordId);
+    long countSuccessByAlertRecordId(Integer alertRecordId);
 
     /**
      * 统计指定告警记录的通知失败数量
      */
-    long countFailedByAlertRecordId(Long alertRecordId);
+    long countFailedByAlertRecordId(Integer alertRecordId);
 
     /**
      * 批量保存通知日志

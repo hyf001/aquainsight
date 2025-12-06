@@ -27,7 +27,6 @@ import {
   updateSite,
   deleteSite,
   type Site,
-  type PageResult,
 } from '@/services/monitoring'
 import { getAllEnterprises, type Enterprise } from '@/services/enterprise'
 

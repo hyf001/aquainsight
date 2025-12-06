@@ -1,7 +1,7 @@
 package com.aquainsight.domain.alert.repository;
 
 import com.aquainsight.domain.alert.entity.AlertRule;
-import com.aquainsight.domain.alert.types.AlertRuleType;
+import com.aquainsight.domain.alert.types.AlertTargetType;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 
 import java.util.List;
@@ -33,9 +33,9 @@ public interface AlertRuleRepository {
     List<AlertRule> findAllEnabled();
 
     /**
-     * 根据规则类型查找启用的告警规则
+     * 根据告警对象类型查找启用的告警规则
      */
-    List<AlertRule> findEnabledByRuleType(AlertRuleType ruleType);
+    List<AlertRule> findEnabledByAlertTargetType(AlertTargetType alertTargetType);
 
     /**
      * 根据方案ID查找告警规则
@@ -55,7 +55,7 @@ public interface AlertRuleRepository {
     /**
      * 分页查询告警规则
      */
-    IPage<AlertRule> findPage(Integer pageNum, Integer pageSize, AlertRuleType ruleType, Integer enabled);
+    IPage<AlertRule> findPage(Integer pageNum, Integer pageSize, AlertTargetType alertTargetType, Integer enabled);
 
     /**
      * 检查规则名称是否存在

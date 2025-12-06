@@ -24,7 +24,7 @@ public class AlertNotifyLogDomainService {
     /**
      * 创建通知日志
      */
-    public AlertNotifyLog createNotifyLog(Long alertRecordId, NotifyType notifyType,
+    public AlertNotifyLog createNotifyLog(Integer alertRecordId, NotifyType notifyType,
                                          String notifyTarget, Integer notifyUserId,
                                          String notifyUserName, String notifyContent) {
         // 验证必填字段
@@ -101,7 +101,7 @@ public class AlertNotifyLogDomainService {
     /**
      * 标记发送成功
      */
-    public AlertNotifyLog markSuccess(Long logId) {
+    public AlertNotifyLog markSuccess(Integer logId) {
         AlertNotifyLog log = alertNotifyLogRepository.findById(logId)
                 .orElseThrow(() -> new IllegalArgumentException("通知日志不存在"));
 
@@ -112,7 +112,7 @@ public class AlertNotifyLogDomainService {
     /**
      * 标记发送失败
      */
-    public AlertNotifyLog markFailed(Long logId, String errorMessage) {
+    public AlertNotifyLog markFailed(Integer logId, String errorMessage) {
         AlertNotifyLog log = alertNotifyLogRepository.findById(logId)
                 .orElseThrow(() -> new IllegalArgumentException("通知日志不存在"));
 
@@ -123,7 +123,7 @@ public class AlertNotifyLogDomainService {
     /**
      * 重试发送
      */
-    public AlertNotifyLog retry(Long logId) {
+    public AlertNotifyLog retry(Integer logId) {
         AlertNotifyLog log = alertNotifyLogRepository.findById(logId)
                 .orElseThrow(() -> new IllegalArgumentException("通知日志不存在"));
 
@@ -138,7 +138,7 @@ public class AlertNotifyLogDomainService {
     /**
      * 根据ID获取通知日志
      */
-    public AlertNotifyLog getLogById(Long logId) {
+    public AlertNotifyLog getLogById(Integer logId) {
         return alertNotifyLogRepository.findById(logId)
                 .orElseThrow(() -> new IllegalArgumentException("通知日志不存在"));
     }
@@ -146,7 +146,7 @@ public class AlertNotifyLogDomainService {
     /**
      * 根据告警记录ID获取所有通知日志
      */
-    public List<AlertNotifyLog> getLogsByAlertRecordId(Long alertRecordId) {
+    public List<AlertNotifyLog> getLogsByAlertRecordId(Integer alertRecordId) {
         return alertNotifyLogRepository.findByAlertRecordId(alertRecordId);
     }
 
@@ -188,21 +188,21 @@ public class AlertNotifyLogDomainService {
     /**
      * 统计告警记录的通知成功数量
      */
-    public long countSuccessByAlertRecordId(Long alertRecordId) {
+    public long countSuccessByAlertRecordId(Integer alertRecordId) {
         return alertNotifyLogRepository.countSuccessByAlertRecordId(alertRecordId);
     }
 
     /**
      * 统计告警记录的通知失败数量
      */
-    public long countFailedByAlertRecordId(Long alertRecordId) {
+    public long countFailedByAlertRecordId(Integer alertRecordId) {
         return alertNotifyLogRepository.countFailedByAlertRecordId(alertRecordId);
     }
 
     /**
      * 检查告警记录是否所有通知都已成功
      */
-    public boolean isAllNotifySuccess(Long alertRecordId) {
+    public boolean isAllNotifySuccess(Integer alertRecordId) {
         List<AlertNotifyLog> logs = alertNotifyLogRepository.findByAlertRecordId(alertRecordId);
         if (logs.isEmpty()) {
             return false;
@@ -213,7 +213,7 @@ public class AlertNotifyLogDomainService {
     /**
      * 检查告警记录是否有通知失败
      */
-    public boolean hasNotifyFailed(Long alertRecordId) {
+    public boolean hasNotifyFailed(Integer alertRecordId) {
         List<AlertNotifyLog> logs = alertNotifyLogRepository.findByAlertRecordId(alertRecordId);
         return logs.stream().anyMatch(AlertNotifyLog::isFailed);
     }
@@ -241,7 +241,7 @@ public class AlertNotifyLogDomainService {
     /**
      * 删除通知日志
      */
-    public void deleteLog(Long logId) {
+    public void deleteLog(Integer logId) {
         // 验证通知日志存在
         alertNotifyLogRepository.findById(logId)
                 .orElseThrow(() -> new IllegalArgumentException("通知日志不存在"));
@@ -252,7 +252,7 @@ public class AlertNotifyLogDomainService {
     /**
      * 批量删除告警记录相关的通知日志
      */
-    public void deleteLogsByAlertRecordId(Long alertRecordId) {
+    public void deleteLogsByAlertRecordId(Integer alertRecordId) {
         List<AlertNotifyLog> logs = alertNotifyLogRepository.findByAlertRecordId(alertRecordId);
         for (AlertNotifyLog log : logs) {
             alertNotifyLogRepository.deleteById(log.getId());

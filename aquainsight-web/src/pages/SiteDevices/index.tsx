@@ -32,7 +32,6 @@ import {
   type Device,
   type DeviceModel,
   type Site,
-  type PageResult,
 } from '@/services/monitoring'
 
 const SiteDevices: React.FC = () => {

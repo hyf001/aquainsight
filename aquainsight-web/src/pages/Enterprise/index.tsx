@@ -27,7 +27,6 @@ import {
   updateEnterprise,
   deleteEnterprise,
   type Enterprise,
-  type PageResult,
 } from '@/services/enterprise'
 
 const ENTERPRISE_TAGS = [

@@ -38,29 +38,31 @@ public class TaskMetricCollector implements MetricCollector {
     private static final int TASK_DUE_SOON_THRESHOLD_HOURS = 24;
 
     @Override
-    public List<Metric> collect(String metricName, String targetType, Integer targetId) {
+    public List<Metric> collectAll(String metricName) {
         List<Metric> metrics = new ArrayList<>();
 
-        // 验证目标类型
-        if (!"task".equals(targetType)) {
-            return metrics;
-        }
+        // 获取所有待处理和进行中的任务实例
+        List<SiteJobInstance> jobInstances = new ArrayList<>();
+        jobInstances.addAll(siteJobInstanceRepository.findPendingInstances());
+        jobInstances.addAll(siteJobInstanceRepository.findInProgressInstances());
 
-        // 根据站点作业实例ID查询
-        SiteJobInstance jobInstance = siteJobInstanceRepository.findById(targetId);
-        if (jobInstance == null) {
+        if (jobInstances.isEmpty()) {
             return metrics;
         }
 
         LocalDateTime now = LocalDateTime.now();
 
-        // 根据指标名称采集不同的指标
+        // 根据指标名称批量采集
         switch (metricName) {
             case "任务即将到期":
-                metrics.add(collectTaskDueSoon(jobInstance, now));
+                for (SiteJobInstance jobInstance : jobInstances) {
+                    metrics.add(collectTaskDueSoon(jobInstance, now));
+                }
                 break;
             case "任务超时":
-                metrics.add(collectTaskTimeout(jobInstance, now));
+                for (SiteJobInstance jobInstance : jobInstances) {
+                    metrics.add(collectTaskTimeout(jobInstance, now));
+                }
                 break;
             default:
                 // 不支持的指标

@@ -5,7 +5,7 @@ import com.aquainsight.domain.alert.entity.Metric;
 import com.aquainsight.domain.alert.entity.RuleCondition;
 import com.aquainsight.domain.alert.repository.AlertRuleRepository;
 import com.aquainsight.domain.alert.types.AlertLevel;
-import com.aquainsight.domain.alert.types.AlertRuleType;
+import com.aquainsight.domain.alert.types.AlertTargetType;
 import com.aquainsight.domain.alert.types.RuleEvaluationResult;
 
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,7 @@ public class AlertRuleDomainService {
     /**
      * 创建告警规则
      */
-    public AlertRule createRule(String ruleName, AlertRuleType ruleType, List<RuleCondition> conditionConfigs,
+    public AlertRule createRule(String ruleName, AlertTargetType alertTargetType, List<RuleCondition> conditionConfigs,
                                 AlertLevel alertLevel, String alertMessage, Integer schemeId,
                                 String notifyTypes, String notifyUsers, String notifyDepartments,
                                 Integer quietPeriod, String description, String creator) {
@@ -37,8 +37,8 @@ public class AlertRuleDomainService {
         if (ruleName == null || ruleName.trim().isEmpty()) {
             throw new IllegalArgumentException("规则名称不能为空");
         }
-        if (ruleType == null) {
-            throw new IllegalArgumentException("规则类型不能为空");
+        if (alertTargetType == null) {
+            throw new IllegalArgumentException("告警对象类型不能为空");
         }
         if (alertLevel == null) {
             throw new IllegalArgumentException("告警级别不能为空");
@@ -51,7 +51,7 @@ public class AlertRuleDomainService {
 
         AlertRule rule = AlertRule.builder()
                 .ruleName(ruleName)
-                .ruleType(ruleType)
+                .alertTargetType(alertTargetType)
                 .conditionConfigs(conditionConfigs)
                 .alertLevel(alertLevel)
                 .alertMessage(alertMessage)
@@ -79,7 +79,7 @@ public class AlertRuleDomainService {
     /**
      * 更新告警规则
      */
-    public AlertRule updateRule(Integer ruleId, String ruleName, AlertRuleType ruleType,
+    public AlertRule updateRule(Integer ruleId, String ruleName, AlertTargetType alertTargetType,
                                 List<RuleCondition> conditionConfigs, AlertLevel alertLevel,
                                 String alertMessage, Integer schemeId, String notifyTypes,
                                 String notifyUsers, String notifyDepartments, Integer quietPeriod,
@@ -94,7 +94,7 @@ public class AlertRuleDomainService {
             }
         }
 
-        rule.updateInfo(ruleName, ruleType, conditionConfigs, alertLevel, alertMessage,
+        rule.updateInfo(ruleName, alertTargetType, conditionConfigs, alertLevel, alertMessage,
                 schemeId, notifyTypes, notifyUsers, notifyDepartments, quietPeriod,
                 description, updater);
 
@@ -171,8 +171,8 @@ public class AlertRuleDomainService {
     /**
      * 根据规则类型获取启用的告警规则
      */
-    public List<AlertRule> getEnabledRulesByType(AlertRuleType ruleType) {
-        return alertRuleRepository.findEnabledByRuleType(ruleType);
+    public List<AlertRule> getEnabledRulesByType(AlertTargetType alertTargetType) {
+        return alertRuleRepository.findEnabledByAlertTargetType(alertTargetType);
     }
 
     /**
@@ -290,8 +290,97 @@ public class AlertRuleDomainService {
     }
 
     /**
-     * 评估告警规则的所有条件是否满足
+     * 批量评估告警规则
+     * 采集所有目标对象的指标，并按目标分组返回评估结果
+     * 用于定时任务中大规模扫描
+     *
+     * @param ruleId 告警规则ID
+     * @return 按目标ID分组的评估结果列表（只包含触发告警的结果）
+     */
+    public List<RuleEvaluationResult> evaluateRuleBatch(Integer ruleId) {
+        List<RuleEvaluationResult> results = new ArrayList<>();
+
+        // 获取告警规则
+        AlertRule rule = alertRuleRepository.findById(ruleId)
+                .orElseThrow(() -> new IllegalArgumentException("告警规则不存在"));
+
+        // 检查规则是否启用
+        if (!rule.isEnabled() || !rule.hasConditionConfigs()) {
+            return results;
+        }
+
+        List<RuleCondition> conditions = rule.getConditionConfigs();
+
+        // 第一步：批量采集所有条件的指标数据
+        // 使用Map存储每个条件对应的所有指标数据
+        java.util.Map<String, List<Metric>> conditionMetricsMap = new java.util.HashMap<>();
+
+        for (RuleCondition condition : conditions) {
+            // 根据指标名称获取对应的采集器
+            MetricCollector collector = metricCollectorRegistry.getCollector(condition.getMetric());
+
+            // 批量采集该指标的所有目标对象数据
+            List<Metric> allMetrics = collector.collectAll(condition.getMetric());
+            conditionMetricsMap.put(condition.getMetric(), allMetrics);
+        }
+
+        // 第二步：按目标ID分组，找出所有涉及的目标对象
+        java.util.Set<Integer> allTargetIds = new java.util.HashSet<>();
+        for (List<Metric> metrics : conditionMetricsMap.values()) {
+            for (Metric metric : metrics) {
+                allTargetIds.add(metric.getTargetId());
+            }
+        }
+
+        // 第三步：对每个目标对象进行规则评估
+        LocalDateTime evaluationTime = LocalDateTime.now();
+        for (Integer targetId : allTargetIds) {
+            RuleEvaluationResult result = RuleEvaluationResult.builder()
+                    .ruleId(rule.getId())
+                    .ruleName(rule.getRuleName())
+                    .triggered(false)
+                    .triggeredMetrics(new ArrayList<>())
+                    .evaluationTime(evaluationTime)
+                    .build();
+
+            List<Metric> allTriggeredMetrics = new ArrayList<>();
+            boolean allConditionsMet = true;
+
+            // 检查该目标对象是否满足所有条件（AND逻辑）
+            for (RuleCondition condition : conditions) {
+                // 从采集的数据中筛选出该目标对象的指标
+                List<Metric> targetMetrics = conditionMetricsMap.get(condition.getMetric()).stream()
+                        .filter(m -> m.getTargetId().equals(targetId))
+                        .collect(java.util.stream.Collectors.toList());
+
+                // 评估条件，获取满足条件的指标
+                List<Metric> triggeredMetrics = evaluateCondition(condition, targetMetrics);
+
+                // 如果该条件没有满足的指标，则整体不触发告警
+                if (triggeredMetrics.isEmpty()) {
+                    allConditionsMet = false;
+                    break;
+                }
+
+                // 收集所有触发的指标
+                allTriggeredMetrics.addAll(triggeredMetrics);
+            }
+
+            // 只有所有条件都满足时才触发告警
+            if (allConditionsMet) {
+                result.setTriggered(true);
+                result.setTriggeredMetrics(allTriggeredMetrics);
+                results.add(result);
+            }
+        }
+
+        return results;
+    }
+
+    /**
+     * 评估告警规则的所有条件是否满足（单个目标对象）
      * 所有条件都满足时才触发告警（AND逻辑）
+     * 用于实时评估特定目标对象
      *
      * @param ruleId 告警规则ID
      * @param targetType 目标对象类型(如: site, device等)
@@ -325,11 +414,14 @@ public class AlertRuleDomainService {
             // 根据指标名称获取对应的采集器
             MetricCollector collector = metricCollectorRegistry.getCollector(condition.getMetric());
 
-            // 采集指标数据 - 针对特定目标对象
-            List<Metric> metrics = collector.collect(condition.getMetric(), targetType, targetId);
+            // 批量采集指标数据，然后筛选出目标对象的数据
+            List<Metric> allMetrics = collector.collectAll(condition.getMetric());
+            List<Metric> targetMetrics = allMetrics.stream()
+                    .filter(m -> m.getTargetId().equals(targetId) && targetType.equals(m.getTargetType()))
+                    .collect(java.util.stream.Collectors.toList());
 
             // 评估条件，获取满足条件的指标
-            List<Metric> triggeredMetrics = evaluateCondition(condition, metrics);
+            List<Metric> triggeredMetrics = evaluateCondition(condition, targetMetrics);
 
             // 如果该条件没有满足的指标，则整体不触发告警
             if (triggeredMetrics.isEmpty()) {

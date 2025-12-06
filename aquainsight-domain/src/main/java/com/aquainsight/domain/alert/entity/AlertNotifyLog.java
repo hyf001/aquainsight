@@ -21,12 +21,12 @@ public class AlertNotifyLog {
     /**
      * 通知日志ID
      */
-    private Long id;
+    private Integer id;
 
     /**
      * 告警记录ID
      */
-    private Long alertRecordId;
+    private Integer alertRecordId;
 
     /**
      * 通知方式

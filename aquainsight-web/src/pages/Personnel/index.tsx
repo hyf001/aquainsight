@@ -35,7 +35,7 @@ import {
   setUserRole,
   resetUserPassword,
 } from '@/services/organization'
-import type { UserInfo, CreateUserRequest, UpdateUserRequest } from '@/services/organization'
+import type { UserInfo } from '@/services/organization'
 
 const Personnel: React.FC = () => {
   const [users, setUsers] = useState<UserInfo[]>([])

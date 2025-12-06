@@ -242,5 +242,73 @@ CREATE TABLE `site_job_instance` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
+-- aquainsight.alert_rule definition
+
+CREATE TABLE `alert_rule` (
+  `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '告警规则ID',
+  `rule_name` varchar(100) NOT NULL COMMENT '规则名称',
+  `alert_target_type` varchar(50) NOT NULL COMMENT '告警对象类型(site-站点,device-设备,task-任务)',
+  `condition_configs` text COMMENT '告警条件配置(JSON格式,存储阈值、持续时间等条件)',
+  `alert_level` int(11) NOT NULL DEFAULT '2' COMMENT '告警级别(1-紧急,2-重要,3-一般,4-提示)',
+  `alert_message` varchar(500) DEFAULT NULL COMMENT '告警消息模板',
+  `scheme_id` int(11) DEFAULT NULL COMMENT '关联方案ID(用于创建处理任务实例)',
+  `notify_types` varchar(100) DEFAULT NULL COMMENT '通知方式(多个逗号分隔: sms-短信,email-邮件,push-推送,wechat-微信)',
+  `notify_users` varchar(500) DEFAULT NULL COMMENT '通知人员ID列表(多个逗号分隔)',
+  `notify_departments` varchar(500) DEFAULT NULL COMMENT '通知部门ID列表(多个逗号分隔)',
+  `enabled` int(11) NOT NULL DEFAULT '1' COMMENT '是否启用(0-禁用,1-启用)',
+  `quiet_period` int(11) DEFAULT '0' COMMENT '静默期(分钟),同一规则在静默期内不重复告警',
+  `creator` varchar(50) NOT NULL COMMENT '创建人',
+  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updater` varchar(50) DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `deleted` int(11) NOT NULL DEFAULT '0' COMMENT '是否删除(0-未删除,1-已删除)',
+  `description` varchar(500) DEFAULT NULL COMMENT '规则描述',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='告警规则表';
+
+-- aquainsight.alert_record definition
+
+CREATE TABLE `alert_record` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '告警记录ID',
+  `rule_id` int(11) NOT NULL COMMENT '关联的规则ID',
+  `rule_name` varchar(100) NOT NULL COMMENT '规则名称(冗余字段)',
+  `rule_type` varchar(50) NOT NULL COMMENT '规则类型(冗余字段)',
+  `target_type` varchar(50) DEFAULT NULL COMMENT '告警目标类型(site-站点,device-设备,factor-因子,task-任务)',
+  `target_id` int(11) DEFAULT NULL COMMENT '告警目标ID',
+  `target_name` varchar(100) DEFAULT NULL COMMENT '告警目标名称',
+  `alert_level` int(11) NOT NULL COMMENT '告警级别',
+  `alert_message` varchar(1000) NOT NULL COMMENT '告警消息内容',
+  `alert_data` text COMMENT '告警相关数据(JSON格式,如超标数值、设备状态等)',
+  `job_instance_id` int(11) DEFAULT NULL COMMENT '关联的任务实例ID(任务超时告警时关联触发告警的任务,其他类型告警关联新创建的处理任务)',
+  `is_self_task` tinyint(1) DEFAULT '0' COMMENT '是否关联自身任务(0-关联新创建任务,1-关联触发告警的任务本身,如任务超时)',
+  `status` tinyint(1) NOT NULL DEFAULT '0' COMMENT '告警状态(0-待处理,1-处理中,2-已处理,3-已忽略,4-已恢复)',
+  `notify_status` tinyint(1) DEFAULT '0' COMMENT '通知状态(0-未通知,1-已通知,2-通知失败)',
+  `notify_time` datetime DEFAULT NULL COMMENT '通知时间',
+  `recover_time` datetime DEFAULT NULL COMMENT '恢复正常时间',
+  `duration` int(11) DEFAULT NULL COMMENT '持续时长(分钟)',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否删除(0-未删除,1-已删除)',
+  `handler` varchar(100) DEFAULT NULL COMMENT '处理人',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='告警记录表';
+-- aquainsight.alert_notify_log definition
+
+CREATE TABLE `alert_notify_log` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '通知日志ID',
+  `alert_record_id` bigint(20) NOT NULL COMMENT '告警记录ID',
+  `notify_type` varchar(50) NOT NULL COMMENT '通知方式(sms-短信,email-邮件,push-推送,wechat-微信)',
+  `notify_target` varchar(100) NOT NULL COMMENT '通知目标(手机号/邮箱/用户ID等)',
+  `notify_user_id` int(11) DEFAULT NULL COMMENT '通知用户ID',
+  `notify_user_name` varchar(50) DEFAULT NULL COMMENT '通知用户姓名',
+  `notify_content` varchar(1000) DEFAULT NULL COMMENT '通知内容',
+  `notify_status` tinyint(1) NOT NULL DEFAULT '0' COMMENT '通知状态(0-待发送,1-发送成功,2-发送失败)',
+  `send_time` datetime DEFAULT NULL COMMENT '发送时间',
+  `error_message` varchar(500) DEFAULT NULL COMMENT '失败原因',
+  `retry_count` int(11) DEFAULT '0' COMMENT '重试次数',
+  `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='告警通知日志表';
 
 

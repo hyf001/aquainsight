@@ -21,6 +21,9 @@ const DeviceModels = lazy(() => import('@/pages/DeviceModels'))
 const JobCategories = lazy(() => import('@/pages/JobCategories'))
 const Schemes = lazy(() => import('@/pages/Schemes'))
 const SiteConfiguration = lazy(() => import('@/pages/SiteConfiguration'))
+const AlertRules = lazy(() => import('@/pages/AlertRules'))
+const AlertRecords = lazy(() => import('@/pages/AlertRecords'))
+const AlertNotifications = lazy(() => import('@/pages/AlertNotifications'))
 const Login = lazy(() => import('@/pages/Login'))
 
 const PageLoading = () => (
@@ -191,6 +194,30 @@ export const router = createBrowserRouter([
         element: (
           <Suspense fallback={<Spin />}>
             <SiteConfiguration />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'alert-rules',
+        element: (
+          <Suspense fallback={<Spin />}>
+            <AlertRules />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'alert-records',
+        element: (
+          <Suspense fallback={<Spin />}>
+            <AlertRecords />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'alert-notifications',
+        element: (
+          <Suspense fallback={<Spin />}>
+            <AlertNotifications />
           </Suspense>
         ),
       },

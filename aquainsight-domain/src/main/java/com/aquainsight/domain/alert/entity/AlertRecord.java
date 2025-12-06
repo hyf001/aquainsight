@@ -25,12 +25,7 @@ public class AlertRecord {
     /**
      * 告警记录ID
      */
-    private Long id;
-
-    /**
-     * 告警编码(唯一标识)
-     */
-    private String alertCode;
+    private Integer id;
 
     /**
      * 关联的规则ID
@@ -116,6 +111,10 @@ public class AlertRecord {
      * 备注
      */
     private String remark;
+    /**
+     * 告警处理人
+     */
+    private String handler;
 
     /**
      * 创建时间

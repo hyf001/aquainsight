@@ -159,12 +159,6 @@ const Schemes: React.FC = () => {
     loadSchemes(values.name)
   }
 
-  // 重置搜索
-  const handleReset = () => {
-    searchForm.resetFields()
-    setSearchName('')
-    loadSchemes()
-  }
 
   // 打开方案项目抽屉
   const openItemDrawer = async (scheme: Scheme) => {

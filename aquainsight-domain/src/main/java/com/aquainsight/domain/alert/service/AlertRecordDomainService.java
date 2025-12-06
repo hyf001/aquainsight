@@ -42,14 +42,9 @@ public class AlertRecordDomainService {
             throw new IllegalArgumentException("告警消息不能为空");
         }
 
-        // 生成告警编码
-        String alertCode = generateAlertCode(rule.getRuleType(), targetType);
-
         AlertRecord record = AlertRecord.builder()
-                .alertCode(alertCode)
                 .ruleId(rule.getId())
                 .ruleName(rule.getRuleName())
-                .ruleType(rule.getRuleType())
                 .targetType(targetType)
                 .targetId(targetId)
                 .targetName(targetName)
@@ -71,7 +66,7 @@ public class AlertRecordDomainService {
     /**
      * 开始处理告警
      */
-    public AlertRecord startProcess(Long recordId) {
+    public AlertRecord startProcess(Integer recordId) {
         AlertRecord record = alertRecordRepository.findById(recordId)
                 .orElseThrow(() -> new IllegalArgumentException("告警记录不存在"));
 
@@ -82,7 +77,7 @@ public class AlertRecordDomainService {
     /**
      * 解决告警
      */
-    public AlertRecord resolveAlert(Long recordId, String remark) {
+    public AlertRecord resolveAlert(Integer recordId, String remark) {
         AlertRecord record = alertRecordRepository.findById(recordId)
                 .orElseThrow(() -> new IllegalArgumentException("告警记录不存在"));
 
@@ -93,7 +88,7 @@ public class AlertRecordDomainService {
     /**
      * 忽略告警
      */
-    public AlertRecord ignoreAlert(Long recordId, String remark) {
+    public AlertRecord ignoreAlert(Integer recordId, String remark) {
         AlertRecord record = alertRecordRepository.findById(recordId)
                 .orElseThrow(() -> new IllegalArgumentException("告警记录不存在"));
 
@@ -104,7 +99,7 @@ public class AlertRecordDomainService {
     /**
      * 标记告警已恢复
      */
-    public AlertRecord recoverAlert(Long recordId) {
+    public AlertRecord recoverAlert(Integer recordId) {
         AlertRecord record = alertRecordRepository.findById(recordId)
                 .orElseThrow(() -> new IllegalArgumentException("告警记录不存在"));
 
@@ -115,7 +110,7 @@ public class AlertRecordDomainService {
     /**
      * 更新通知状态为成功
      */
-    public AlertRecord markNotifySuccess(Long recordId) {
+    public AlertRecord markNotifySuccess(Integer recordId) {
         AlertRecord record = alertRecordRepository.findById(recordId)
                 .orElseThrow(() -> new IllegalArgumentException("告警记录不存在"));
 
@@ -126,7 +121,7 @@ public class AlertRecordDomainService {
     /**
      * 更新通知状态为失败
      */
-    public AlertRecord markNotifyFailed(Long recordId) {
+    public AlertRecord markNotifyFailed(Integer recordId) {
         AlertRecord record = alertRecordRepository.findById(recordId)
                 .orElseThrow(() -> new IllegalArgumentException("告警记录不存在"));
 
@@ -137,7 +132,7 @@ public class AlertRecordDomainService {
     /**
      * 关联任务实例
      */
-    public AlertRecord associateJobInstance(Long recordId, Integer jobInstanceId, boolean isSelfTask) {
+    public AlertRecord associateJobInstance(Integer recordId, Integer jobInstanceId, boolean isSelfTask) {
         AlertRecord record = alertRecordRepository.findById(recordId)
                 .orElseThrow(() -> new IllegalArgumentException("告警记录不存在"));
 
@@ -148,7 +143,7 @@ public class AlertRecordDomainService {
     /**
      * 更新备注
      */
-    public AlertRecord updateRemark(Long recordId, String remark) {
+    public AlertRecord updateRemark(Integer recordId, String remark) {
         AlertRecord record = alertRecordRepository.findById(recordId)
                 .orElseThrow(() -> new IllegalArgumentException("告警记录不存在"));
 
@@ -159,16 +154,8 @@ public class AlertRecordDomainService {
     /**
      * 根据ID获取告警记录
      */
-    public AlertRecord getRecordById(Long recordId) {
+    public AlertRecord getRecordById(Integer recordId) {
         return alertRecordRepository.findById(recordId)
-                .orElseThrow(() -> new IllegalArgumentException("告警记录不存在"));
-    }
-
-    /**
-     * 根据告警编码获取告警记录
-     */
-    public AlertRecord getRecordByAlertCode(String alertCode) {
-        return alertRecordRepository.findByAlertCode(alertCode)
                 .orElseThrow(() -> new IllegalArgumentException("告警记录不存在"));
     }
 
@@ -237,23 +224,10 @@ public class AlertRecordDomainService {
     }
 
     /**
-     * 生成告警编码
-     * 格式: ALERT-{规则类型}-{目标类型}-{时间戳}
-     */
-    private String generateAlertCode(AlertRuleType ruleType, AlertTargetType targetType) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
-        String timestamp = LocalDateTime.now().format(formatter);
-        return String.format("ALERT-%s-%s-%s",
-                ruleType.getCode().toUpperCase(),
-                targetType.getCode().toUpperCase(),
-                timestamp);
-    }
-
-    /**
      * 批量处理告警恢复
      * 用于系统自动检测到告警条件恢复时调用
      */
-    public List<AlertRecord> batchRecoverAlerts(List<Long> recordIds) {
+    public List<AlertRecord> batchRecoverAlerts(List<Integer> recordIds) {
         return recordIds.stream()
                 .map(recordId -> {
                     try {
@@ -270,7 +244,7 @@ public class AlertRecordDomainService {
     /**
      * 删除告警记录
      */
-    public void deleteRecord(Long recordId) {
+    public void deleteRecord(Integer recordId) {
         // 验证告警记录存在
         alertRecordRepository.findById(recordId)
                 .orElseThrow(() -> new IllegalArgumentException("告警记录不存在"));

@@ -23,12 +23,7 @@ public interface AlertRecordRepository {
     /**
      * 根据ID查找告警记录
      */
-    Optional<AlertRecord> findById(Long id);
-
-    /**
-     * 根据告警编码查找告警记录
-     */
-    Optional<AlertRecord> findByAlertCode(String alertCode);
+    Optional<AlertRecord> findById(Integer id);
 
     /**
      * 查找所有告警记录
@@ -68,7 +63,7 @@ public interface AlertRecordRepository {
     /**
      * 根据ID删除告警记录
      */
-    boolean deleteById(Long id);
+    boolean deleteById(Integer id);
 
     /**
      * 分页查询告警记录

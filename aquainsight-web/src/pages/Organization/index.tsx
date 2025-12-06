@@ -35,7 +35,6 @@ import {
   deleteDepartment,
   setLeader,
   unsetLeader,
-  updateEmployeeStatus,
   updateEmployeeDepartment,
   removeEmployeeFromDepartment,
 } from '@/services/organization'
@@ -265,16 +264,6 @@ const Organization: React.FC = () => {
     }
   }
 
-  // 更新员工状态
-  const handleUpdateStatus = async (userId: number, status: number) => {
-    try {
-      await updateEmployeeStatus(userId, status)
-      message.success('更新成功')
-      loadEmployees(selectedDeptId || undefined)
-    } catch (error) {
-      console.error('更新状态失败:', error)
-    }
-  }
 
   // 获取所有部门的平铺列表
   const flattenDepartments = (depts: Department[]): Department[] => {
