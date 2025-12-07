@@ -16,6 +16,7 @@ import {
   UserOutlined,
 } from '@ant-design/icons'
 import { useUserStore } from '@/stores/useUserStore'
+import NotificationDropdown from '@/components/NotificationDropdown'
 import './styles.less'
 
 const { Header, Sider, Content } = AntLayout
@@ -172,9 +173,7 @@ const LayoutComponent: React.FC = () => {
           <Badge count={0} className="header-icon">
             <MailOutlined />
           </Badge>
-          <Badge count={2} className="header-icon">
-            <BellOutlined />
-          </Badge>
+          <NotificationDropdown />
           <SettingOutlined className="header-icon" />
           <Dropdown menu={{ items: userDropdownItems }} placement="bottomRight">
             <div className="user-info">

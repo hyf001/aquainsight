@@ -11,18 +11,24 @@ import {
   Space,
   Tag,
   DatePicker,
+  Modal,
+  Form,
 } from 'antd'
 import {
   SearchOutlined,
   ReloadOutlined,
+  PlusOutlined,
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import {
   getSiteJobInstancePage,
+  createManualJobInstance,
   type SiteJobInstance,
 } from '@/services/maintenance'
 import { getAllDepartments, type Department } from '@/services/organization'
+import { getEnterpriseSiteTree, type EnterpriseSiteTree } from '@/services/monitoring'
+import { getSchemeList, type Scheme } from '@/services/maintenance'
 
 const { RangePicker } = DatePicker
 
@@ -44,6 +50,16 @@ const TaskExecution: React.FC = () => {
 
   // 部门列表
   const [departments, setDepartments] = useState<Department[]>([])
+
+  // 新建任务弹窗相关
+  const [createModalVisible, setCreateModalVisible] = useState(false)
+  const [createLoading, setCreateLoading] = useState(false)
+  const [createForm] = Form.useForm()
+
+  // 站点树列表
+  const [enterpriseSiteTree, setEnterpriseSiteTree] = useState<EnterpriseSiteTree[]>([])
+  // 方案列表
+  const [schemes, setSchemes] = useState<Scheme[]>([])
 
   // 搜索条件（表单输入）
   const [searchForm, setSearchForm] = useState({
@@ -92,6 +108,26 @@ const TaskExecution: React.FC = () => {
       setDepartments(data)
     } catch (error) {
       console.error('加载部门列表失败:', error)
+    }
+  }
+
+  // 加载站点树
+  const loadEnterpriseSiteTree = async () => {
+    try {
+      const data = await getEnterpriseSiteTree()
+      setEnterpriseSiteTree(data)
+    } catch (error) {
+      console.error('加载站点列表失败:', error)
+    }
+  }
+
+  // 加载方案列表
+  const loadSchemes = async () => {
+    try {
+      const data = await getSchemeList()
+      setSchemes(data)
+    } catch (error) {
+      console.error('加载方案列表失败:', error)
     }
   }
 
@@ -155,6 +191,47 @@ const TaskExecution: React.FC = () => {
         startTime: undefined,
         endTime: undefined,
       })
+    }
+  }
+
+  // 打开新建任务弹窗
+  const handleOpenCreateModal = () => {
+    loadEnterpriseSiteTree()
+    loadSchemes()
+    setCreateModalVisible(true)
+  }
+
+  // 关闭新建任务弹窗
+  const handleCloseCreateModal = () => {
+    setCreateModalVisible(false)
+    createForm.resetFields()
+  }
+
+  // 提交新建任务
+  const handleCreateSubmit = async () => {
+    try {
+      const values = await createForm.validateFields()
+      setCreateLoading(true)
+
+      await createManualJobInstance({
+        siteId: values.siteId,
+        schemeId: values.schemeId,
+        departmentId: values.departmentId,
+      })
+
+      message.success('任务创建成功')
+      handleCloseCreateModal()
+      // 重新加载列表
+      loadJobInstances()
+    } catch (error: any) {
+      if (error.errorFields) {
+        // 表单验证错误，不显示消息
+        return
+      }
+      console.error('创建任务失败:', error)
+      message.error(error.message || '创建任务失败')
+    } finally {
+      setCreateLoading(false)
     }
   }
 
@@ -334,6 +411,9 @@ const TaskExecution: React.FC = () => {
               <Button icon={<ReloadOutlined />} onClick={handleReset}>
                 重置
               </Button>
+              <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreateModal}>
+                新建任务
+              </Button>
             </Space>
           </Col>
         </Row>
@@ -360,6 +440,75 @@ const TaskExecution: React.FC = () => {
           scroll={{ x: 1600, y: 'calc(100vh - 340px)' }}
         />
       </Card>
+
+      {/* 新建任务弹窗 */}
+      <Modal
+        title="新建任务"
+        open={createModalVisible}
+        onOk={handleCreateSubmit}
+        onCancel={handleCloseCreateModal}
+        confirmLoading={createLoading}
+        width={600}
+      >
+        <Form
+          form={createForm}
+          layout="vertical"
+          autoComplete="off"
+        >
+          <Form.Item
+            label="选择站点"
+            name="siteId"
+            rules={[{ required: true, message: '请选择站点' }]}
+          >
+            <Select
+              placeholder="请选择站点"
+              showSearch
+              optionFilterProp="children"
+              filterOption={(input, option) =>
+                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+              }
+            >
+              {enterpriseSiteTree.map((enterprise) => (
+                <Select.OptGroup key={enterprise.enterpriseId} label={enterprise.enterpriseName}>
+                  {enterprise.sites.map((site) => (
+                    <Select.Option key={site.id} value={site.id} label={site.siteName}>
+                      {site.siteName}
+                    </Select.Option>
+                  ))}
+                </Select.OptGroup>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            label="运维小组"
+            name="departmentId"
+            rules={[{ required: true, message: '请选择运维小组' }]}
+          >
+            <Select placeholder="请选择运维小组">
+              {departments.map((dept) => (
+                <Select.Option key={dept.id} value={dept.id}>
+                  {dept.name}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            label="运维方案"
+            name="schemeId"
+            rules={[{ required: true, message: '请选择运维方案' }]}
+          >
+            <Select placeholder="请选择运维方案">
+              {schemes.map((scheme) => (
+                <Select.Option key={scheme.id} value={scheme.id}>
+                  {scheme.name}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   )
 }

@@ -3,6 +3,7 @@ package com.aquainsight.interfaces.rest.controller;
 import com.aquainsight.application.service.AlertApplicationService;
 import com.aquainsight.common.util.PageResult;
 import com.aquainsight.common.util.Response;
+import com.aquainsight.common.util.ThreadLocalUtil;
 import com.aquainsight.domain.alert.entity.AlertNotifyLog;
 import com.aquainsight.domain.alert.entity.AlertRecord;
 import com.aquainsight.domain.alert.entity.AlertRule;
@@ -15,6 +16,7 @@ import com.aquainsight.domain.alert.types.NotifyStatus;
 import com.aquainsight.domain.alert.types.NotifyType;
 import com.aquainsight.domain.alert.repository.AlertRecordRepository;
 import com.aquainsight.domain.alert.repository.AlertNotifyLogRepository;
+import com.aquainsight.domain.user.entity.User;
 import com.aquainsight.interfaces.rest.dto.CreateAlertRuleRequest;
 import com.aquainsight.interfaces.rest.dto.HandleAlertRequest;
 import com.aquainsight.interfaces.rest.dto.RuleConditionDTO;
@@ -311,6 +313,31 @@ public class AlertController {
     }
 
     /**
+     * 认领告警
+     */
+    @PutMapping("/records/{id}/claim")
+    public Response<AlertRecordVO> claimAlert(@PathVariable Integer id) {
+        try {
+            Optional<AlertRecord> recordOpt = alertRecordRepository.findById(id);
+            if (!recordOpt.isPresent()) {
+                return Response.error("告警记录不存在");
+            }
+
+            // 从ThreadLocal获取当前登录用户
+            User currentUser = ThreadLocalUtil.getUser();
+            String handler = currentUser != null ? currentUser.getName() : "system";
+
+            AlertRecord record = recordOpt.get();
+            record.claim(handler);
+            AlertRecord updatedRecord = alertRecordRepository.update(record);
+
+            return Response.success(convertToAlertRecordVO(updatedRecord));
+        } catch (Exception e) {
+            return Response.error(e.getMessage());
+        }
+    }
+
+    /**
      * 开始处理告警
      */
     @PutMapping("/records/{id}/start-process")
@@ -323,28 +350,6 @@ public class AlertController {
 
             AlertRecord record = recordOpt.get();
             record.startProcess();
-            AlertRecord updatedRecord = alertRecordRepository.update(record);
-
-            return Response.success(convertToAlertRecordVO(updatedRecord));
-        } catch (Exception e) {
-            return Response.error(e.getMessage());
-        }
-    }
-
-    /**
-     * 解决告警
-     */
-    @PutMapping("/records/{id}/resolve")
-    public Response<AlertRecordVO> resolveAlert(@PathVariable Integer id,
-                                                  @RequestBody HandleAlertRequest request) {
-        try {
-            Optional<AlertRecord> recordOpt = alertRecordRepository.findById(id);
-            if (!recordOpt.isPresent()) {
-                return Response.error("告警记录不存在");
-            }
-
-            AlertRecord record = recordOpt.get();
-            record.resolve(request.getRemark());
             AlertRecord updatedRecord = alertRecordRepository.update(record);
 
             return Response.success(convertToAlertRecordVO(updatedRecord));
@@ -383,7 +388,6 @@ public class AlertController {
         try {
             long pendingCount = alertRecordRepository.countByStatus(AlertStatus.PENDING);
             long inProgressCount = alertRecordRepository.countByStatus(AlertStatus.IN_PROGRESS);
-            long resolvedCount = alertRecordRepository.countByStatus(AlertStatus.RESOLVED);
             long ignoredCount = alertRecordRepository.countByStatus(AlertStatus.IGNORED);
             long recoveredCount = alertRecordRepository.countByStatus(AlertStatus.RECOVERED);
 
@@ -393,7 +397,6 @@ public class AlertController {
             java.util.Map<String, Object> statistics = new java.util.HashMap<>();
             statistics.put("pendingCount", pendingCount);
             statistics.put("inProgressCount", inProgressCount);
-            statistics.put("resolvedCount", resolvedCount);
             statistics.put("ignoredCount", ignoredCount);
             statistics.put("recoveredCount", recoveredCount);
             statistics.put("urgentCount", urgentCount);
@@ -406,6 +409,42 @@ public class AlertController {
     }
 
     // ==================== Alert Notify Log Endpoints ====================
+
+    /**
+     * 分页查询通知日志
+     */
+    @GetMapping("/notify-logs")
+    public Response<PageResult<AlertNotifyLogVO>> getNotifyLogs(
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "10") Integer pageSize,
+            @RequestParam(required = false) Integer alertRecordId,
+            @RequestParam(required = false) String notifyStatus,
+            @RequestParam(required = false) String notifyType,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime startTime,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime endTime) {
+        try {
+            NotifyStatus status = notifyStatus != null ? NotifyStatus.valueOf(notifyStatus) : null;
+            NotifyType type = notifyType != null ? NotifyType.valueOf(notifyType) : null;
+
+            IPage<AlertNotifyLog> logPage = alertNotifyLogRepository.findPage(
+                    pageNum, pageSize, alertRecordId, status, type, startTime, endTime);
+
+            List<AlertNotifyLogVO> logVOs = logPage.getRecords().stream()
+                    .map(this::convertToAlertNotifyLogVO)
+                    .collect(Collectors.toList());
+
+            PageResult<AlertNotifyLogVO> pageResult = PageResult.of(
+                    logVOs,
+                    logPage.getTotal(),
+                    (int) logPage.getCurrent(),
+                    (int) logPage.getSize()
+            );
+
+            return Response.success(pageResult);
+        } catch (Exception e) {
+            return Response.error(e.getMessage());
+        }
+    }
 
     /**
      * 根据告警记录ID获取通知日志
@@ -470,6 +509,7 @@ public class AlertController {
                 .recoverTime(record.getRecoverTime())
                 .duration(record.getDuration())
                 .remark(record.getRemark())
+                .handler(record.getHandler())
                 .isSelfTask(record.getIsSelfTask())
                 .createTime(record.getCreateTime())
                 .updateTime(record.getUpdateTime())

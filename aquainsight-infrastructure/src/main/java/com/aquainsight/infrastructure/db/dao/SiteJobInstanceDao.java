@@ -20,6 +20,9 @@ public interface SiteJobInstanceDao extends BaseMapper<SiteJobInstancePO> {
     @SelectProvider(type = SiteJobInstanceSqlProvider.class, method = "selectPageWithDetails")
     @Results({
             @Result(column = "id", property = "id"),
+            @Result(column = "site_id", property = "siteId"),
+            @Result(column = "scheme_id", property = "schemeId"),
+            @Result(column = "department_id", property = "departmentId"),
             @Result(column = "site_job_plan_id", property = "siteJobPlanId"),
             @Result(column = "trigger_time", property = "triggerTime"),
             @Result(column = "start_time", property = "startTime"),
@@ -31,6 +34,12 @@ public interface SiteJobInstanceDao extends BaseMapper<SiteJobInstancePO> {
             @Result(column = "create_time", property = "createTime"),
             @Result(column = "update_time", property = "updateTime"),
             @Result(column = "deleted", property = "deleted"),
+            @Result(column = "site_id", property = "site",
+                    one = @One(select = "com.aquainsight.infrastructure.db.dao.SiteDao.selectById")),
+            @Result(column = "scheme_id", property = "scheme",
+                    one = @One(select = "com.aquainsight.infrastructure.db.dao.SchemeDao.selectByIdWithItems")),
+            @Result(column = "department_id", property = "department",
+                    one = @One(select = "com.aquainsight.infrastructure.db.dao.DepartmentDao.selectById")),
             @Result(column = "site_job_plan_id", property = "siteJobPlan",
                     one = @One(select = "com.aquainsight.infrastructure.db.dao.SiteJobPlanDao.selectByIdWithDetails"))
     })
@@ -54,13 +63,9 @@ public interface SiteJobInstanceDao extends BaseMapper<SiteJobInstancePO> {
                                             @Param("departmentId") Integer departmentId) {
             StringBuilder sql = new StringBuilder("SELECT sji.* FROM site_job_instance sji");
 
-            // 如果需要按站点名称或运维小组过滤，需要JOIN相关表
-            boolean needJoin = (siteName != null && !siteName.trim().isEmpty()) || departmentId != null;
-            if (needJoin) {
-                sql.append(" LEFT JOIN site_job_plan sjp ON sji.site_job_plan_id = sjp.id");
-                if (siteName != null && !siteName.trim().isEmpty()) {
-                    sql.append(" LEFT JOIN site s ON sjp.site_id = s.id");
-                }
+            // 如果需要按站点名称过滤，需要JOIN站点表
+            if (siteName != null && !siteName.trim().isEmpty()) {
+                sql.append(" LEFT JOIN site s ON sji.site_id = s.id");
             }
 
             sql.append(" WHERE sji.deleted = 0");
@@ -86,7 +91,7 @@ public interface SiteJobInstanceDao extends BaseMapper<SiteJobInstancePO> {
             }
 
             if (departmentId != null) {
-                sql.append(" AND sjp.department_id = #{departmentId}");
+                sql.append(" AND sji.department_id = #{departmentId}");
             }
 
             sql.append(" ORDER BY sji.trigger_time DESC");

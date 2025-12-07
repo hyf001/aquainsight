@@ -25,7 +25,7 @@ public class AlertRuleEvaluationJob {
      * 每5分钟执行一次告警规则扫描和评估
      * 检查所有启用的告警规则，对符合条件的目标对象生成告警记录
      */
-    @Scheduled(cron = "0 */1 * * * ?")
+    @Scheduled(cron = "0 */5 * * * ?")
     public void evaluateAlertRules() {
         log.info("开始执行告警规则评估定时任务，时间: {}", LocalDateTime.now());
 
@@ -60,7 +60,7 @@ public class AlertRuleEvaluationJob {
      * 每10分钟执行一次告警恢复检查
      * 检查待处理和处理中的告警，如果条件不再满足则标记为已恢复
      */
-    @Scheduled(cron = "0 */10 * * * ?")
+    @Scheduled(cron = "30 */5 * * * ?")
     public void checkAlertRecovery() {
         log.info("开始执行告警恢复检查定时任务，时间: {}", LocalDateTime.now());
 
@@ -69,6 +69,25 @@ public class AlertRuleEvaluationJob {
             log.info("告警恢复检查定时任务执行完成");
         } catch (Exception e) {
             log.error("告警恢复检查定时任务执行失败", e);
+        }
+    }
+
+    /**
+     * 每15分钟执行一次告警自动取消检查
+     * 检查待处理和处理中的告警，满足取消条件则自动忽略：
+     * 1. 指标值已恢复正常，不再符合告警条件
+     * 2. 目标对象已被删除
+     * 3. 关联的规则已被禁用或删除
+     */
+    @Scheduled(cron = "0 */15 * * * ?")
+    public void autoCancelAlerts() {
+        log.info("开始执行告警自动取消定时任务，时间: {}", LocalDateTime.now());
+
+        try {
+            alertApplicationService.autoCancelAlerts();
+            log.info("告警自动取消定时任务执行完成");
+        } catch (Exception e) {
+            log.error("告警自动取消定时任务执行失败", e);
         }
     }
 }

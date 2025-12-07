@@ -121,7 +121,7 @@ public class AlertRecordRepositoryImpl implements AlertRecordRepository {
         }
 
         if (alertLevel != null) {
-            queryWrapper.eq(AlertRecordPO::getAlertLevel, alertLevel.name());
+            queryWrapper.eq(AlertRecordPO::getAlertLevel, alertLevel.getCode());
         }
 
         if (targetType != null) {

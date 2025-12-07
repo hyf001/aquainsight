@@ -304,3 +304,16 @@ export const getSiteJobInstancePage = (params: {
     params,
   })
 }
+
+// ========== 手动创建任务实例 ==========
+
+export type CreateManualJobInstanceRequest = {
+  siteId: number
+  schemeId: number
+  departmentId: number
+}
+
+// 手动创建任务实例
+export const createManualJobInstance = (data: CreateManualJobInstanceRequest) => {
+  return request.post<any, SiteJobInstance>('/maintenance/job-instances', data)
+}

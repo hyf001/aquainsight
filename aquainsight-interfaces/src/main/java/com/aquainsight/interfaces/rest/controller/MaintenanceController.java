@@ -736,42 +736,39 @@ public class MaintenanceController {
                 .updateTime(instance.getUpdateTime())
                 .build();
 
-        // 填充任务计划相关信息
-        if (instance.getSiteJobPlan() != null) {
-            com.aquainsight.domain.maintenance.entity.SiteJobPlan plan = instance.getSiteJobPlan();
-            vo.setSiteJobPlanId(plan.getId());
+        // 填充任务计划ID（仅作为标记）
+        vo.setSiteJobPlanId(instance.getSiteJobPlanId());
 
-            // 填充站点信息
-            if (plan.getSite() != null) {
-                vo.setSiteId(plan.getSite().getId());
-                vo.setSiteName(plan.getSite().getSiteName());
-                vo.setSiteCode(plan.getSite().getSiteCode());
+        // 填充站点信息（直接从任务实例获取）
+        if (instance.getSite() != null) {
+            vo.setSiteId(instance.getSite().getId());
+            vo.setSiteName(instance.getSite().getSiteName());
+            vo.setSiteCode(instance.getSite().getSiteCode());
 
-                // 填充企业信息
-                if (plan.getSite().getEnterprise() != null) {
-                    vo.setEnterpriseId(plan.getSite().getEnterprise().getId());
-                    vo.setEnterpriseName(plan.getSite().getEnterprise().getEnterpriseName());
-                }
+            // 填充企业信息
+            if (instance.getSite().getEnterprise() != null) {
+                vo.setEnterpriseId(instance.getSite().getEnterprise().getId());
+                vo.setEnterpriseName(instance.getSite().getEnterprise().getEnterpriseName());
             }
+        }
 
-            // 填充方案信息
-            if (plan.getScheme() != null) {
-                vo.setSchemeId(plan.getScheme().getId());
-                vo.setSchemeName(plan.getScheme().getName());
+        // 填充方案信息（直接从任务实例获取）
+        if (instance.getScheme() != null) {
+            vo.setSchemeId(instance.getScheme().getId());
+            vo.setSchemeName(instance.getScheme().getName());
 
-                // 计算任务项量
-                if (plan.getScheme().getItems() != null) {
-                    vo.setTaskItemCount(plan.getScheme().getItems().size());
-                } else {
-                    vo.setTaskItemCount(0);
-                }
+            // 计算任务项量
+            if (instance.getScheme().getItems() != null) {
+                vo.setTaskItemCount(instance.getScheme().getItems().size());
+            } else {
+                vo.setTaskItemCount(0);
             }
+        }
 
-            // 填充部门信息
-            if (plan.getDepartment() != null) {
-                vo.setDepartmentId(plan.getDepartment().getId());
-                vo.setDepartmentName(plan.getDepartment().getName());
-            }
+        // 填充部门信息（直接从任务实例获取）
+        if (instance.getDepartment() != null) {
+            vo.setDepartmentId(instance.getDepartment().getId());
+            vo.setDepartmentName(instance.getDepartment().getName());
         }
 
         return vo;
@@ -820,6 +817,37 @@ public class MaintenanceController {
             return Response.error(e.getMessage());
         } catch (Exception e) {
             return Response.error("补齐任务实例失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 手动创建任务实例
+     * 根据站点、方案、部门信息创建一个任务实例（触发时间为当前时间）
+     */
+    @PostMapping("/job-instances")
+    public Response<SiteJobInstanceVO> createManualJobInstance(@Valid @RequestBody CreateManualJobInstanceRequest request) {
+        try {
+            // 获取当前用户
+            User currentUser = ThreadLocalUtil.getUser();
+
+            // 调用应用服务创建任务实例
+            com.aquainsight.domain.maintenance.entity.SiteJobInstance instance =
+                    maintenanceApplicationService.createManualJobInstance(
+                            request.getSiteId(),
+                            request.getSchemeId(),
+                            request.getDepartmentId(),
+                            currentUser.getName()
+                    );
+
+            // 转换为VO
+            SiteJobInstanceVO vo = convertSiteJobInstanceToVO(instance);
+
+            return Response.success(vo);
+
+        } catch (IllegalArgumentException e) {
+            return Response.error(e.getMessage());
+        } catch (Exception e) {
+            return Response.error("创建任务实例失败: " + e.getMessage());
         }
     }
 }

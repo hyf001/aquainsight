@@ -40,9 +40,7 @@ public class SiteJobInstanceGeneratorJob {
             // 记录生成的任务实例详情
             for (SiteJobInstance instance : generatedInstances) {
                 log.info("成功为站点 {} 生成任务实例，派发时间: {}",
-                        instance.getSiteJobPlan() != null && instance.getSiteJobPlan().getSite() != null
-                                ? instance.getSiteJobPlan().getSite().getSiteName()
-                                : "未知站点",
+                        instance.getSite() != null ? instance.getSite().getSiteName() : "未知站点",
                         instance.getTriggerTime());
             }
 

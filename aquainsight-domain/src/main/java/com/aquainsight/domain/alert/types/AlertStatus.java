@@ -6,29 +6,24 @@ package com.aquainsight.domain.alert.types;
 public enum AlertStatus {
 
     /**
-     * 待处理 - 告警已触发，等待处理
+     * 未认领 - 告警已触发，等待认领
      */
-    PENDING(0, "待处理"),
+    PENDING(0, "未认领"),
 
     /**
-     * 处理中 - 告警正在处理
+     * 已认领 - 告警已被认领
      */
-    IN_PROGRESS(1, "处理中"),
-
-    /**
-     * 已处理 - 告警已处理完成
-     */
-    RESOLVED(2, "已处理"),
+    IN_PROGRESS(1, "已认领"),
 
     /**
      * 已忽略 - 告警被手动忽略
      */
-    IGNORED(3, "已忽略"),
+    IGNORED(2, "已忽略"),
 
     /**
      * 已恢复 - 告警条件已恢复正常
      */
-    RECOVERED(4, "已恢复");
+    RECOVERED(3, "已恢复");
 
     private final Integer code;
     private final String description;

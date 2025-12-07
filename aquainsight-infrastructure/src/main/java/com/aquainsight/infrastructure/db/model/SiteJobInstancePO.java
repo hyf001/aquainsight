@@ -22,12 +22,45 @@ public class SiteJobInstancePO {
     private Integer id;
 
     /**
-     * 任务计划ID
+     * 站点ID (直接存储,不依赖任务计划)
+     */
+    private Integer siteId;
+
+    /**
+     * 站点 (关联对象,用于查询时填充)
+     */
+    @TableField(exist = false)
+    private SitePO site;
+
+    /**
+     * 方案ID (直接存储,不依赖任务计划)
+     */
+    private Integer schemeId;
+
+    /**
+     * 方案 (关联对象,用于查询时填充)
+     */
+    @TableField(exist = false)
+    private SchemePO scheme;
+
+    /**
+     * 部门ID (直接存储,不依赖任务计划)
+     */
+    private Integer departmentId;
+
+    /**
+     * 部门 (关联对象,用于查询时填充)
+     */
+    @TableField(exist = false)
+    private DepartmentPO department;
+
+    /**
+     * 任务计划ID (可选,如果是从计划生成的任务则有值)
      */
     private Integer siteJobPlanId;
 
     /**
-     * 任务计划（用于关联查询）
+     * 任务计划 (关联对象,用于查询时填充)
      */
     @TableField(exist = false)
     private SiteJobPlanPO siteJobPlan;

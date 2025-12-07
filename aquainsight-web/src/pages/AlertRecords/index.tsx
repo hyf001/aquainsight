@@ -20,10 +20,10 @@ import {
   EyeOutlined,
   CheckOutlined,
   CloseOutlined,
-  ReloadOutlined,
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
-import { getAlertRecords, startProcessAlert, resolveAlert, ignoreAlert } from '@/services/alert'
+import { getAlertRecords, claimAlert, ignoreAlert } from '@/services/alert'
+import { createManualJobInstance, getSchemeList, type Scheme } from '@/services/maintenance'
 import dayjs from 'dayjs'
 
 const { RangePicker } = DatePicker
@@ -33,6 +33,7 @@ interface AlertRecord {
   ruleName: string
   ruleType: string
   targetType: string
+  targetId: number
   targetName: string
   alertLevel: string
   alertMessage: string
@@ -42,6 +43,7 @@ interface AlertRecord {
   recoverTime?: string
   duration?: number
   remark?: string
+  handler?: string
   createTime: string
   updateTime: string
 }
@@ -72,8 +74,9 @@ const AlertRecords: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [detailVisible, setDetailVisible] = useState(false)
   const [handleVisible, setHandleVisible] = useState(false)
+  const [createTaskVisible, setCreateTaskVisible] = useState(false)
   const [currentRecord, setCurrentRecord] = useState<AlertRecord | null>(null)
-  const [handleType, setHandleType] = useState<'resolve' | 'ignore'>('resolve')
+  const [schemes, setSchemes] = useState<Scheme[]>([])
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 })
   const [filters, setFilters] = useState({
     status: undefined as string | undefined,
@@ -82,15 +85,16 @@ const AlertRecords: React.FC = () => {
     endTime: undefined as string | undefined,
   })
   const [form] = Form.useForm()
+  const [taskForm] = Form.useForm()
   const [searchForm] = Form.useForm()
 
   // Load alert records
   const loadRecords = async (pageNum: number = 1, pageSize: number = 10) => {
     setLoading(true)
     try {
-      const data = await getAlertRecords(pageNum, pageSize, filters)
-      setRecords(data.list)
-      setPagination({ current: data.pageNum, pageSize: data.pageSize, total: data.total })
+      const pageResult = await getAlertRecords(pageNum, pageSize, filters)
+      setRecords(pageResult.list)
+      setPagination({ current: pageResult.pageNum, pageSize: pageResult.pageSize, total: pageResult.total })
     } catch (error) {
       console.error('加载告警记录失败:', error)
       message.error('加载告警记录失败')
@@ -132,41 +136,77 @@ const AlertRecords: React.FC = () => {
     setDetailVisible(true)
   }
 
-  // Start processing
-  const handleStartProcess = async (record: AlertRecord) => {
+  // 认领告警
+  const handleClaim = async (record: AlertRecord) => {
+    // 如果是站点告警，弹窗创建任务
+    if (record.targetType === 'site') {
+      setCurrentRecord(record)
+      setCreateTaskVisible(true)
+      taskForm.resetFields()
+      // 加载方案列表
+      loadSchemes()
+    } else {
+      // 任务告警直接认领
+      try {
+        await claimAlert(record.id)
+        message.success('已认领告警')
+        loadRecords(pagination.current, pagination.pageSize)
+      } catch (error) {
+        console.error('认领告警失败:', error)
+        message.error('操作失败')
+      }
+    }
+  }
+
+  // 加载方案列表
+  const loadSchemes = async () => {
     try {
-      await startProcessAlert(record.id)
-      message.success('已开始处理')
+      const schemeList = await getSchemeList()
+      setSchemes(schemeList)
+    } catch (error) {
+      console.error('加载方案列表失败:', error)
+      message.error('加载方案列表失败')
+    }
+  }
+
+  // 创建任务
+  const handleCreateTask = async () => {
+    try {
+      const values = await taskForm.validateFields()
+      // 创建手动任务实例
+      await createManualJobInstance({
+        siteId: currentRecord!.targetId,
+        schemeId: values.schemeId,
+        departmentId: values.departmentId,
+      })
+      // 认领告警
+      await claimAlert(currentRecord!.id)
+      message.success('任务创建成功，告警已认领')
+      setCreateTaskVisible(false)
       loadRecords(pagination.current, pagination.pageSize)
     } catch (error) {
-      console.error('开始处理失败:', error)
+      console.error('创建任务失败:', error)
       message.error('操作失败')
     }
   }
 
-  // Open handle modal
-  const openHandleModal = (record: AlertRecord, type: 'resolve' | 'ignore') => {
+  // 打开忽略弹窗
+  const openIgnoreModal = (record: AlertRecord) => {
     setCurrentRecord(record)
-    setHandleType(type)
     setHandleVisible(true)
     form.resetFields()
   }
 
-  // Handle alert
-  const handleAlert = async () => {
+  // 忽略告警
+  const handleIgnore = async () => {
     try {
       const values = await form.validateFields()
-      if (handleType === 'resolve') {
-        await resolveAlert(currentRecord!.id, values.remark)
-        message.success('已解决')
-      } else {
-        await ignoreAlert(currentRecord!.id, values.remark)
-        message.success('已忽略')
-      }
+      await ignoreAlert(currentRecord!.id, values.remark)
+      message.success('已忽略')
       setHandleVisible(false)
       loadRecords(pagination.current, pagination.pageSize)
     } catch (error) {
-      console.error('处理告警失败:', error)
+      console.error('忽略告警失败:', error)
       message.error('操作失败')
     }
   }
@@ -227,6 +267,13 @@ const AlertRecords: React.FC = () => {
       },
     },
     {
+      title: '处理人',
+      dataIndex: 'handler',
+      key: 'handler',
+      width: 100,
+      render: (handler: string) => handler || '-',
+    },
+    {
       title: '创建时间',
       dataIndex: 'createTime',
       key: 'createTime',
@@ -235,26 +282,15 @@ const AlertRecords: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      width: 280,
+      width: 150,
       fixed: 'right',
       render: (_: any, record: AlertRecord) => (
         <Space>
-          <Button type="link" icon={<EyeOutlined />} onClick={() => viewDetail(record)}>
-            详情
-          </Button>
+          <Button type="link" icon={<EyeOutlined />} onClick={() => viewDetail(record)} />
           {record.status === 'PENDING' && (
-            <Button type="link" icon={<ReloadOutlined />} onClick={() => handleStartProcess(record)}>
-              处理
-            </Button>
-          )}
-          {record.status === 'IN_PROGRESS' && (
             <>
-              <Button type="link" icon={<CheckOutlined />} onClick={() => openHandleModal(record, 'resolve')}>
-                解决
-              </Button>
-              <Button type="link" icon={<CloseOutlined />} onClick={() => openHandleModal(record, 'ignore')}>
-                忽略
-              </Button>
+              <Button type="link" icon={<CheckOutlined />} onClick={() => handleClaim(record)} />
+              <Button type="link" icon={<CloseOutlined />} onClick={() => openIgnoreModal(record)} />
             </>
           )}
         </Space>
@@ -265,20 +301,20 @@ const AlertRecords: React.FC = () => {
   return (
     <Card title="告警实例管理">
       <Form form={searchForm} layout="inline" style={{ marginBottom: 16 }}>
-        <Row gutter={16} style={{ width: '100%' }}>
-          <Col span={6}>
-            <Form.Item name="status" label="状态">
-              <Select placeholder="请选择状态" allowClear options={ALERT_STATUS} />
+        <Row gutter={16} style={{ width: '100%' }} align="middle">
+          <Col span={5}>
+            <Form.Item name="status" label="状态" style={{ marginBottom: 0 }}>
+              <Select placeholder="请选择状态" allowClear options={ALERT_STATUS} style={{ width: '100%' }} />
             </Form.Item>
           </Col>
           <Col span={6}>
-            <Form.Item name="alertLevel" label="告警级别">
-              <Select placeholder="请选择告警级别" allowClear options={ALERT_LEVELS} />
+            <Form.Item name="alertLevel" label="告警级别" style={{ marginBottom: 0 }}>
+              <Select placeholder="请选择告警级别" allowClear options={ALERT_LEVELS} style={{ width: '100%' }} />
             </Form.Item>
           </Col>
-          <Col span={8}>
-            <Form.Item name="timeRange" label="时间范围">
-              <RangePicker showTime />
+          <Col span={9}>
+            <Form.Item name="timeRange" label="时间范围" style={{ marginBottom: 0 }}>
+              <RangePicker showTime style={{ width: '100%' }} />
             </Form.Item>
           </Col>
           <Col span={4}>
@@ -340,6 +376,7 @@ const AlertRecords: React.FC = () => {
             <Descriptions.Item label="通知时间">{currentRecord.notifyTime || '-'}</Descriptions.Item>
             <Descriptions.Item label="恢复时间">{currentRecord.recoverTime || '-'}</Descriptions.Item>
             <Descriptions.Item label="持续时长">{currentRecord.duration ? `${currentRecord.duration}分钟` : '-'}</Descriptions.Item>
+            <Descriptions.Item label="处理人">{currentRecord.handler || '-'}</Descriptions.Item>
             <Descriptions.Item label="备注" span={2}>{currentRecord.remark || '-'}</Descriptions.Item>
             <Descriptions.Item label="创建时间">{currentRecord.createTime}</Descriptions.Item>
             <Descriptions.Item label="更新时间">{currentRecord.updateTime}</Descriptions.Item>
@@ -347,22 +384,58 @@ const AlertRecords: React.FC = () => {
         )}
       </Modal>
 
-      {/* 处理弹窗 */}
+      {/* 忽略弹窗 */}
       <Modal
-        title={handleType === 'resolve' ? '解决告警' : '忽略告警'}
+        title="忽略告警"
         open={handleVisible}
-        onOk={handleAlert}
+        onOk={handleIgnore}
         onCancel={() => setHandleVisible(false)}
         okText="确定"
         cancelText="取消"
       >
         <Form form={form} layout="vertical">
           <Form.Item
-            label="处理备注"
+            label="忽略原因"
             name="remark"
-            rules={[{ required: true, message: '请输入处理备注' }]}
+            rules={[{ required: true, message: '请输入忽略原因' }]}
           >
-            <Input.TextArea rows={4} placeholder="请输入处理备注" />
+            <Input.TextArea rows={4} placeholder="请输入忽略原因" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* 创建任务弹窗 */}
+      <Modal
+        title="创建任务"
+        open={createTaskVisible}
+        onOk={handleCreateTask}
+        onCancel={() => setCreateTaskVisible(false)}
+        okText="创建并认领"
+        cancelText="取消"
+      >
+        <Form form={taskForm} layout="vertical">
+          <Form.Item label="站点">
+            <Input value={currentRecord?.targetName} disabled />
+          </Form.Item>
+          <Form.Item
+            label="方案"
+            name="schemeId"
+            rules={[{ required: true, message: '请选择方案' }]}
+          >
+            <Select placeholder="请选择方案">
+              {schemes.map((scheme) => (
+                <Select.Option key={scheme.id} value={scheme.id}>
+                  {scheme.name}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Form.Item
+            label="部门ID"
+            name="departmentId"
+            rules={[{ required: true, message: '请输入部门ID' }]}
+          >
+            <Input type="number" placeholder="请输入部门ID" />
           </Form.Item>
         </Form>
       </Modal>

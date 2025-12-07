@@ -80,7 +80,7 @@ public class AlertRecordPO {
     private Integer isSelfTask;
 
     /**
-     * 告警状态(0-待处理,1-处理中,2-已处理,3-已忽略,4-已恢复)
+     * 告警状态(0-未认领,1-已认领,2-已忽略,3-已恢复)
      */
     private Integer status;
 

@@ -10,20 +10,20 @@ import java.util.List;
 /**
  * 方案转换器
  */
-@Mapper
+@Mapper(uses = {SchemeItemConverter.class})
 public interface SchemeConverter {
 
     SchemeConverter INSTANCE = Mappers.getMapper(SchemeConverter.class);
 
     /**
      * PO转Entity
-     * items 字段在 Repository 层手动填充
+     * items 字段通过 SchemeItemConverter 自动转换
      */
     Scheme toEntity(SchemePO schemePO);
 
     /**
      * Entity转PO
-     * items 字段不存在于 SchemePO，由 MapStruct 自动忽略
+     * items 字段通过 SchemeItemConverter 自动转换
      */
     SchemePO toPO(Scheme scheme);
 

@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * 站点任务实例转换器
  */
-@Mapper(uses = {SiteJobPlanConverter.class})
+@Mapper(uses = {SiteConverter.class, SchemeConverter.class, DepartmentConverter.class})
 public interface SiteJobInstanceConverter {
 
     SiteJobInstanceConverter INSTANCE = Mappers.getMapper(SiteJobInstanceConverter.class);
@@ -28,7 +28,12 @@ public interface SiteJobInstanceConverter {
      * Entity转PO
      */
     @Mapping(target = "status", source = "status", qualifiedByName = "statusToString")
-    @Mapping(target = "siteJobPlanId", expression = "java(siteJobInstance.getSiteJobPlan() != null ? siteJobInstance.getSiteJobPlan().getId() : null)")
+    @Mapping(target = "siteId", expression = "java(siteJobInstance.getSite() != null ? siteJobInstance.getSite().getId() : siteJobInstance.getSiteId())")
+    @Mapping(target = "schemeId", expression = "java(siteJobInstance.getScheme() != null ? siteJobInstance.getScheme().getId() : siteJobInstance.getSchemeId())")
+    @Mapping(target = "departmentId", expression = "java(siteJobInstance.getDepartment() != null ? siteJobInstance.getDepartment().getId() : siteJobInstance.getDepartmentId())")
+    @Mapping(target = "site", ignore = true)
+    @Mapping(target = "scheme", ignore = true)
+    @Mapping(target = "department", ignore = true)
     @Mapping(target = "siteJobPlan", ignore = true)
     SiteJobInstancePO toPO(SiteJobInstance siteJobInstance);
 

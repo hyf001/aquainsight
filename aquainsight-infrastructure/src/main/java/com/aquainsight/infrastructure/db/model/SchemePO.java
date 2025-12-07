@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 方案持久化对象
@@ -37,4 +38,10 @@ public class SchemePO {
 
     @TableLogic
     private Integer deleted;
+
+    /**
+     * 方案项目列表 (关联对象,用于查询时填充)
+     */
+    @TableField(exist = false)
+    private List<SchemeItemPO> items;
 }

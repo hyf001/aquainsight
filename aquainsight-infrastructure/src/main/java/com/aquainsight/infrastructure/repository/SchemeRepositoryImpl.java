@@ -82,17 +82,11 @@ public class SchemeRepositoryImpl implements SchemeRepository {
 
     @Override
     public Scheme findByIdWithItems(Integer id) {
-        SchemePO schemePO = schemeDao.selectById(id);
+        // 使用包含方案项的查询方法
+        SchemePO schemePO = schemeDao.selectByIdWithItems(id);
         if (schemePO == null) {
             return null;
         }
-        Scheme scheme = SchemeConverter.INSTANCE.toEntity(schemePO);
-
-        // 查询方案项目
-        List<SchemeItemPO> schemeItemPOList = schemeItemDao.selectBySchemeIdWithJobCategory(id);
-        List<SchemeItem> schemeItems = SchemeItemConverter.INSTANCE.toEntityList(schemeItemPOList);
-        scheme.setItems(schemeItems);
-
-        return scheme;
+        return SchemeConverter.INSTANCE.toEntity(schemePO);
     }
 }

@@ -271,6 +271,7 @@ public class AlertApplicationService {
             activeAlerts.addAll(alertRecordRepository.findByStatus(AlertStatus.IN_PROGRESS));
 
             int recoveredCount = 0;
+            int updatedCount = 0;
             for (AlertRecord alert : activeAlerts) {
                 try {
                     // 重新评估规则
@@ -287,17 +288,121 @@ public class AlertApplicationService {
                         log.info("告警已恢复。告警ID: {}, 规则: {}, 目标: {}:{}",
                                 alert.getId(), alert.getRuleName(),
                                 alert.getTargetType().getCode(), alert.getTargetId());
+                    } else {
+                        // 即使未恢复，也更新持续时长
+                        alert.updateDuration();
+                        alertRecordRepository.update(alert);
+                        updatedCount++;
                     }
                 } catch (Exception e) {
                     log.error("检查告警恢复状态失败，告警ID: {}", alert.getId(), e);
                 }
             }
 
-            log.info("告警恢复检查完成，共恢复 {} 条告警", recoveredCount);
+            log.info("告警恢复检查完成，共恢复 {} 条告警，更新 {} 条活跃告警的持续时长", recoveredCount, updatedCount);
 
         } catch (Exception e) {
             log.error("检查告警恢复状态失败", e);
             throw e;
+        }
+    }
+
+    /**
+     * 自动取消告警
+     * 检查待处理和处理中的告警，满足以下条件之一则自动忽略：
+     * 1. 检测到的指标值不再符合告警规则（已恢复正常）
+     * 2. 目标对象已被删除
+     * 3. 关联的规则已被禁用或删除
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void autoCancelAlerts() {
+        log.info("开始执行告警自动取消检查");
+
+        try {
+            // 获取待处理和处理中的告警
+            List<AlertRecord> activeAlerts = new ArrayList<>();
+            activeAlerts.addAll(alertRecordRepository.findByStatus(AlertStatus.PENDING));
+            activeAlerts.addAll(alertRecordRepository.findByStatus(AlertStatus.IN_PROGRESS));
+
+            int canceledCount = 0;
+            for (AlertRecord alert : activeAlerts) {
+                try {
+                    boolean shouldCancel = false;
+                    String cancelReason = "";
+
+                    // 情况3: 检查关联的规则是否仍然有效
+                    AlertRule rule = alertRuleRepository.findById(alert.getRuleId()).orElse(null);
+                    if (rule == null) {
+                        shouldCancel = true;
+                        cancelReason = "关联的告警规则已被删除";
+                    } else if (rule.isDisabled()) {
+                        shouldCancel = true;
+                        cancelReason = "关联的告警规则已被禁用";
+                    } else {
+                        // 情况2: 检查目标对象是否存在
+                        boolean targetExists = checkTargetExists(alert.getTargetType().getCode(), alert.getTargetId());
+                        if (!targetExists) {
+                            shouldCancel = true;
+                            cancelReason = "目标对象已被删除";
+                        } else {
+                            // 情况1: 重新评估规则，检查指标值是否不再符合告警条件
+                            try {
+                                RuleEvaluationResult result = alertRuleDomainService.evaluateRule(
+                                        alert.getRuleId(),
+                                        alert.getTargetType().getCode(),
+                                        alert.getTargetId());
+
+                                if (!result.isTriggered()) {
+                                    shouldCancel = true;
+                                    cancelReason = "指标值已恢复正常，不再符合告警条件";
+                                }
+                            } catch (Exception e) {
+                                log.warn("重新评估规则失败，告警ID: {}, 跳过此告警", alert.getId(), e);
+                            }
+                        }
+                    }
+
+                    // 执行取消操作
+                    if (shouldCancel) {
+                        alert.ignore(cancelReason);
+                        alertRecordRepository.update(alert);
+                        canceledCount++;
+                        log.info("自动取消告警。告警ID: {}, 规则: {}, 目标: {}:{}, 原因: {}",
+                                alert.getId(), alert.getRuleName(),
+                                alert.getTargetType().getCode(), alert.getTargetId(), cancelReason);
+                    }
+                } catch (Exception e) {
+                    log.error("检查告警取消条件失败，告警ID: {}", alert.getId(), e);
+                }
+            }
+
+            log.info("告警自动取消检查完成，共取消 {} 条告警", canceledCount);
+
+        } catch (Exception e) {
+            log.error("自动取消告警失败", e);
+            throw e;
+        }
+    }
+
+    /**
+     * 检查目标对象是否存在
+     */
+    private boolean checkTargetExists(String targetType, Integer targetId) {
+        try {
+            switch (targetType) {
+                case "site":
+                    return siteRepository.findById(targetId).isPresent();
+                case "device":
+                    return deviceRepository.findById(targetId) != null;
+                case "task":
+                    return siteJobInstanceRepository.findById(targetId) != null;
+                default:
+                    log.warn("未知的目标类型: {}", targetType);
+                    return true; // 未知类型默认认为存在，避免误删
+            }
+        } catch (Exception e) {
+            log.error("检查目标对象是否存在失败，类型: {}, ID: {}", targetType, targetId, e);
+            return true; // 出错时默认认为存在
         }
     }
 }

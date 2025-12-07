@@ -48,6 +48,8 @@ public class AlertRecordVO {
 
     private String remark;
 
+    private String handler;
+
     private Integer isSelfTask;
 
     private LocalDateTime createTime;

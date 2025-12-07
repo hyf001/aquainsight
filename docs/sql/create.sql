@@ -231,7 +231,7 @@ CREATE TABLE `user_department` (
 
 CREATE TABLE `site_job_instance` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'id',
-  `site_job_plan_id` int(11) NOT NULL COMMENT '任务计划id',
+  `site_job_plan_id` int(11) DEFAULT NULL COMMENT '任务计划id',
   `trigger_time` datetime DEFAULT NULL COMMENT '任务派发时间',
   `start_time` datetime DEFAULT NULL COMMENT '任务开始时间',
   `end_time` datetime DEFAULT NULL COMMENT '任务结束时间',
@@ -239,8 +239,14 @@ CREATE TABLE `site_job_instance` (
   `expired_time` datetime DEFAULT NULL COMMENT '任务过期时间',
   `creator` varchar(100) DEFAULT NULL COMMENT '创建人',
   `operator` varchar(100) DEFAULT NULL COMMENT '任务处理人',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除标记',
+  `site_id` int(11) DEFAULT NULL COMMENT '站点id',
+  `scheme_id` int(11) DEFAULT NULL COMMENT '方案id',
+  `department_id` int(11) DEFAULT NULL COMMENT '处理小组',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
 
 -- aquainsight.alert_rule definition
 

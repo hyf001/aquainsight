@@ -1,6 +1,8 @@
 package com.aquainsight.domain.maintenance.entity;
 
 import com.aquainsight.domain.maintenance.types.JobInstanceStatus;
+import com.aquainsight.domain.monitoring.entity.Site;
+import com.aquainsight.domain.organization.entity.Department;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,7 +12,7 @@ import java.time.LocalDateTime;
 
 /**
  * 站点任务实例实体
- * 根据 site_job_plan 的周期配置生成的实际任务
+ * 可以从任务计划生成,也可以手动创建
  */
 @Data
 @Builder
@@ -24,9 +26,39 @@ public class SiteJobInstance {
     private Integer id;
 
     /**
-     * 任务计划
+     * 站点ID (直接存储,不依赖任务计划)
      */
-    private SiteJobPlan siteJobPlan;
+    private Integer siteId;
+
+    /**
+     * 站点 (关联对象,用于查询时填充)
+     */
+    private Site site;
+
+    /**
+     * 方案ID (直接存储,不依赖任务计划)
+     */
+    private Integer schemeId;
+
+    /**
+     * 方案 (关联对象,用于查询时填充)
+     */
+    private Scheme scheme;
+
+    /**
+     * 部门ID (直接存储,不依赖任务计划)
+     */
+    private Integer departmentId;
+
+    /**
+     * 部门 (关联对象,用于查询时填充)
+     */
+    private Department department;
+
+    /**
+     * 任务计划 (可选,如果是从计划生成的任务则有值)
+     */
+    private Integer siteJobPlanId;
 
     /**
      * 任务派发时间

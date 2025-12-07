@@ -92,6 +92,11 @@ public interface SiteJobInstanceRepository {
     SiteJobInstance findBySiteJobPlanIdAndTriggerTime(Integer siteJobPlanId, LocalDateTime triggerTime);
 
     /**
+     * 根据站点ID和派发时间查询任务实例
+     */
+    SiteJobInstance findBySiteIdAndTriggerTime(Integer siteId, LocalDateTime triggerTime);
+
+    /**
      * 分页查询任务实例（包含关联的任务计划详情）
      */
     com.baomidou.mybatisplus.core.metadata.IPage<SiteJobInstance> findPageWithDetails(

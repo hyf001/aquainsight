@@ -90,9 +90,11 @@ public class SiteJobInstanceRepositoryImpl implements SiteJobInstanceRepository 
 
     @Override
     public List<SiteJobInstance> findBySiteId(Integer siteId) {
-        // 需要关联查询，暂时返回空列表
-        // TODO: 实现关联查询
-        return new java.util.ArrayList<>();
+        LambdaQueryWrapper<SiteJobInstancePO> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(SiteJobInstancePO::getSiteId, siteId);
+        wrapper.orderByDesc(SiteJobInstancePO::getTriggerTime);
+        List<SiteJobInstancePO> siteJobInstancePOList = siteJobInstanceDao.selectList(wrapper);
+        return SiteJobInstanceConverter.INSTANCE.toEntityList(siteJobInstancePOList);
     }
 
     @Override
@@ -134,6 +136,18 @@ public class SiteJobInstanceRepositoryImpl implements SiteJobInstanceRepository 
     public SiteJobInstance findBySiteJobPlanIdAndTriggerTime(Integer siteJobPlanId, LocalDateTime triggerTime) {
         LambdaQueryWrapper<SiteJobInstancePO> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(SiteJobInstancePO::getSiteJobPlanId, siteJobPlanId);
+        wrapper.eq(SiteJobInstancePO::getTriggerTime, triggerTime);
+        SiteJobInstancePO siteJobInstancePO = siteJobInstanceDao.selectOne(wrapper);
+        if (siteJobInstancePO == null) {
+            return null;
+        }
+        return SiteJobInstanceConverter.INSTANCE.toEntity(siteJobInstancePO);
+    }
+
+    @Override
+    public SiteJobInstance findBySiteIdAndTriggerTime(Integer siteId, LocalDateTime triggerTime) {
+        LambdaQueryWrapper<SiteJobInstancePO> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(SiteJobInstancePO::getSiteId, siteId);
         wrapper.eq(SiteJobInstancePO::getTriggerTime, triggerTime);
         SiteJobInstancePO siteJobInstancePO = siteJobInstanceDao.selectOne(wrapper);
         if (siteJobInstancePO == null) {

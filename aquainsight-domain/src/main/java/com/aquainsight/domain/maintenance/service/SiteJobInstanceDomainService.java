@@ -30,19 +30,34 @@ public class SiteJobInstanceDomainService {
         if (triggerTime == null) {
             throw new IllegalArgumentException("派发时间不能为空");
         }
+        if (siteJobPlan.getSite() == null) {
+            throw new IllegalArgumentException("任务计划必须关联站点");
+        }
+        if (siteJobPlan.getScheme() == null) {
+            throw new IllegalArgumentException("任务计划必须关联方案");
+        }
+        if (siteJobPlan.getDepartment() == null) {
+            throw new IllegalArgumentException("任务计划必须关联部门");
+        }
 
-        // 检查是否已经存在相同的任务实例
+        // 检查是否已经存在相同站点在相同时间的任务实例
         SiteJobInstance existingInstance = siteJobInstanceRepository
-                .findBySiteJobPlanIdAndTriggerTime(siteJobPlan.getId(), triggerTime);
+                .findBySiteIdAndTriggerTime(siteJobPlan.getSite().getId(), triggerTime);
         if (existingInstance != null) {
-            throw new IllegalArgumentException("该时间点的任务实例已存在");
+            throw new IllegalArgumentException("该站点在该时间点的任务实例已存在");
         }
 
         // 计算过期时间（根据作业类别的逾期天数）
         LocalDateTime expiredTime = calculateExpiredTime(siteJobPlan, triggerTime);
 
         SiteJobInstance instance = SiteJobInstance.builder()
-                .siteJobPlan(siteJobPlan)
+                .siteId(siteJobPlan.getSite().getId())
+                .site(siteJobPlan.getSite())
+                .schemeId(siteJobPlan.getScheme().getId())
+                .scheme(siteJobPlan.getScheme())
+                .departmentId(siteJobPlan.getDepartment().getId())
+                .department(siteJobPlan.getDepartment())
+                .siteJobPlanId(siteJobPlan.getId())  // 仅作为标记，表示从计划生成
                 .triggerTime(triggerTime)
                 .status(JobInstanceStatus.PENDING)
                 .expiredTime(expiredTime)
@@ -159,6 +174,20 @@ public class SiteJobInstanceDomainService {
             instance.checkAndUpdateExpirationStatus(expiringThresholdHours);
             siteJobInstanceRepository.save(instance);
         }
+    }
+
+    /**
+     * 保存任务实例
+     */
+    public SiteJobInstance saveInstance(SiteJobInstance instance) {
+        return siteJobInstanceRepository.save(instance);
+    }
+
+    /**
+     * 根据站点ID和触发时间获取任务实例
+     */
+    public SiteJobInstance getInstanceBySiteIdAndTriggerTime(Integer siteId, LocalDateTime triggerTime) {
+        return siteJobInstanceRepository.findBySiteIdAndTriggerTime(siteId, triggerTime);
     }
 
     /**

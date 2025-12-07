@@ -144,6 +144,13 @@ export const getAlertRecordById = (id: number) => {
   })
 }
 
+export const claimAlert = (id: number) => {
+  return request({
+    url: `/alert/records/${id}/claim`,
+    method: 'PUT',
+  })
+}
+
 export const startProcessAlert = (id: number) => {
   return request({
     url: `/alert/records/${id}/start-process`,

@@ -15,6 +15,7 @@ import com.aquainsight.domain.maintenance.types.PeriodConfig;
 import com.aquainsight.domain.monitoring.entity.Site;
 import com.aquainsight.domain.monitoring.repository.SiteRepository;
 import com.aquainsight.domain.organization.entity.Department;
+import com.aquainsight.domain.organization.service.DepartmentDomainService;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -37,6 +38,7 @@ public class MaintenanceApplicationService {
     private final SiteJobInstanceDomainService siteJobInstanceDomainService;
     private final SiteJobPlanRepository siteJobPlanRepository;
     private final SiteRepository siteRepository;
+    private final DepartmentDomainService departmentDomainService;
 
     /**
      * 创建作业类别
@@ -370,5 +372,73 @@ public class MaintenanceApplicationService {
         // 调用领域服务补齐任务实例
         return siteJobInstanceDomainService.backfillInstancesForPlan(
                 siteJobPlan, startTime, endTime, operator);
+    }
+
+    /**
+     * 手动创建任务实例
+     * 根据站点、方案、部门信息直接创建一个任务实例（不依赖任务计划，触发时间为当前时间）
+     *
+     * @param siteId 站点ID
+     * @param schemeId 方案ID
+     * @param departmentId 部门ID
+     * @param creator 创建人
+     * @return 创建的任务实例
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public SiteJobInstance createManualJobInstance(Integer siteId, Integer schemeId, Integer departmentId,
+                                                    String creator) {
+        // 查询站点
+        Site site = siteRepository.findById(siteId)
+                .orElseThrow(() -> new IllegalArgumentException("站点不存在"));
+
+        // 查询方案（包含方案项）
+        Scheme scheme = schemeDomainService.getSchemeByIdWithItems(schemeId);
+        if (scheme == null) {
+            throw new IllegalArgumentException("方案不存在");
+        }
+
+        // 查询部门
+        Department department = departmentDomainService.getDepartmentById(departmentId)
+                .orElseThrow(() -> new IllegalArgumentException("部门不存在"));
+
+        // 触发时间为当前时间
+        java.time.LocalDateTime triggerTime = java.time.LocalDateTime.now();
+
+        // 计算过期时间（根据方案中作业类别的最大逾期天数）
+        int maxOverdueDays = 7; // 默认7天
+        if (scheme.getItems() != null && !scheme.getItems().isEmpty()) {
+            maxOverdueDays = scheme.getItems().stream()
+                    .filter(item -> item.getJobCategory() != null && item.getJobCategory().getOverdueDays() != null)
+                    .mapToInt(item -> item.getJobCategory().getOverdueDays())
+                    .max()
+                    .orElse(7);
+        }
+        java.time.LocalDateTime expiredTime = triggerTime.plusDays(maxOverdueDays);
+
+        // 检查是否已存在相同站点在相同时间的任务实例
+        SiteJobInstance existingInstance = siteJobInstanceDomainService.getInstanceBySiteIdAndTriggerTime(siteId, triggerTime);
+        if (existingInstance != null) {
+            throw new IllegalArgumentException("该站点在该时间点的任务实例已存在");
+        }
+
+        // 直接创建任务实例，不依赖任务计划
+        SiteJobInstance instance = SiteJobInstance.builder()
+                .siteId(siteId)
+                .site(site)
+                .schemeId(schemeId)
+                .scheme(scheme)
+                .departmentId(departmentId)
+                .department(department)
+                .siteJobPlanId(null) // 手动创建的任务不关联任务计划
+                .triggerTime(triggerTime)
+                .status(com.aquainsight.domain.maintenance.types.JobInstanceStatus.PENDING)
+                .expiredTime(expiredTime)
+                .creator(creator)
+                .createTime(java.time.LocalDateTime.now())
+                .updateTime(java.time.LocalDateTime.now())
+                .deleted(0)
+                .build();
+
+        return siteJobInstanceDomainService.saveInstance(instance);
     }
 }

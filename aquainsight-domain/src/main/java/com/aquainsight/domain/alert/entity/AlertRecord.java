@@ -132,6 +132,19 @@ public class AlertRecord {
     private Integer deleted;
 
     /**
+     * 认领告警
+     */
+    public void claim(String handler) {
+        if (this.status == AlertStatus.PENDING) {
+            this.status = AlertStatus.IN_PROGRESS;
+            this.handler = handler;
+            this.updateTime = LocalDateTime.now();
+        } else {
+            throw new IllegalStateException("只有未认领状态的告警才能认领");
+        }
+    }
+
+    /**
      * 开始处理
      */
     public void startProcess() {
@@ -140,20 +153,6 @@ public class AlertRecord {
             this.updateTime = LocalDateTime.now();
         } else {
             throw new IllegalStateException("只有待处理状态的告警才能开始处理");
-        }
-    }
-
-    /**
-     * 标记为已处理
-     */
-    public void resolve(String remark) {
-        if (this.status == AlertStatus.IN_PROGRESS || this.status == AlertStatus.PENDING) {
-            this.status = AlertStatus.RESOLVED;
-            this.remark = remark;
-            this.updateTime = LocalDateTime.now();
-            this.calculateDuration();
-        } else {
-            throw new IllegalStateException("只有待处理或处理中的告警才能标记为已处理");
         }
     }
 
@@ -175,13 +174,11 @@ public class AlertRecord {
      * 标记为已恢复
      */
     public void recover() {
-        if (this.status != AlertStatus.RESOLVED && this.status != AlertStatus.IGNORED) {
+        if (this.status != AlertStatus.IGNORED) {
             this.status = AlertStatus.RECOVERED;
             this.recoverTime = LocalDateTime.now();
             this.updateTime = LocalDateTime.now();
             this.calculateDuration();
-        } else {
-            throw new IllegalStateException("已处理或已忽略的告警不能标记为已恢复");
         }
     }
 
@@ -214,6 +211,15 @@ public class AlertRecord {
     }
 
     /**
+     * 更新持续时长
+     * 用于定期更新活跃告警的持续时长
+     */
+    public void updateDuration() {
+        this.calculateDuration();
+        this.updateTime = LocalDateTime.now();
+    }
+
+    /**
      * 是否待处理
      */
     public boolean isPending() {
@@ -225,13 +231,6 @@ public class AlertRecord {
      */
     public boolean isInProgress() {
         return AlertStatus.IN_PROGRESS.equals(this.status);
-    }
-
-    /**
-     * 是否已处理
-     */
-    public boolean isResolved() {
-        return AlertStatus.RESOLVED.equals(this.status);
     }
 
     /**

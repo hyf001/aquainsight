@@ -121,4 +121,22 @@ public class User {
         }
         this.updateTime = LocalDateTime.now();
     }
+
+    /**
+     * 根据通知类型获取通知目标
+     * 用于告警通知
+     *
+     * @param notifyType 通知类型（导入需要：import com.aquainsight.domain.alert.types.NotifyType）
+     * @return 通知目标（手机号/邮箱/用户ID等）
+     */
+    public String getNotifyTargetByType(String notifyTypeCode) {
+        if ("sms".equals(notifyTypeCode)) {
+            return this.phone;
+        } else if ("email".equals(notifyTypeCode)) {
+            return this.email;
+        } else if ("push".equals(notifyTypeCode) || "wechat".equals(notifyTypeCode)) {
+            return this.id != null ? this.id.toString() : null;
+        }
+        return null;
+    }
 }
