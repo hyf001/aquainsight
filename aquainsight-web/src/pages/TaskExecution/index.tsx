@@ -39,6 +39,7 @@ const STATUS_MAP: { [key: string]: { text: string; color: string } } = {
   COMPLETED: { text: '已完成', color: 'success' },
   OVERDUE: { text: '已逾期', color: 'error' },
   CANCELLED: { text: '已取消', color: 'warning' },
+  EXPIRING: { text: '即将逾期', color: 'warning' },
 }
 
 const TaskExecution: React.FC = () => {

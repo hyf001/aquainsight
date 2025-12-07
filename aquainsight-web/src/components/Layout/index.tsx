@@ -177,7 +177,7 @@ const LayoutComponent: React.FC = () => {
           <SettingOutlined className="header-icon" />
           <Dropdown menu={{ items: userDropdownItems }} placement="bottomRight">
             <div className="user-info">
-              <span className="user-company">平台演示(江苏远畅环保)</span>
+              <span className="user-company">演示环境</span>
               <Avatar size="small" icon={<UserOutlined />} />
             </div>
           </Dropdown>
