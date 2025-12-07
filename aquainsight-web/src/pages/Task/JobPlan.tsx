@@ -30,6 +30,8 @@ import {
 } from '@/services/maintenance'
 import {
   getEnterpriseSiteTree,
+  type EnterpriseSiteTree,
+  type Site,
 } from '@/services/monitoring'
 import { getAllDepartments, type Department } from '@/services/organization'
 
@@ -91,7 +93,7 @@ const JobPlan: React.FC = () => {
       const data = await getEnterpriseSiteTree(filters.enterpriseName, filters.siteName)
 
       // 转换为树形结构数据
-      const treeNodes: DataNode[] = data.map((enterprise) => ({
+      const treeNodes: DataNode[] = data.map((enterprise: EnterpriseSiteTree) => ({
         key: `enterprise-${enterprise.enterpriseId}`,
         title: (
           <span>
@@ -99,7 +101,7 @@ const JobPlan: React.FC = () => {
             {enterprise.enterpriseName}
           </span>
         ),
-        children: enterprise.sites.map((site) => ({
+        children: enterprise.sites.map((site: Site) => ({
           key: `site-${site.id}`,
           title: (
             <span>

@@ -223,4 +223,6 @@ export const router = createBrowserRouter([
       },
     ],
   },
-])
+], {
+  basename: '/aquainsight',
+})

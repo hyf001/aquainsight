@@ -51,19 +51,19 @@ export type PageResult<T> = {
 
 // 获取站点列表（分页）
 export const getSiteList = (pageNum: number = 1, pageSize: number = 10, siteType?: string, enterpriseId?: number) => {
-  return request.get<any, PageResult<Site>>('/monitoring/sites', {
+  return request.get<PageResult<Site>>('/monitoring/sites', {
     params: { pageNum, pageSize, siteType, enterpriseId }
   })
 }
 
 // 创建站点
 export const createSite = (data: CreateSiteRequest) => {
-  return request.post<any, Site>('/monitoring/sites', data)
+  return request.post<Site>('/monitoring/sites', data)
 }
 
 // 更新站点
 export const updateSite = (id: number, data: UpdateSiteRequest) => {
-  return request.put<any, Site>(`/monitoring/sites/${id}`, data)
+  return request.put<Site>(`/monitoring/sites/${id}`, data)
 }
 
 // 删除站点
@@ -73,7 +73,7 @@ export const deleteSite = (id: number) => {
 
 // 获取站点详情
 export const getSiteDetail = (id: number) => {
-  return request.get<any, Site>(`/monitoring/sites/${id}`)
+  return request.get<Site>(`/monitoring/sites/${id}`)
 }
 
 // ==================== 设备型号管理 ====================
@@ -113,24 +113,24 @@ export type UpdateDeviceModelRequest = {
 
 // 获取设备型号列表（分页）
 export const getDeviceModelList = (pageNum: number = 1, pageSize: number = 10, deviceType?: string) => {
-  return request.get<any, PageResult<DeviceModel>>('/monitoring/device-models', {
+  return request.get<PageResult<DeviceModel>>('/monitoring/device-models', {
     params: { pageNum, pageSize, deviceType }
   })
 }
 
 // 获取所有设备型号（不分页）
 export const getAllDeviceModels = () => {
-  return request.get<any, DeviceModel[]>('/monitoring/device-models/all')
+  return request.get<DeviceModel[]>('/monitoring/device-models/all')
 }
 
 // 创建设备型号
 export const createDeviceModel = (data: CreateDeviceModelRequest) => {
-  return request.post<any, DeviceModel>('/monitoring/device-models', data)
+  return request.post<DeviceModel>('/monitoring/device-models', data)
 }
 
 // 更新设备型号
 export const updateDeviceModel = (id: number, data: UpdateDeviceModelRequest) => {
-  return request.put<any, DeviceModel>(`/monitoring/device-models/${id}`, data)
+  return request.put<DeviceModel>(`/monitoring/device-models/${id}`, data)
 }
 
 // 删除设备型号
@@ -183,19 +183,19 @@ export type UpdateDeviceRequest = {
 
 // 获取设备列表（分页）
 export const getDeviceList = (pageNum: number = 1, pageSize: number = 10, siteId?: number, deviceModelId?: number) => {
-  return request.get<any, PageResult<Device>>('/monitoring/devices', {
+  return request.get<PageResult<Device>>('/monitoring/devices', {
     params: { pageNum, pageSize, siteId, deviceModelId }
   })
 }
 
 // 创建设备
 export const createDevice = (data: CreateDeviceRequest) => {
-  return request.post<any, Device>('/monitoring/devices', data)
+  return request.post<Device>('/monitoring/devices', data)
 }
 
 // 更新设备
 export const updateDevice = (id: number, data: UpdateDeviceRequest) => {
-  return request.put<any, Device>(`/monitoring/devices/${id}`, data)
+  return request.put<Device>(`/monitoring/devices/${id}`, data)
 }
 
 // 删除设备
@@ -205,17 +205,17 @@ export const deleteDevice = (id: number) => {
 
 // 设置设备在线
 export const setDeviceOnline = (id: number) => {
-  return request.put<any, Device>(`/monitoring/devices/${id}/status/online`)
+  return request.put<Device>(`/monitoring/devices/${id}/status/online`)
 }
 
 // 设置设备离线
 export const setDeviceOffline = (id: number) => {
-  return request.put<any, Device>(`/monitoring/devices/${id}/status/offline`)
+  return request.put<Device>(`/monitoring/devices/${id}/status/offline`)
 }
 
 // 设置设备故障
 export const setDeviceFault = (id: number) => {
-  return request.put<any, Device>(`/monitoring/devices/${id}/status/fault`)
+  return request.put<Device>(`/monitoring/devices/${id}/status/fault`)
 }
 
 // ==================== 监测因子管理 ====================
@@ -262,24 +262,24 @@ export type UpdateFactorRequest = {
 
 // 获取监测因子列表（分页）
 export const getFactorList = (pageNum: number = 1, pageSize: number = 10, category?: string, deviceModelId?: number) => {
-  return request.get<any, PageResult<Factor>>('/monitoring/factors', {
+  return request.get<PageResult<Factor>>('/monitoring/factors', {
     params: { pageNum, pageSize, category, deviceModelId }
   })
 }
 
 // 获取所有监测因子（不分页）
 export const getAllFactors = () => {
-  return request.get<any, Factor[]>('/monitoring/factors/all')
+  return request.get<Factor[]>('/monitoring/factors/all')
 }
 
 // 创建监测因子
 export const createFactor = (data: CreateFactorRequest) => {
-  return request.post<any, Factor>('/monitoring/factors', data)
+  return request.post<Factor>('/monitoring/factors', data)
 }
 
 // 更新监测因子
 export const updateFactor = (id: number, data: UpdateFactorRequest) => {
-  return request.put<any, Factor>(`/monitoring/factors/${id}`, data)
+  return request.put<Factor>(`/monitoring/factors/${id}`, data)
 }
 
 // 删除监测因子
@@ -300,7 +300,7 @@ export type EnterpriseSiteTree = {
 
 // 获取企业-站点树（支持按企业名称和站点名称过滤）
 export const getEnterpriseSiteTree = (enterpriseName?: string, siteName?: string) => {
-  return request.get<any, EnterpriseSiteTree[]>('/monitoring/sites/tree', {
+  return request.get<EnterpriseSiteTree[]>('/monitoring/sites/tree', {
     params: { enterpriseName, siteName }
   })
 }

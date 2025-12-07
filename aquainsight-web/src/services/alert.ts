@@ -100,6 +100,7 @@ export interface AlertRecord {
   ruleName: string
   ruleType: string
   targetType: string
+  targetId: number
   targetName: string
   alertLevel: string
   alertMessage: string
@@ -109,6 +110,7 @@ export interface AlertRecord {
   recoverTime?: string
   duration?: number
   remark?: string
+  handler?: string
   createTime: string
   updateTime: string
 }

@@ -51,7 +51,7 @@ const NotificationDropdown: React.FC = () => {
     return () => clearInterval(interval)
   }, [])
 
-  const handleNotificationClick = (notification: AlertRecord) => {
+  const handleNotificationClick = () => {
     // 跳转到告警详情页
     navigate('/alert-records')
     setOpen(false)
@@ -81,7 +81,7 @@ const NotificationDropdown: React.FC = () => {
                 <div
                   key={item.id}
                   className="notification-item"
-                  onClick={() => handleNotificationClick(item)}
+                  onClick={() => handleNotificationClick()}
                 >
                   <div className="notification-item-content">
                     <div className="notification-item-header">

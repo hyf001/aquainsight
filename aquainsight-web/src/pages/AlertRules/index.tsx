@@ -282,7 +282,7 @@ const AlertRules: React.FC = () => {
       ellipsis: true,
       render: (conditions: RuleCondition[]) => {
         if (!conditions || conditions.length === 0) return '-'
-        return conditions.map((c, index) => {
+        return conditions.map((c) => {
           const operatorObj = COMPARISON_OPERATORS.find(op => op.value === c.operator)
           const operatorLabel = operatorObj?.label || c.operator
           if (c.operator === 'BETWEEN' || c.operator === 'NOT_BETWEEN') {

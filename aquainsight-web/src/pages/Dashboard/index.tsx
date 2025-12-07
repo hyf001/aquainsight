@@ -30,7 +30,7 @@ const Dashboard: React.FC = () => {
     setLoading(true)
     try {
       const response = await dashboardApi.getOverview()
-      setData(response.data)
+      setData(response)
     } catch (error) {
       console.error('Failed to load dashboard data:', error)
     } finally {

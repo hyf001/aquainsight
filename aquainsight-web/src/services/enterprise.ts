@@ -48,24 +48,24 @@ export const getEnterpriseList = (
   enterpriseName?: string,
   enterpriseTag?: string
 ) => {
-  return request.get<any, PageResult<Enterprise>>('/enterprises', {
+  return request.get<PageResult<Enterprise>>('/enterprises', {
     params: { pageNum, pageSize, enterpriseName, enterpriseTag },
   })
 }
 
 // 获取所有企业（不分页）
 export const getAllEnterprises = () => {
-  return request.get<any, Enterprise[]>('/enterprises/all')
+  return request.get<Enterprise[]>('/enterprises/all')
 }
 
 // 创建企业
 export const createEnterprise = (data: CreateEnterpriseRequest) => {
-  return request.post<any, Enterprise>('/enterprises', data)
+  return request.post<Enterprise>('/enterprises', data)
 }
 
 // 更新企业
 export const updateEnterprise = (id: number, data: UpdateEnterpriseRequest) => {
-  return request.put<any, Enterprise>(`/enterprises/${id}`, data)
+  return request.put<Enterprise>(`/enterprises/${id}`, data)
 }
 
 // 删除企业
@@ -75,5 +75,5 @@ export const deleteEnterprise = (id: number) => {
 
 // 获取企业详情
 export const getEnterpriseDetail = (id: number) => {
-  return request.get<any, Enterprise>(`/enterprises/${id}`)
+  return request.get<Enterprise>(`/enterprises/${id}`)
 }

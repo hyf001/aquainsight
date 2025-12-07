@@ -34,19 +34,19 @@ export type UpdateJobCategoryRequest = {
 
 // 获取作业类别列表
 export const getJobCategoryList = (name?: string) => {
-  return request.get<any, JobCategory[]>('/maintenance/job-categories', {
+  return request.get<JobCategory[]>('/maintenance/job-categories', {
     params: { name },
   })
 }
 
 // 创建作业类别
 export const createJobCategory = (data: CreateJobCategoryRequest) => {
-  return request.post<any, JobCategory>('/maintenance/job-categories', data)
+  return request.post<JobCategory>('/maintenance/job-categories', data)
 }
 
 // 更新作业类别
 export const updateJobCategory = (id: number, data: UpdateJobCategoryRequest) => {
-  return request.put<any, JobCategory>(`/maintenance/job-categories/${id}`, data)
+  return request.put<JobCategory>(`/maintenance/job-categories/${id}`, data)
 }
 
 // 删除作业类别
@@ -61,7 +61,7 @@ export const batchDeleteJobCategories = (ids: number[]) => {
 
 // 获取作业类别详情
 export const getJobCategoryDetail = (id: number) => {
-  return request.get<any, JobCategory>(`/maintenance/job-categories/${id}`)
+  return request.get<JobCategory>(`/maintenance/job-categories/${id}`)
 }
 
 // ========== 方案管理 ==========
@@ -110,19 +110,19 @@ export type UpdateSchemeItemRequest = {
 
 // 获取方案列表
 export const getSchemeList = (name?: string) => {
-  return request.get<any, Scheme[]>('/maintenance/schemes', {
+  return request.get<Scheme[]>('/maintenance/schemes', {
     params: { name },
   })
 }
 
 // 创建方案
 export const createScheme = (data: CreateSchemeRequest) => {
-  return request.post<any, Scheme>('/maintenance/schemes', data)
+  return request.post<Scheme>('/maintenance/schemes', data)
 }
 
 // 更新方案
 export const updateScheme = (id: number, data: UpdateSchemeRequest) => {
-  return request.put<any, Scheme>(`/maintenance/schemes/${id}`, data)
+  return request.put<Scheme>(`/maintenance/schemes/${id}`, data)
 }
 
 // 删除方案
@@ -137,24 +137,24 @@ export const batchDeleteSchemes = (ids: number[]) => {
 
 // 获取方案详情（包含方案项目）
 export const getSchemeDetail = (id: number, withItems: boolean = true) => {
-  return request.get<any, Scheme>(`/maintenance/schemes/${id}`, {
+  return request.get<Scheme>(`/maintenance/schemes/${id}`, {
     params: { withItems },
   })
 }
 
 // 获取方案的所有项目
 export const getSchemeItems = (schemeId: number) => {
-  return request.get<any, SchemeItem[]>(`/maintenance/schemes/${schemeId}/items`)
+  return request.get<SchemeItem[]>(`/maintenance/schemes/${schemeId}/items`)
 }
 
 // 添加方案项目
 export const addSchemeItem = (data: CreateSchemeItemRequest) => {
-  return request.post<any, SchemeItem>('/maintenance/scheme-items', data)
+  return request.post<SchemeItem>('/maintenance/scheme-items', data)
 }
 
 // 更新方案项目
 export const updateSchemeItem = (id: number, data: UpdateSchemeItemRequest) => {
-  return request.put<any, SchemeItem>(`/maintenance/scheme-items/${id}`, data)
+  return request.put<SchemeItem>(`/maintenance/scheme-items/${id}`, data)
 }
 
 // 删除方案项目
@@ -198,12 +198,12 @@ export type ConfigureSiteJobPlanRequest = {
 
 // 配置站点任务计划（新增或更新）
 export const configureSiteJobPlan = (data: ConfigureSiteJobPlanRequest) => {
-  return request.post<any, SiteJobPlan>('/maintenance/site-job-plans', data)
+  return request.post<SiteJobPlan>('/maintenance/site-job-plans', data)
 }
 
 // 根据站点ID获取任务计划
 export const getSiteJobPlanBySiteId = (siteId: number) => {
-  return request.get<any, SiteJobPlan>(`/maintenance/site-job-plans/site/${siteId}`)
+  return request.get<SiteJobPlan>(`/maintenance/site-job-plans/site/${siteId}`)
 }
 
 // 删除站点任务计划
@@ -218,7 +218,7 @@ export const getSitesWithJobPlans = (
   siteType?: string,
   enterpriseId?: number
 ) => {
-  return request.get<any, any>('/maintenance/sites-with-job-plans', {
+  return request.get<any>('/maintenance/sites-with-job-plans', {
     params: { pageNum, pageSize, siteType, enterpriseId },
   })
 }
@@ -232,7 +232,7 @@ export const getSiteJobPlanPage = (params: {
   siteId?: number
   departmentId?: number
 }) => {
-  return request.get<any, any>('/maintenance/site-job-plans', {
+  return request.get<any>('/maintenance/site-job-plans', {
     params,
   })
 }
@@ -260,7 +260,7 @@ export type BackfillResultVO = {
 
 // 补齐任务实例
 export const backfillJobInstances = (data: BackfillJobInstancesRequest) => {
-  return request.post<any, BackfillResultVO>('/maintenance/job-instances/backfill', data)
+  return request.post<BackfillResultVO>('/maintenance/job-instances/backfill', data)
 }
 
 // ========== 任务实例查询 ==========
@@ -300,7 +300,7 @@ export const getSiteJobInstancePage = (params: {
   creator?: string
   departmentId?: number
 }) => {
-  return request.get<any, any>('/maintenance/job-instances', {
+  return request.get<any>('/maintenance/job-instances', {
     params,
   })
 }
@@ -315,5 +315,5 @@ export type CreateManualJobInstanceRequest = {
 
 // 手动创建任务实例
 export const createManualJobInstance = (data: CreateManualJobInstanceRequest) => {
-  return request.post<any, SiteJobInstance>('/maintenance/job-instances', data)
+  return request.post<SiteJobInstance>('/maintenance/job-instances', data)
 }

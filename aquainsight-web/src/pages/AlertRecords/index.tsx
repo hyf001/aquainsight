@@ -22,31 +22,11 @@ import {
   CloseOutlined,
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
-import { getAlertRecords, claimAlert, ignoreAlert } from '@/services/alert'
+import { getAlertRecords, claimAlert, ignoreAlert, type AlertRecord } from '@/services/alert'
 import { createManualJobInstance, getSchemeList, type Scheme } from '@/services/maintenance'
 import dayjs from 'dayjs'
 
 const { RangePicker } = DatePicker
-
-interface AlertRecord {
-  id: number
-  ruleName: string
-  ruleType: string
-  targetType: string
-  targetId: number
-  targetName: string
-  alertLevel: string
-  alertMessage: string
-  status: string
-  notifyStatus: string
-  notifyTime?: string
-  recoverTime?: string
-  duration?: number
-  remark?: string
-  handler?: string
-  createTime: string
-  updateTime: string
-}
 
 const ALERT_STATUS = [
   { label: '待处理', value: 'PENDING', color: 'red' },

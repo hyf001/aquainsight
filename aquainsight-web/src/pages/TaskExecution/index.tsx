@@ -466,7 +466,7 @@ const TaskExecution: React.FC = () => {
               showSearch
               optionFilterProp="children"
               filterOption={(input, option) =>
-                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
               }
             >
               {enterpriseSiteTree.map((enterprise) => (
