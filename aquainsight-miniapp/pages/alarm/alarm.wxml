@@ -1,0 +1,35 @@
+<view class="container">
+  <view class="alarm-header">
+    <view class="alarm-tabs">
+      <view class="tab-item {{activeTab === 0 ? 'active' : ''}}" bindtap="onTabChange" data-index="0">
+        全部
+      </view>
+      <view class="tab-item {{activeTab === 1 ? 'active' : ''}}" bindtap="onTabChange" data-index="1">
+        未处理
+      </view>
+      <view class="tab-item {{activeTab === 2 ? 'active' : ''}}" bindtap="onTabChange" data-index="2">
+        已处理
+      </view>
+    </view>
+  </view>
+
+  <scroll-view class="alarm-list" scroll-y>
+    <view class="alarm-item card" wx:for="{{alarmList}}" wx:key="id" bindtap="onAlarmTap" data-id="{{item.id}}">
+      <view class="alarm-top">
+        <view class="alarm-level level-{{item.level}}">{{item.levelText}}</view>
+        <text class="alarm-time">{{item.time}}</text>
+      </view>
+      <view class="alarm-title">{{item.title}}</view>
+      <view class="alarm-desc">{{item.description}}</view>
+      <view class="alarm-bottom">
+        <text class="alarm-source">来源: {{item.source}}</text>
+        <view class="alarm-status status-{{item.status}}">{{item.statusText}}</view>
+      </view>
+    </view>
+
+    <view class="empty" wx:if="{{alarmList.length === 0}}">
+      <image class="empty-icon" src="../../images/empty.png" mode="aspectFit"></image>
+      <text class="empty-text">暂无告警信息</text>
+    </view>
+  </scroll-view>
+</view>

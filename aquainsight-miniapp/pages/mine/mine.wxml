@@ -1,0 +1,59 @@
+<view class="container">
+  <!-- 用户信息卡片 -->
+  <view class="user-card card">
+    <view class="user-info">
+      <image class="avatar" src="{{userInfo.avatar || '../../images/default-avatar.png'}}" mode="aspectFill"></image>
+      <view class="user-details">
+        <text class="user-name">{{userInfo.name || '未登录'}}</text>
+        <text class="user-role">{{userInfo.role || '点击登录'}}</text>
+      </view>
+    </view>
+    <image class="arrow" src="../../images/arrow-right.png" mode="aspectFit" bindtap="onUserInfoTap"></image>
+  </view>
+
+  <!-- 统计信息 -->
+  <view class="stats-card card">
+    <view class="stat-item" bindtap="onStatTap" data-type="alarm">
+      <text class="stat-value">{{stats.alarmCount}}</text>
+      <text class="stat-label">我的告警</text>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item" bindtap="onStatTap" data-type="task">
+      <text class="stat-value">{{stats.taskCount}}</text>
+      <text class="stat-label">我的任务</text>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item" bindtap="onStatTap" data-type="completed">
+      <text class="stat-value">{{stats.completedCount}}</text>
+      <text class="stat-label">已完成</text>
+    </view>
+  </view>
+
+  <!-- 功能列表 -->
+  <view class="menu-list">
+    <view class="menu-group card">
+      <view class="menu-item" wx:for="{{menuList}}" wx:key="id" bindtap="onMenuTap" data-path="{{item.path}}">
+        <view class="menu-left">
+          <image class="menu-icon" src="{{item.icon}}" mode="aspectFit"></image>
+          <text class="menu-text">{{item.name}}</text>
+        </view>
+        <image class="arrow" src="../../images/arrow-right.png" mode="aspectFit"></image>
+      </view>
+    </view>
+
+    <view class="menu-group card">
+      <view class="menu-item" bindtap="onAboutTap">
+        <view class="menu-left">
+          <image class="menu-icon" src="../../images/menu/about.png" mode="aspectFit"></image>
+          <text class="menu-text">关于我们</text>
+        </view>
+        <image class="arrow" src="../../images/arrow-right.png" mode="aspectFit"></image>
+      </view>
+    </view>
+  </view>
+
+  <!-- 退出登录按钮 -->
+  <view class="logout-btn" bindtap="onLogout" wx:if="{{userInfo.name}}">
+    <button class="btn-logout">退出登录</button>
+  </view>
+</view>

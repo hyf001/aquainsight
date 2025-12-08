@@ -1,0 +1,147 @@
+page {
+  background-color: #f5f5f5;
+}
+
+.container {
+  min-height: 100vh;
+  padding-bottom: calc(120rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+/* 顶部状态栏 */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30rpx;
+  padding-top: calc(30rpx + env(safe-area-inset-top));
+  background-color: #fff;
+}
+
+.header-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.header-icons {
+  display: flex;
+  gap: 20rpx;
+}
+
+.header-icons .icon {
+  width: 44rpx;
+  height: 44rpx;
+}
+
+/* 系统状态卡片 */
+.status-card {
+  margin: 20rpx;
+  padding: 30rpx;
+}
+
+.status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.status-label {
+  font-size: 32rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+.status-badge {
+  padding: 10rpx 24rpx;
+  border-radius: 8rpx;
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+.status-normal {
+  background-color: #e8f5e9;
+  color: #07c160;
+}
+
+.status-error {
+  background-color: #ffebee;
+  color: #ff3b30;
+}
+
+/* 告警统计卡片 */
+.alarm-stats {
+  display: flex;
+  margin: 20rpx;
+  padding: 40rpx 30rpx;
+}
+
+.alarm-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.alarm-label {
+  font-size: 28rpx;
+  color: #666;
+}
+
+.alarm-count {
+  font-size: 60rpx;
+  font-weight: bold;
+}
+
+.alarm-today {
+  color: #ff3b30;
+}
+
+.alarm-pending {
+  color: #007aff;
+}
+
+.alarm-divider {
+  width: 2rpx;
+  height: 80rpx;
+  background-color: #e5e5e5;
+}
+
+/* 功能菜单 */
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30rpx;
+  padding: 20rpx;
+  background-color: #fff;
+  margin: 20rpx;
+  border-radius: 16rpx;
+}
+
+.menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20rpx;
+  padding: 30rpx 0;
+}
+
+.menu-icon-wrapper {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 20rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.menu-icon {
+  width: 56rpx;
+  height: 56rpx;
+}
+
+.menu-text {
+  font-size: 26rpx;
+  color: #333;
+}

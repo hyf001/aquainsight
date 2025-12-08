@@ -1,0 +1,38 @@
+<view class="container">
+  <view class="task-header">
+    <view class="task-tabs">
+      <view class="tab-item {{activeTab === 0 ? 'active' : ''}}" bindtap="onTabChange" data-index="0">
+        待办
+      </view>
+      <view class="tab-item {{activeTab === 1 ? 'active' : ''}}" bindtap="onTabChange" data-index="1">
+        进行中
+      </view>
+      <view class="tab-item {{activeTab === 2 ? 'active' : ''}}" bindtap="onTabChange" data-index="2">
+        已完成
+      </view>
+    </view>
+  </view>
+
+  <scroll-view class="task-list" scroll-y>
+    <view class="task-item card" wx:for="{{taskList}}" wx:key="id" bindtap="onTaskTap" data-id="{{item.id}}">
+      <view class="task-header-row">
+        <view class="task-priority priority-{{item.priority}}">{{item.priorityText}}</view>
+        <text class="task-time">{{item.createTime}}</text>
+      </view>
+      <view class="task-title">{{item.title}}</view>
+      <view class="task-desc">{{item.description}}</view>
+      <view class="task-footer">
+        <view class="task-assignee">
+          <image class="avatar" src="{{item.assigneeAvatar}}" mode="aspectFill"></image>
+          <text class="assignee-name">{{item.assigneeName}}</text>
+        </view>
+        <view class="task-status status-{{item.status}}">{{item.statusText}}</view>
+      </view>
+    </view>
+
+    <view class="empty" wx:if="{{taskList.length === 0}}">
+      <image class="empty-icon" src="../../images/empty.png" mode="aspectFit"></image>
+      <text class="empty-text">暂无任务</text>
+    </view>
+  </scroll-view>
+</view>

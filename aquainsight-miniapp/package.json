@@ -1,0 +1,20 @@
+{
+  "name": "aquainsight-miniapp",
+  "version": "1.0.0",
+  "description": "Aquainsight中心小程序",
+  "main": "app.js",
+  "scripts": {
+    "tsc": "tsc",
+    "watch": "tsc --watch"
+  },
+  "keywords": [
+    "miniprogram",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "miniprogram-api-typings": "^3.12.0"
+  }
+}
