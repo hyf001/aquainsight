@@ -25,7 +25,7 @@ import {
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { getAlertRules, createAlertRule, updateAlertRule, deleteAlertRule, enableAlertRule, disableAlertRule, getMetrics } from '@/services/alert'
-import { getSchemeList } from '@/services/maintenance'
+import { getTaskTemplateList } from '@/services/maintenance'
 import { getAllDepartments, getAllEmployees } from '@/services/organization'
 
 interface RuleCondition {
@@ -85,7 +85,7 @@ const AlertRules: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false)
   const [editingRule, setEditingRule] = useState<AlertRule | null>(null)
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 })
-  const [schemes, setSchemes] = useState<any[]>([])
+  const [taskTemplates, setTaskTemplates] = useState<any[]>([])
   const [departments, setDepartments] = useState<any[]>([])
   const [users, setUsers] = useState<any[]>([])
   const [metricsMap, setMetricsMap] = useState<Record<string, string[]>>({})
@@ -106,15 +106,15 @@ const AlertRules: React.FC = () => {
     }
   }
 
-  // Load schemes, departments, users, and metrics
+  // Load taskTemplates, departments, users, and metrics
   const loadOptions = async () => {
     try {
-      const [schemesData, departmentsData, usersData] = await Promise.all([
-        getSchemeList(),
+      const [taskTemplatesData, departmentsData, usersData] = await Promise.all([
+        getTaskTemplateList(),
         getAllDepartments(),
         getAllEmployees(),
       ])
-      setSchemes(schemesData.map((s: any) => ({ label: s.name, value: s.id })))
+      setTaskTemplates(taskTemplatesData.map((s: any) => ({ label: s.name, value: s.id })))
       setDepartments(departmentsData.map((d: any) => ({ label: d.name, value: d.id })))
       setUsers(usersData.map((u: any) => ({ label: u.name, value: u.id })))
 
@@ -146,7 +146,7 @@ const AlertRules: React.FC = () => {
         alertMessage: rule.alertMessage,
         quietPeriod: rule.quietPeriod,
         description: rule.description,
-        schemeId: (rule as any).schemeId,
+        taskTemplateId: (rule as any).taskTemplateId,
         notifyTypes: (rule as any).notifyTypes?.split(',').filter(Boolean) || [],
         notifyUsers: (rule as any).notifyUsers?.split(',').map(Number).filter(Boolean) || [],
         notifyDepartments: (rule as any).notifyDepartments?.split(',').map(Number).filter(Boolean) || [],
@@ -397,10 +397,10 @@ const AlertRules: React.FC = () => {
           </Row>
 
           <Form.Item
-            label="关联方案"
-            name="schemeId"
+            label="关联任务模版"
+            name="taskTemplateId"
           >
-            <Select placeholder="请选择关联方案(可选)" options={schemes} allowClear />
+            <Select placeholder="请选择关联任务模版(可选)" options={taskTemplates} allowClear />
           </Form.Item>
 
           <Form.Item

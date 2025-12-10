@@ -5,7 +5,7 @@ import { Spin } from 'antd'
 const Layout = lazy(() => import('@/components/Layout'))
 const Dashboard = lazy(() => import('@/pages/Dashboard'))
 const Task = lazy(() => import('@/pages/Task'))
-const TaskExecution = lazy(() => import('@/pages/TaskExecution'))
+const TaskExecution = lazy(() => import('@/pages/Task'))
 const Material = lazy(() => import('@/pages/Material'))
 const Analysis = lazy(() => import('@/pages/Analysis'))
 const Knowledge = lazy(() => import('@/pages/Knowledge'))
@@ -18,8 +18,8 @@ const Sites = lazy(() => import('@/pages/Sites'))
 const DetectionFactors = lazy(() => import('@/pages/DetectionFactors'))
 const SiteDevices = lazy(() => import('@/pages/SiteDevices'))
 const DeviceModels = lazy(() => import('@/pages/DeviceModels'))
-const JobCategories = lazy(() => import('@/pages/JobCategories'))
-const Schemes = lazy(() => import('@/pages/Schemes'))
+const StepTemplates = lazy(() => import('@/pages/StepTemplates'))
+const TaskTemplates = lazy(() => import('@/pages/TaskTemplates'))
 const SiteConfiguration = lazy(() => import('@/pages/SiteConfiguration'))
 const AlertRules = lazy(() => import('@/pages/AlertRules'))
 const AlertRecords = lazy(() => import('@/pages/AlertRecords'))
@@ -174,18 +174,18 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'job-categories',
+        path: 'step-templates',
         element: (
           <Suspense fallback={<Spin />}>
-            <JobCategories />
+            <StepTemplates />
           </Suspense>
         ),
       },
       {
-        path: 'schemes',
+        path: 'taskTemplates',
         element: (
           <Suspense fallback={<Spin />}>
-            <Schemes />
+            <TaskTemplates />
           </Suspense>
         ),
       },

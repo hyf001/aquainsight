@@ -20,7 +20,7 @@ public class UpdateAlertRuleRequest {
 
     private String alertMessage;
 
-    private Integer schemeId;
+    private Integer taskTemplateId;
 
     private String notifyTypes;
 

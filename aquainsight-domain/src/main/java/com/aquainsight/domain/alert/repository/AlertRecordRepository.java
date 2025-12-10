@@ -51,9 +51,9 @@ public interface AlertRecordRepository {
     List<AlertRecord> findByAlertLevel(AlertLevel alertLevel);
 
     /**
-     * 根据任务实例ID查找告警记录
+     * 根据任务ID查找告警记录
      */
-    List<AlertRecord> findByJobInstanceId(Integer jobInstanceId);
+    List<AlertRecord> findByJobInstanceId(Integer taskId);
 
     /**
      * 更新告警记录

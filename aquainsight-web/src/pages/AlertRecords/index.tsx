@@ -23,7 +23,7 @@ import {
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import { getAlertRecords, claimAlert, ignoreAlert, type AlertRecord } from '@/services/alert'
-import { createManualJobInstance, getSchemeList, type Scheme } from '@/services/maintenance'
+import { createManualJobInstance, getTaskTemplateList, type TaskTemplate } from '@/services/maintenance'
 import dayjs from 'dayjs'
 
 const { RangePicker } = DatePicker
@@ -56,7 +56,7 @@ const AlertRecords: React.FC = () => {
   const [handleVisible, setHandleVisible] = useState(false)
   const [createTaskVisible, setCreateTaskVisible] = useState(false)
   const [currentRecord, setCurrentRecord] = useState<AlertRecord | null>(null)
-  const [schemes, setSchemes] = useState<Scheme[]>([])
+  const [taskTemplates, setTaskTemplates] = useState<TaskTemplate[]>([])
   const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 })
   const [filters, setFilters] = useState({
     status: undefined as string | undefined,
@@ -123,8 +123,8 @@ const AlertRecords: React.FC = () => {
       setCurrentRecord(record)
       setCreateTaskVisible(true)
       taskForm.resetFields()
-      // 加载方案列表
-      loadSchemes()
+      // 加载任务模版列表
+      loadTaskTemplates()
     } else {
       // 任务告警直接认领
       try {
@@ -138,14 +138,14 @@ const AlertRecords: React.FC = () => {
     }
   }
 
-  // 加载方案列表
-  const loadSchemes = async () => {
+  // 加载任务模版列表
+  const loadTaskTemplates = async () => {
     try {
-      const schemeList = await getSchemeList()
-      setSchemes(schemeList)
+      const taskTemplateList = await getTaskTemplateList()
+      setTaskTemplates(taskTemplateList)
     } catch (error) {
-      console.error('加载方案列表失败:', error)
-      message.error('加载方案列表失败')
+      console.error('加载任务模版列表失败:', error)
+      message.error('加载任务模版列表失败')
     }
   }
 
@@ -153,10 +153,10 @@ const AlertRecords: React.FC = () => {
   const handleCreateTask = async () => {
     try {
       const values = await taskForm.validateFields()
-      // 创建手动任务实例
+      // 创建手动任务
       await createManualJobInstance({
         siteId: currentRecord!.targetId,
-        schemeId: values.schemeId,
+        taskTemplateId: values.taskTemplateId,
         departmentId: values.departmentId,
       })
       // 认领告警
@@ -398,14 +398,14 @@ const AlertRecords: React.FC = () => {
             <Input value={currentRecord?.targetName} disabled />
           </Form.Item>
           <Form.Item
-            label="方案"
-            name="schemeId"
-            rules={[{ required: true, message: '请选择方案' }]}
+            label="任务模版"
+            name="taskTemplateId"
+            rules={[{ required: true, message: '请选择任务模版' }]}
           >
-            <Select placeholder="请选择方案">
-              {schemes.map((scheme) => (
-                <Select.Option key={scheme.id} value={scheme.id}>
-                  {scheme.name}
+            <Select placeholder="请选择任务模版">
+              {taskTemplates.map((taskTemplate) => (
+                <Select.Option key={taskTemplate.id} value={taskTemplate.id}>
+                  {taskTemplate.name}
                 </Select.Option>
               ))}
             </Select>

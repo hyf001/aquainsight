@@ -99,7 +99,7 @@ const Dashboard: React.FC = () => {
 
       {/* 任务统计 */}
       <div className="dashboard-section">
-        <h3>任务执行</h3>
+        <h3>任务</h3>
         <Row gutter={16}>
           <Col xs={24} sm={12} lg={6}>
             <Card loading={loading}>

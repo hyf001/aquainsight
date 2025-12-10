@@ -8,7 +8,7 @@ interface IAppOption {
 App<IAppOption>({
   globalData: {
     userInfo: null,
-    apiBaseUrl: 'http://47.95.205.124/aquainsight/api'
+    apiBaseUrl: 'http://192.168.3.215:8080/aquainsight/api'
   },
 
   onLaunch() {

@@ -55,9 +55,9 @@ public class AlertRule {
     private String alertMessage;
 
     /**
-     * 关联方案ID(用于创建处理任务实例)
+     * 关联任务模版ID(用于创建处理任务)
      */
-    private Integer schemeId;
+    private Integer taskTemplateId;
 
     /**
      * 通知方式(多个逗号分隔: sms,email,push,wechat)
@@ -118,7 +118,7 @@ public class AlertRule {
      * 更新规则信息
      */
     public void updateInfo(String ruleName, AlertTargetType alertTargetType, List<RuleCondition> conditionConfigs,
-                          AlertLevel alertLevel, String alertMessage, Integer schemeId,
+                          AlertLevel alertLevel, String alertMessage, Integer taskTemplateId,
                           String notifyTypes, String notifyUsers, String notifyDepartments,
                           Integer quietPeriod, String description, String updater) {
         if (ruleName != null) {
@@ -136,8 +136,8 @@ public class AlertRule {
         if (alertMessage != null) {
             this.alertMessage = alertMessage;
         }
-        if (schemeId != null) {
-            this.schemeId = schemeId;
+        if (taskTemplateId != null) {
+            this.taskTemplateId = taskTemplateId;
         }
         if (notifyTypes != null) {
             this.notifyTypes = notifyTypes;
@@ -237,10 +237,10 @@ public class AlertRule {
     }
 
     /**
-     * 是否关联处理方案
+     * 是否关联处理任务模版
      */
-    public boolean hasScheme() {
-        return this.schemeId != null && this.schemeId > 0;
+    public boolean hasTaskTemplate() {
+        return this.taskTemplateId != null && this.taskTemplateId > 0;
     }
 
     /**

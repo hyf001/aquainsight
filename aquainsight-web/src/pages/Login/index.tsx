@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { userApi } from '@/services/api/user'
 import type { LoginRequest } from '@/services/api/user'
 import { useUserStore } from '@/stores/useUserStore'
+import logoImg from '@/assets/logo.svg'
 import './styles.less'
 
 const Login: React.FC = () => {
@@ -32,8 +33,11 @@ const Login: React.FC = () => {
     <div className="login-container">
       <Card className="login-card">
         <div className="login-header">
-          <h1>AquaInsight</h1>
-          <p>环境运维管理系统</p>
+          <div className="logo-container">
+            <img src={logoImg} alt="AquaInsight" className="logo" />
+          </div>
+          <h1 className="title">AquaInsight</h1>
+          <p className="subtitle">环境运维管理系统</p>
         </div>
         <Form
           name="login"
@@ -45,16 +49,24 @@ const Login: React.FC = () => {
             name="phone"
             rules={[{ required: true, message: '请输入手机号' }]}
           >
-            <Input prefix={<UserOutlined />} placeholder="手机号" />
+            <Input
+              prefix={<UserOutlined />}
+              placeholder="手机号"
+              className="login-input"
+            />
           </Form.Item>
           <Form.Item
             name="password"
             rules={[{ required: true, message: '请输入密码' }]}
           >
-            <Input.Password prefix={<LockOutlined />} placeholder="密码" />
+            <Input.Password
+              prefix={<LockOutlined />}
+              placeholder="密码"
+              className="login-input"
+            />
           </Form.Item>
           <Form.Item>
-            <Button type="primary" htmlType="submit" loading={loading} block>
+            <Button type="primary" htmlType="submit" loading={loading} block className="login-button">
               登录
             </Button>
           </Form.Item>

@@ -30,7 +30,7 @@ export interface CreateAlertRuleRequest {
   alertLevel: number
   alertMessage: string
   quietPeriod: number
-  schemeId: number
+  taskTemplateId: number
   notifyTypes: string
   notifyUsers: string
   notifyDepartments: string

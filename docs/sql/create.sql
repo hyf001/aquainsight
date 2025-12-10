@@ -98,28 +98,27 @@ CREATE TABLE `factor` (
   KEY `idx_category` (`category`)
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COMMENT='监测因子表';
 
--- aquainsight.job_category definition
+-- aquainsight.step_template definition
 
-CREATE TABLE `job_category` (
+CREATE TABLE `step_template` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '作业类别ID',
   `name` varchar(100) NOT NULL COMMENT '类别名称',
   `code` varchar(50) NOT NULL COMMENT '类别编码',
-  `need_photo` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否需要拍照(0-不需要,1-需要)',
-  `photo_types` varchar(200) DEFAULT NULL COMMENT '照片类型，多个之间逗号分隔',
   `overdue_days` int(11) NOT NULL DEFAULT '0' COMMENT '逾期天数',
   `description` varchar(500) DEFAULT NULL COMMENT '类别描述',
   `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否删除(0-未删除,1-已删除)',
+  `parameters` text COMMENT '参数列表，json数组',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_job_category_code` (`code`),
   KEY `idx_job_category_name` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COMMENT='作业类别表';
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COMMENT='步骤模版表';
 
 
--- aquainsight.scheme definition
+-- aquainsight.task_template definition
 
-CREATE TABLE `scheme` (
+CREATE TABLE `task_template` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '方案ID',
   `name` varchar(100) NOT NULL COMMENT '方案名称',
   `code` varchar(50) NOT NULL COMMENT '方案编码',
@@ -134,21 +133,19 @@ CREATE TABLE `scheme` (
   KEY `idx_creator` (`creator`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COMMENT='维护方案表';
 
+-- aquainsight.task_template_item definition
 
--- aquainsight.scheme_item definition
-
-CREATE TABLE `scheme_item` (
+CREATE TABLE `task_template_item` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '方案项目ID',
-  `scheme_id` int(11) NOT NULL COMMENT '所属方案ID',
+  `task_template_id` int(11) NOT NULL COMMENT '所属任务模版ID',
   `name` varchar(100) NOT NULL COMMENT '项目名称',
-  `job_category_id` int(11) NOT NULL COMMENT '作业类别ID',
+  `step_template_id` int(11) NOT NULL COMMENT '步骤模版ID',
   `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否删除(0-未删除,1-已删除)',
   `description` varchar(100) DEFAULT NULL COMMENT '描述',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COMMENT='方案项目表';
-
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COMMENT='任务模版项表';
 
 -- aquainsight.site definition
 
@@ -174,22 +171,23 @@ CREATE TABLE `site` (
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COMMENT='站点表';
 
 
--- aquainsight.site_job_plan definition
+-- aquainsight.task_scheduler definition
 
-CREATE TABLE `site_job_plan` (
+CREATE TABLE `task_scheduler` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'id',
   `site_id` int(11) NOT NULL COMMENT '所属站点ID',
   `period_config` varchar(200) DEFAULT NULL COMMENT '站点周期计划配置json',
-  `scheme_id` int(11) DEFAULT NULL COMMENT '所属方案ID',
+  `task_template_id` int(11) DEFAULT NULL COMMENT '任务模版ID',
   `creator` varchar(50) NOT NULL COMMENT '创建人',
   `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `updater` varchar(50) DEFAULT NULL COMMENT '更新人',
   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
   `deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否删除(0-未删除,1-已删除)',
   `department_id` int(11) DEFAULT NULL COMMENT '组织id',
-  `job_plan_state` varchar(100) DEFAULT NULL COMMENT '任务计划状态',
+  `task_scheduler_state` varchar(100) DEFAULT NULL COMMENT '任务调度状态',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COMMENT='站点任务计划表';
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COMMENT='任务调度表';
+
 -- aquainsight.`user` definition
 
 CREATE TABLE `user` (
@@ -227,11 +225,11 @@ CREATE TABLE `user_department` (
   KEY `idx_department_id` (`department_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COMMENT='用户-部门关系表';
 
--- aquainsight.site_job_instance definition
+-- aquainsight.task definition
 
-CREATE TABLE `site_job_instance` (
+CREATE TABLE `task` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'id',
-  `site_job_plan_id` int(11) DEFAULT NULL COMMENT '任务计划id',
+  `task_scheduler_id` int(11) DEFAULT NULL COMMENT '任务调度id',
   `trigger_time` datetime DEFAULT NULL COMMENT '任务派发时间',
   `start_time` datetime DEFAULT NULL COMMENT '任务开始时间',
   `end_time` datetime DEFAULT NULL COMMENT '任务结束时间',
@@ -243,10 +241,10 @@ CREATE TABLE `site_job_instance` (
   `update_time` datetime DEFAULT NULL COMMENT '更新时间',
   `deleted` bit(1) NOT NULL DEFAULT b'0' COMMENT '是否删除标记',
   `site_id` int(11) DEFAULT NULL COMMENT '站点id',
-  `scheme_id` int(11) DEFAULT NULL COMMENT '方案id',
+  `task_template_id` int(11) DEFAULT NULL COMMENT '任务模版ID',
   `department_id` int(11) DEFAULT NULL COMMENT '处理小组',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8 COMMENT='任务表';
 
 -- aquainsight.alert_rule definition
 
@@ -257,7 +255,7 @@ CREATE TABLE `alert_rule` (
   `condition_configs` text COMMENT '告警条件配置(JSON格式,存储阈值、持续时间等条件)',
   `alert_level` int(11) NOT NULL DEFAULT '2' COMMENT '告警级别(1-紧急,2-重要,3-一般,4-提示)',
   `alert_message` varchar(500) DEFAULT NULL COMMENT '告警消息模板',
-  `scheme_id` int(11) DEFAULT NULL COMMENT '关联方案ID(用于创建处理任务实例)',
+  `task_template_id` int(11) DEFAULT NULL COMMENT '关联任务模版ID(用于创建处理任务)',
   `notify_types` varchar(100) DEFAULT NULL COMMENT '通知方式(多个逗号分隔: sms-短信,email-邮件,push-推送,wechat-微信)',
   `notify_users` varchar(500) DEFAULT NULL COMMENT '通知人员ID列表(多个逗号分隔)',
   `notify_departments` varchar(500) DEFAULT NULL COMMENT '通知部门ID列表(多个逗号分隔)',
@@ -285,7 +283,7 @@ CREATE TABLE `alert_record` (
   `alert_level` int(11) NOT NULL COMMENT '告警级别',
   `alert_message` varchar(1000) NOT NULL COMMENT '告警消息内容',
   `alert_data` text COMMENT '告警相关数据(JSON格式,如超标数值、设备状态等)',
-  `job_instance_id` int(11) DEFAULT NULL COMMENT '关联的任务实例ID(任务超时告警时关联触发告警的任务,其他类型告警关联新创建的处理任务)',
+  `task_id` int(11) DEFAULT NULL COMMENT '关联的任务ID(任务超时告警时关联触发告警的任务,其他类型告警关联新创建的处理任务)',
   `is_self_task` tinyint(1) DEFAULT '0' COMMENT '是否关联自身任务(0-关联新创建任务,1-关联触发告警的任务本身,如任务超时)',
   `status` tinyint(1) NOT NULL DEFAULT '0' COMMENT '告警状态(0-待处理,1-处理中,2-已处理,3-已忽略,4-已恢复)',
   `notify_status` tinyint(1) DEFAULT '0' COMMENT '通知状态(0-未通知,1-已通知,2-通知失败)',

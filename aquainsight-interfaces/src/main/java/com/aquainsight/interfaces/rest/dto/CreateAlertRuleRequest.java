@@ -27,7 +27,7 @@ public class CreateAlertRuleRequest {
     @NotBlank(message = "告警消息不能为空")
     private String alertMessage;
 
-    private Integer schemeId;
+    private Integer taskTemplateId;
 
     private String notifyTypes;
 

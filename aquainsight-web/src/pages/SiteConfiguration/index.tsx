@@ -26,13 +26,13 @@ import type { ColumnsType } from 'antd/es/table'
 import type { Site } from '@/services/monitoring'
 import { getAllDepartments, type Department } from '@/services/organization'
 import {
-  getSchemeList,
-  type Scheme,
-  configureSiteJobPlan,
-  getSiteJobPlanBySiteId,
-  getSitesWithJobPlans,
-  type SiteJobPlan,
-  type ConfigureSiteJobPlanRequest,
+  getTaskTemplateList,
+  type TaskTemplate,
+  configureTaskScheduler,
+  getTaskSchedulerBySiteId,
+  getSitesWithTaskSchedulers,
+  type TaskScheduler,
+  type ConfigureTaskSchedulerRequest,
 } from '@/services/maintenance'
 
 const { TabPane } = Tabs
@@ -49,10 +49,10 @@ const WEEKDAYS = [
 ]
 
 type SiteWithConfig = Site & {
-  jobPlan?: SiteJobPlan
+  taskScheduler?: TaskScheduler
 }
 
-type ConfigStep = 'department' | 'scheme' | 'period'
+type ConfigStep = 'department' | 'taskTemplate' | 'period'
 
 // 工具函数：从位图解码为数组
 const decodeBitmap = (bitmap: number): number[] => {
@@ -79,7 +79,7 @@ const SiteConfiguration: React.FC = () => {
   const [configModalVisible, setConfigModalVisible] = useState(false)
   const [configStep, setConfigStep] = useState<ConfigStep>('department')
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<number | undefined>()
-  const [selectedSchemeId, setSelectedSchemeId] = useState<number | undefined>()
+  const [selectedTaskTemplateId, setSelectedTaskTemplateId] = useState<number | undefined>()
   const [periodType, setPeriodType] = useState<'INTERVAL' | 'WEEK' | 'MONTH'>('WEEK')
   const [intervalN, setIntervalN] = useState<number>(7)
   const [selectedWeekdays, setSelectedWeekdays] = useState<number[]>([])
@@ -87,15 +87,15 @@ const SiteConfiguration: React.FC = () => {
 
   // 数据源
   const [departments, setDepartments] = useState<Department[]>([])
-  const [schemes, setSchemes] = useState<Scheme[]>([])
-  const [searchSchemeName, setSearchSchemeName] = useState('')
+  const [taskTemplates, setTaskTemplates] = useState<TaskTemplate[]>([])
+  const [searchTaskTemplateName, setSearchTaskTemplateName] = useState('')
 
   // 加载站点列表
   const loadSites = async () => {
     setLoading(true)
     try {
-      // 使用新的合并接口，一次性获取站点和任务计划
-      const response = await getSitesWithJobPlans(1, 1000, filters.siteType)
+      // 使用新的合并接口，一次性获取站点和任务调度
+      const response = await getSitesWithTaskSchedulers(1, 1000, filters.siteType)
 
       // 将后端返回的数据转换为前端需要的格式
       const sitesWithConfig = response.list.map((item: any) => {
@@ -115,25 +115,25 @@ const SiteConfiguration: React.FC = () => {
           updateTime: item.updateTime,
         }
 
-        // 如果有任务计划信息，添加到site对象
-        if (item.jobPlanId) {
-          const jobPlan: SiteJobPlan = {
-            id: item.jobPlanId,
+        // 如果有任务调度信息，添加到site对象
+        if (item.taskSchedulerId) {
+          const taskScheduler: TaskScheduler = {
+            id: item.taskSchedulerId,
             siteId: item.id,
             siteName: item.siteName,
             departmentId: item.departmentId,
             departmentName: item.departmentName,
-            schemeId: item.schemeId,
-            schemeName: item.schemeName,
-            schemeCode: item.schemeCode,
+            taskTemplateId: item.taskTemplateId,
+            taskTemplateName: item.taskTemplateName,
+            taskTemplateCode: item.taskTemplateCode,
             periodConfig: item.periodConfig,
-            jobPlanState: item.jobPlanState,
-            creator: item.jobPlanCreator,
-            createTime: item.jobPlanCreateTime,
-            updater: item.jobPlanUpdater,
-            updateTime: item.jobPlanUpdateTime,
+            taskSchedulerState: item.taskSchedulerState,
+            creator: item.taskSchedulerCreator,
+            createTime: item.taskSchedulerCreateTime,
+            updater: item.taskSchedulerUpdater,
+            updateTime: item.taskSchedulerUpdateTime,
           }
-          return { ...site, jobPlan }
+          return { ...site, taskScheduler }
         }
 
         return site
@@ -158,24 +158,24 @@ const SiteConfiguration: React.FC = () => {
     }
   }
 
-  // 加载方案列表
-  const loadSchemes = async (name?: string) => {
+  // 加载任务模版列表
+  const loadTaskTemplates = async (name?: string) => {
     try {
-      const data = await getSchemeList(name)
-      setSchemes(data)
+      const data = await getTaskTemplateList(name)
+      setTaskTemplates(data)
     } catch (error) {
-      console.error('加载方案列表失败:', error)
+      console.error('加载任务模版列表失败:', error)
     }
   }
 
   useEffect(() => {
     loadSites()
     loadDepartments()
-    loadSchemes()
+    loadTaskTemplates()
   }, [])
 
   // 打开配置弹窗
-  const openConfigModal = (type: '运维小组' | '运维方案' | '运维计划') => {
+  const openConfigModal = (type: '运维小组' | '运维任务模版' | '运维计划') => {
     if (selectedSiteIds.length === 0) {
       message.warning('请先选择站点')
       return
@@ -183,7 +183,7 @@ const SiteConfiguration: React.FC = () => {
 
     // 重置状态
     setSelectedDepartmentId(undefined)
-    setSelectedSchemeId(undefined)
+    setSelectedTaskTemplateId(undefined)
     setPeriodType('WEEK')
     setIntervalN(7)
     setSelectedWeekdays([])
@@ -192,8 +192,8 @@ const SiteConfiguration: React.FC = () => {
     // 设置初始步骤
     if (type === '运维小组') {
       setConfigStep('department')
-    } else if (type === '运维方案') {
-      setConfigStep('scheme')
+    } else if (type === '运维任务模版') {
+      setConfigStep('taskTemplate')
     } else {
       setConfigStep('period')
     }
@@ -209,8 +209,8 @@ const SiteConfiguration: React.FC = () => {
         message.warning('请选择运维小组')
         return
       }
-      if (configStep === 'scheme' && !selectedSchemeId) {
-        message.warning('请选择运维方案')
+      if (configStep === 'taskTemplate' && !selectedTaskTemplateId) {
+        message.warning('请选择运维任务模版')
         return
       }
       if (configStep === 'period') {
@@ -235,32 +235,32 @@ const SiteConfiguration: React.FC = () => {
       for (const siteId of selectedSiteIds) {
         try {
           // 查询该站点是否已有配置
-          let existingPlan: SiteJobPlan | null = null
+          let existingPlan: TaskScheduler | null = null
           try {
-            existingPlan = await getSiteJobPlanBySiteId(siteId)
+            existingPlan = await getTaskSchedulerBySiteId(siteId)
           } catch (error) {
             // 站点没有配置，忽略错误
           }
 
-          // 确定要使用的部门ID和方案ID
+          // 确定要使用的部门ID和任务模版ID
           let deptId = selectedDepartmentId
-          let schId = selectedSchemeId
+          let schId = selectedTaskTemplateId
 
-          // 如果当前步骤不是配置部门/方案，则使用已有配置的值
+          // 如果当前步骤不是配置部门/任务模版，则使用已有配置的值
           if (configStep === 'period') {
             if (!deptId && existingPlan) {
               deptId = existingPlan.departmentId
             }
             if (!schId && existingPlan) {
-              schId = existingPlan.schemeId
+              schId = existingPlan.taskTemplateId
             }
           } else if (configStep === 'department') {
-            // 配置部门时，使用已有的方案
+            // 配置部门时，使用已有的任务模版
             if (!schId && existingPlan) {
-              schId = existingPlan.schemeId
+              schId = existingPlan.taskTemplateId
             }
-          } else if (configStep === 'scheme') {
-            // 配置方案时，使用已有的部门
+          } else if (configStep === 'taskTemplate') {
+            // 配置任务模版时，使用已有的部门
             if (!deptId && existingPlan) {
               deptId = existingPlan.departmentId
             }
@@ -284,13 +284,13 @@ const SiteConfiguration: React.FC = () => {
             periodConfig.n = selectedDays.reduce((acc, day) => acc + Math.pow(2, day), 0)
           }
 
-          const request: ConfigureSiteJobPlanRequest = {
+          const request: ConfigureTaskSchedulerRequest = {
             siteId,
             departmentId: deptId!,
-            schemeId: schId!,
+            taskTemplateId: schId!,
             periodConfig,
           }
-          await configureSiteJobPlan(request)
+          await configureTaskScheduler(request)
           successCount++
         } catch (error) {
           console.error(`配置站点 ${siteId} 失败:`, error)
@@ -392,7 +392,7 @@ const SiteConfiguration: React.FC = () => {
   // 配置弹窗标题
   const getConfigModalTitle = () => {
     if (configStep === 'department') return '站点配置运维小组'
-    if (configStep === 'scheme') return '站点配置运维方案'
+    if (configStep === 'taskTemplate') return '站点配置运维任务模版'
     return '站点配置运维计划'
   }
 
@@ -415,19 +415,19 @@ const SiteConfiguration: React.FC = () => {
     {
       title: '运维小组',
       width: 120,
-      render: (_, record) => record.jobPlan?.departmentName || '-',
+      render: (_, record) => record.taskScheduler?.departmentName || '-',
     },
     {
-      title: '运维方案',
+      title: '运维任务模版',
       width: 120,
-      render: (_, record) => record.jobPlan?.schemeName || '-',
+      render: (_, record) => record.taskScheduler?.taskTemplateName || '-',
     },
     {
       title: '运维周期',
       width: 150,
       render: (_, record) => {
-        if (!record.jobPlan || !record.jobPlan.periodConfig) return '-'
-        const config = record.jobPlan.periodConfig
+        if (!record.taskScheduler || !record.taskScheduler.periodConfig) return '-'
+        const config = record.taskScheduler.periodConfig
 
         if (config.periodType === 'WEEK' && config.n) {
           // 周计划：显示"每周一、三、五"
@@ -456,11 +456,11 @@ const SiteConfiguration: React.FC = () => {
       title: '状态',
       width: 100,
       render: (_, record) => {
-        const state = record.jobPlan?.jobPlanState
+        const state = record.taskScheduler?.taskSchedulerState
         if (!state) {
           return <Tag color="default">未配置</Tag>
         }
-        // 根据 jobPlanState 显示不同的状态
+        // 根据 taskSchedulerState 显示不同的状态
         return <Tag color="success">{state}</Tag>
       },
     },
@@ -536,9 +536,9 @@ const SiteConfiguration: React.FC = () => {
                 <Button
                   type="primary"
                   icon={<SettingOutlined />}
-                  onClick={() => openConfigModal('运维方案')}
+                  onClick={() => openConfigModal('运维任务模版')}
                 >
-                  配置运维方案
+                  配置运维任务模版
                 </Button>
                 <Button
                   type="primary"
@@ -638,22 +638,22 @@ const SiteConfiguration: React.FC = () => {
           </div>
         )}
 
-        {/* 配置运维方案 */}
-        {configStep === 'scheme' && (
+        {/* 配置运维任务模版 */}
+        {configStep === 'taskTemplate' && (
           <div>
             <Row gutter={16} style={{ marginBottom: 16 }}>
               <Col span={12}>
                 <Input
-                  placeholder="请输入方案名称"
-                  value={searchSchemeName}
-                  onChange={(e) => setSearchSchemeName(e.target.value)}
+                  placeholder="请输入任务模版名称"
+                  value={searchTaskTemplateName}
+                  onChange={(e) => setSearchTaskTemplateName(e.target.value)}
                 />
               </Col>
               <Col span={12}>
                 <Button
                   type="primary"
                   icon={<SearchOutlined />}
-                  onClick={() => loadSchemes(searchSchemeName)}
+                  onClick={() => loadTaskTemplates(searchTaskTemplateName)}
                 >
                   查询
                 </Button>
@@ -664,19 +664,19 @@ const SiteConfiguration: React.FC = () => {
                 {
                   title: '单选',
                   width: 80,
-                  render: (_, record: Scheme) => (
+                  render: (_, record: TaskTemplate) => (
                     <Radio
-                      checked={selectedSchemeId === record.id}
-                      onChange={() => setSelectedSchemeId(record.id)}
+                      checked={selectedTaskTemplateId === record.id}
+                      onChange={() => setSelectedTaskTemplateId(record.id)}
                     />
                   ),
                 },
                 { title: '序号', width: 80, render: (_, __, index) => index + 1 },
-                { title: '方案名称', dataIndex: 'name' },
+                { title: '任务模版名称', dataIndex: 'name' },
                 { title: '任务项数', render: () => '-' },
                 { title: '状态', render: () => <Tag color="success">启用</Tag> },
               ]}
-              dataSource={schemes}
+              dataSource={taskTemplates}
               rowKey="id"
               pagination={{
                 pageSize: 20,

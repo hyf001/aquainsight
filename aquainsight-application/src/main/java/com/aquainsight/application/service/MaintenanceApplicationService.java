@@ -1,16 +1,16 @@
 package com.aquainsight.application.service;
 
-import com.aquainsight.domain.maintenance.entity.JobCategory;
-import com.aquainsight.domain.maintenance.entity.Scheme;
-import com.aquainsight.domain.maintenance.entity.SchemeItem;
-import com.aquainsight.domain.maintenance.entity.SiteJobInstance;
-import com.aquainsight.domain.maintenance.entity.SiteJobPlan;
-import com.aquainsight.domain.maintenance.repository.SiteJobPlanRepository;
-import com.aquainsight.domain.maintenance.service.JobCategoryDomainService;
-import com.aquainsight.domain.maintenance.service.SchemeDomainService;
-import com.aquainsight.domain.maintenance.service.SiteJobInstanceDomainService;
-import com.aquainsight.domain.maintenance.service.SiteJobPlanDomainService;
-import com.aquainsight.domain.maintenance.types.JobParameter;
+import com.aquainsight.domain.maintenance.entity.StepTemplate;
+import com.aquainsight.domain.maintenance.entity.TaskTemplate;
+import com.aquainsight.domain.maintenance.entity.TaskTemplateItem;
+import com.aquainsight.domain.maintenance.entity.Task;
+import com.aquainsight.domain.maintenance.entity.TaskScheduler;
+import com.aquainsight.domain.maintenance.repository.TaskSchedulerRepository;
+import com.aquainsight.domain.maintenance.service.StepTemplateDomainService;
+import com.aquainsight.domain.maintenance.service.TaskTemplateDomainService;
+import com.aquainsight.domain.maintenance.service.TaskDomainService;
+import com.aquainsight.domain.maintenance.service.TaskSchedulerDomainService;
+import com.aquainsight.domain.maintenance.types.StepParameter;
 import com.aquainsight.domain.maintenance.types.PeriodConfig;
 import com.aquainsight.domain.monitoring.entity.Site;
 import com.aquainsight.domain.monitoring.repository.SiteRepository;
@@ -32,223 +32,223 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class MaintenanceApplicationService {
 
-    private final JobCategoryDomainService jobCategoryDomainService;
-    private final SchemeDomainService schemeDomainService;
-    private final SiteJobPlanDomainService siteJobPlanDomainService;
-    private final SiteJobInstanceDomainService siteJobInstanceDomainService;
-    private final SiteJobPlanRepository siteJobPlanRepository;
+    private final StepTemplateDomainService stepTemplateDomainService;
+    private final TaskTemplateDomainService taskTemplateDomainService;
+    private final TaskSchedulerDomainService taskSchedulerDomainService;
+    private final TaskDomainService taskDomainService;
+    private final TaskSchedulerRepository taskSchedulerRepository;
     private final SiteRepository siteRepository;
     private final DepartmentDomainService departmentDomainService;
 
     /**
-     * 创建作业类别
+     * 创建步骤模版
      */
     @Transactional(rollbackFor = Exception.class)
-    public JobCategory createJobCategory(String name, String code, List<JobParameter> parameters,
+    public StepTemplate createStepTemplate(String name, String code, List<StepParameter> parameters,
                                         Integer overdueDays, String description) {
-        return jobCategoryDomainService.createJobCategory(name, code, parameters, overdueDays, description);
+        return stepTemplateDomainService.createStepTemplate(name, code, parameters, overdueDays, description);
     }
 
     /**
-     * 更新作业类别
+     * 更新步骤模版
      */
     @Transactional(rollbackFor = Exception.class)
-    public JobCategory updateJobCategory(Integer id, String name, List<JobParameter> parameters,
+    public StepTemplate updateStepTemplate(Integer id, String name, List<StepParameter> parameters,
                                         Integer overdueDays, String description) {
-        return jobCategoryDomainService.updateJobCategoryInfo(id, name, parameters, overdueDays, description);
+        return stepTemplateDomainService.updateStepTemplateInfo(id, name, parameters, overdueDays, description);
     }
 
     /**
-     * 获取作业类别详情
+     * 获取步骤模版详情
      */
-    public JobCategory getJobCategory(Integer id) {
-        return jobCategoryDomainService.getJobCategoryById(id);
+    public StepTemplate getStepTemplate(Integer id) {
+        return stepTemplateDomainService.getStepTemplateById(id);
     }
 
     /**
-     * 获取所有作业类别
+     * 获取所有步骤模版
      */
-    public List<JobCategory> getAllJobCategories() {
-        return jobCategoryDomainService.getAllJobCategories();
+    public List<StepTemplate> getAllJobCategories() {
+        return stepTemplateDomainService.getAllJobCategories();
     }
 
     /**
-     * 搜索作业类别
+     * 搜索步骤模版
      */
-    public List<JobCategory> searchJobCategories(String name) {
-        return jobCategoryDomainService.searchJobCategoriesByName(name);
+    public List<StepTemplate> searchJobCategories(String name) {
+        return stepTemplateDomainService.searchJobCategoriesByName(name);
     }
 
     /**
-     * 删除作业类别
+     * 删除步骤模版
      */
     @Transactional(rollbackFor = Exception.class)
-    public void deleteJobCategory(Integer id) {
-        jobCategoryDomainService.deleteJobCategory(id);
+    public void deleteStepTemplate(Integer id) {
+        stepTemplateDomainService.deleteStepTemplate(id);
     }
 
     /**
-     * 批量删除作业类别
+     * 批量删除步骤模版
      */
     @Transactional(rollbackFor = Exception.class)
     public void deleteJobCategories(List<Integer> ids) {
-        jobCategoryDomainService.deleteJobCategories(ids);
+        stepTemplateDomainService.deleteJobCategories(ids);
     }
 
-    // ========== 方案管理 ==========
+    // ========== 任务模版管理 ==========
 
     /**
-     * 创建方案
+     * 创建任务模版
      */
     @Transactional(rollbackFor = Exception.class)
-    public Scheme createScheme(String name, String code, String creator) {
-        return schemeDomainService.createScheme(name, code, creator);
+    public TaskTemplate createTaskTemplate(String name, String code, String creator) {
+        return taskTemplateDomainService.createTaskTemplate(name, code, creator);
     }
 
     /**
-     * 更新方案
+     * 更新任务模版
      */
     @Transactional(rollbackFor = Exception.class)
-    public Scheme updateScheme(Integer id, String name, String updater) {
-        return schemeDomainService.updateSchemeInfo(id, name, updater);
+    public TaskTemplate updateTaskTemplate(Integer id, String name, String updater) {
+        return taskTemplateDomainService.updateTaskTemplateInfo(id, name, updater);
     }
 
     /**
-     * 获取方案详情
+     * 获取任务模版详情
      */
-    public Scheme getScheme(Integer id) {
-        return schemeDomainService.getSchemeById(id);
+    public TaskTemplate getTaskTemplate(Integer id) {
+        return taskTemplateDomainService.getTaskTemplateById(id);
     }
 
     /**
-     * 获取方案详情（包含方案项目）
+     * 获取任务模版详情（包含任务模版项目）
      */
-    public Scheme getSchemeWithItems(Integer id) {
-        return schemeDomainService.getSchemeByIdWithItems(id);
+    public TaskTemplate getTaskTemplateWithItems(Integer id) {
+        return taskTemplateDomainService.getTaskTemplateByIdWithItems(id);
     }
 
     /**
-     * 获取所有方案
+     * 获取所有任务模版
      */
-    public List<Scheme> getAllSchemes() {
-        return schemeDomainService.getAllSchemes();
+    public List<TaskTemplate> getAllTaskTemplates() {
+        return taskTemplateDomainService.getAllTaskTemplates();
     }
 
     /**
-     * 搜索方案
+     * 搜索任务模版
      */
-    public List<Scheme> searchSchemes(String name) {
-        return schemeDomainService.searchSchemesByName(name);
+    public List<TaskTemplate> searchTaskTemplates(String name) {
+        return taskTemplateDomainService.searchTaskTemplatesByName(name);
     }
 
     /**
-     * 删除方案
-     */
-    @Transactional(rollbackFor = Exception.class)
-    public void deleteScheme(Integer id) {
-        schemeDomainService.deleteScheme(id);
-    }
-
-    /**
-     * 批量删除方案
+     * 删除任务模版
      */
     @Transactional(rollbackFor = Exception.class)
-    public void deleteSchemes(List<Integer> ids) {
-        schemeDomainService.deleteSchemes(ids);
+    public void deleteTaskTemplate(Integer id) {
+        taskTemplateDomainService.deleteTaskTemplate(id);
     }
 
     /**
-     * 添加方案项目
+     * 批量删除任务模版
      */
     @Transactional(rollbackFor = Exception.class)
-    public SchemeItem addSchemeItem(Integer schemeId, SchemeItem schemeItem) {
-        return schemeDomainService.addSchemeItem(schemeId, schemeItem);
+    public void deleteTaskTemplates(List<Integer> ids) {
+        taskTemplateDomainService.deleteTaskTemplates(ids);
     }
 
     /**
-     * 更新方案项目
+     * 添加任务模版项目
      */
     @Transactional(rollbackFor = Exception.class)
-    public SchemeItem updateSchemeItem(SchemeItem schemeItem) {
-        return schemeDomainService.updateSchemeItem(schemeItem);
+    public TaskTemplateItem addTaskTemplateItem(Integer taskTemplateId, TaskTemplateItem taskTemplateItem) {
+        return taskTemplateDomainService.addTaskTemplateItem(taskTemplateId, taskTemplateItem);
     }
 
     /**
-     * 删除方案项目
+     * 更新任务模版项目
      */
     @Transactional(rollbackFor = Exception.class)
-    public void deleteSchemeItem(Integer schemeItemId) {
-        schemeDomainService.deleteSchemeItem(schemeItemId);
+    public TaskTemplateItem updateTaskTemplateItem(TaskTemplateItem taskTemplateItem) {
+        return taskTemplateDomainService.updateTaskTemplateItem(taskTemplateItem);
     }
 
     /**
-     * 获取方案的所有项目
-     */
-    public List<SchemeItem> getSchemeItems(Integer schemeId) {
-        return schemeDomainService.getSchemeItems(schemeId);
-    }
-
-    // ========== 站点任务计划管理 ==========
-
-    /**
-     * 配置站点任务计划
-     * 一个站点只能有一个任务计划，如果已存在则更新
+     * 删除任务模版项目
      */
     @Transactional(rollbackFor = Exception.class)
-    public SiteJobPlan configureSiteJobPlan(Site site, PeriodConfig periodConfig, Scheme scheme,
+    public void deleteTaskTemplateItem(Integer taskTemplateItemId) {
+        taskTemplateDomainService.deleteTaskTemplateItem(taskTemplateItemId);
+    }
+
+    /**
+     * 获取任务模版的所有项目
+     */
+    public List<TaskTemplateItem> getTaskTemplateItems(Integer taskTemplateId) {
+        return taskTemplateDomainService.getTaskTemplateItems(taskTemplateId);
+    }
+
+    // ========== 站点任务调度管理 ==========
+
+    /**
+     * 配置站点任务调度
+     * 一个站点只能有一个任务调度，如果已存在则更新
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public TaskScheduler configureTaskScheduler(Site site, PeriodConfig periodConfig, TaskTemplate taskTemplate,
                                              Department department, String operator) {
-        return siteJobPlanDomainService.saveOrUpdateBySiteId(site, periodConfig, scheme, department, operator);
+        return taskSchedulerDomainService.saveOrUpdateBySiteId(site, periodConfig, taskTemplate, department, operator);
     }
 
     /**
-     * 根据站点ID获取任务计划
+     * 根据站点ID获取任务调度
      */
-    public SiteJobPlan getSiteJobPlanBySiteId(Integer siteId) {
-        return siteJobPlanDomainService.getPlanBySiteId(siteId);
+    public TaskScheduler getTaskSchedulerBySiteId(Integer siteId) {
+        return taskSchedulerDomainService.getPlanBySiteId(siteId);
     }
 
     /**
-     * 根据站点ID获取任务计划（包含详情）
+     * 根据站点ID获取任务调度（包含详情）
      */
-    public SiteJobPlan getSiteJobPlanBySiteIdWithDetails(Integer siteId) {
-        return siteJobPlanDomainService.getPlanBySiteIdWithDetails(siteId);
+    public TaskScheduler getTaskSchedulerBySiteIdWithDetails(Integer siteId) {
+        return taskSchedulerDomainService.getPlanBySiteIdWithDetails(siteId);
     }
 
     /**
-     * 获取所有站点任务计划
+     * 获取所有站点任务调度
      */
-    public List<SiteJobPlan> getAllSiteJobPlans() {
-        return siteJobPlanDomainService.getAllPlans();
+    public List<TaskScheduler> getAllTaskSchedulers() {
+        return taskSchedulerDomainService.getAllPlans();
     }
 
     /**
-     * 删除站点任务计划
-     */
-    @Transactional(rollbackFor = Exception.class)
-    public void deleteSiteJobPlan(Integer planId) {
-        siteJobPlanDomainService.deletePlan(planId);
-    }
-
-    /**
-     * 根据站点ID删除任务计划
+     * 删除站点任务调度
      */
     @Transactional(rollbackFor = Exception.class)
-    public void deleteSiteJobPlanBySiteId(Integer siteId) {
-        siteJobPlanDomainService.deleteBySiteId(siteId);
+    public void deleteTaskScheduler(Integer planId) {
+        taskSchedulerDomainService.deletePlan(planId);
     }
 
     /**
-     * 分页查询站点任务计划
+     * 根据站点ID删除任务调度
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteTaskSchedulerBySiteId(Integer siteId) {
+        taskSchedulerDomainService.deleteBySiteId(siteId);
+    }
+
+    /**
+     * 分页查询站点任务调度
      *
      * @param pageNum 页码
      * @param pageSize 每页大小
      * @param siteName 站点名称（模糊查询）
-     * @param enterpriseId 企业ID（查询该企业下所有站点的任务计划）
+     * @param enterpriseId 企业ID（查询该企业下所有站点的任务调度）
      * @param siteId 站点ID（精确查询）
      * @param departmentId 部门ID（运维小组）
      * @return 分页结果
      */
-    public IPage<SiteJobPlan> getSiteJobPlanPage(Integer pageNum, Integer pageSize,
+    public IPage<TaskScheduler> getTaskSchedulerPage(Integer pageNum, Integer pageSize,
                                                   String siteName, Integer enterpriseId,
                                                   Integer siteId, Integer departmentId) {
         // 构建站点ID列表
@@ -273,32 +273,32 @@ public class MaintenanceApplicationService {
             siteIds.add(siteId);
         }
 
-        return siteJobPlanRepository.findPageWithDetails(pageNum, pageSize, siteName, siteIds, departmentId);
+        return taskSchedulerRepository.findPageWithDetails(pageNum, pageSize, siteName, siteIds, departmentId);
     }
 
     // ========== 定时任务相关 ==========
 
     /**
-     * 生成所有启用中的任务计划的下一周期实例
+     * 生成所有启用中的任务调度的下一周期实例
      * 供定时任务调用
      *
      * @param creator 创建人（通常是"SYSTEM"）
-     * @return 成功生成的任务实例列表
+     * @return 成功生成的任务列表
      */
     @Transactional(rollbackFor = Exception.class)
-    public List<SiteJobInstance> generateNextInstancesForAllActivePlans(String creator) {
-        // 查询所有启用中的任务计划
-        List<SiteJobPlan> activeJobPlans = siteJobPlanRepository.findActiveJobPlansWithDetails();
+    public List<Task> generateNextInstancesForAllActivePlans(String creator) {
+        // 查询所有启用中的任务调度
+        List<TaskScheduler> activeTaskSchedulers = taskSchedulerRepository.findActiveTaskSchedulersWithDetails();
 
-        List<SiteJobInstance> generatedInstances = new ArrayList<>();
+        List<Task> generatedInstances = new ArrayList<>();
 
-        for (SiteJobPlan jobPlan : activeJobPlans) {
+        for (TaskScheduler taskScheduler : activeTaskSchedulers) {
             try {
-                // 为每个计划生成下一周期的任务实例
-                SiteJobInstance instance = siteJobInstanceDomainService.generateNextInstanceForPlan(jobPlan, creator);
+                // 为每个计划生成下一周期的任务
+                Task instance = taskDomainService.generateNextInstanceForPlan(taskScheduler, creator);
                 generatedInstances.add(instance);
             } catch (IllegalArgumentException e) {
-                // 任务实例已存在或其他业务异常，跳过
+                // 任务已存在或其他业务异常，跳过
                 // 这里不抛出异常，继续处理其他计划
             }
         }
@@ -307,27 +307,27 @@ public class MaintenanceApplicationService {
     }
 
     /**
-     * 检查并标记所有逾期的任务实例
+     * 检查并标记所有逾期的任务
      * 供定时任务调用
      */
     @Transactional(rollbackFor = Exception.class)
     public void checkAndMarkAllOverdueInstances() {
-        siteJobInstanceDomainService.checkAndMarkOverdueInstances();
+        taskDomainService.checkAndMarkOverdueInstances();
     }
 
     /**
-     * 检查并更新所有任务实例的过期状态（即将过期和已逾期）
+     * 检查并更新所有任务的过期状态（即将过期和已逾期）
      * 供定时任务调用
      *
      * @param expiringThresholdHours 即将过期的阈值（小时数）
      */
     @Transactional(rollbackFor = Exception.class)
     public void checkAndUpdateExpirationStatus(int expiringThresholdHours) {
-        siteJobInstanceDomainService.checkAndUpdateExpirationStatus(expiringThresholdHours);
+        taskDomainService.checkAndUpdateExpirationStatus(expiringThresholdHours);
     }
 
     /**
-     * 分页查询任务实例
+     * 分页查询任务
      *
      * @param pageNum 页码
      * @param pageSize 每页大小
@@ -339,62 +339,62 @@ public class MaintenanceApplicationService {
      * @param departmentId 运维小组（部门ID）
      * @return 分页结果
      */
-    public IPage<SiteJobInstance> getSiteJobInstancePage(Integer pageNum, Integer pageSize,
+    public IPage<Task> getTaskPage(Integer pageNum, Integer pageSize,
                                                           String siteName, String status,
                                                           java.time.LocalDateTime startTime,
                                                           java.time.LocalDateTime endTime,
                                                           String creator, Integer departmentId) {
-        return siteJobInstanceDomainService.getInstancePage(
+        return taskDomainService.getInstancePage(
                 pageNum, pageSize, siteName, status, startTime, endTime, creator, departmentId);
     }
 
     /**
-     * 根据任务计划补齐指定时间范围内缺失的任务实例
+     * 根据任务调度补齐指定时间范围内缺失的任务
      *
-     * @param siteJobPlanId 任务计划ID
+     * @param taskSchedulerId 任务调度ID
      * @param startTime 开始时间
      * @param endTime 结束时间
      * @param operator 操作人
-     * @return 补齐的任务实例列表
+     * @return 补齐的任务列表
      */
     @Transactional(rollbackFor = Exception.class)
-    public List<SiteJobInstance> backfillJobInstancesForPlan(Integer siteJobPlanId,
+    public List<Task> backfillTaskForScheduler(Integer taskSchedulerId,
                                                               java.time.LocalDateTime startTime,
                                                               java.time.LocalDateTime endTime,
                                                               String operator) {
-        // 查询任务计划（包含关联信息）
-        SiteJobPlan siteJobPlan = siteJobPlanDomainService.getPlanByIdWithDetails(siteJobPlanId);
+        // 查询任务调度（包含关联信息）
+        TaskScheduler taskScheduler = taskSchedulerDomainService.getPlanByIdWithDetails(taskSchedulerId);
 
-        if (siteJobPlan == null) {
-            throw new IllegalArgumentException("任务计划不存在");
+        if (taskScheduler == null) {
+            throw new IllegalArgumentException("任务调度不存在");
         }
 
-        // 调用领域服务补齐任务实例
-        return siteJobInstanceDomainService.backfillInstancesForPlan(
-                siteJobPlan, startTime, endTime, operator);
+        // 调用领域服务补齐任务
+        return taskDomainService.backfillInstancesForPlan(
+                taskScheduler, startTime, endTime, operator);
     }
 
     /**
-     * 手动创建任务实例
-     * 根据站点、方案、部门信息直接创建一个任务实例（不依赖任务计划，触发时间为当前时间）
+     * 手动创建任务
+     * 根据站点、任务模版、部门信息直接创建一个任务（不依赖任务调度，触发时间为当前时间）
      *
      * @param siteId 站点ID
-     * @param schemeId 方案ID
+     * @param taskTemplateId 任务模版ID
      * @param departmentId 部门ID
      * @param creator 创建人
-     * @return 创建的任务实例
+     * @return 创建的任务
      */
     @Transactional(rollbackFor = Exception.class)
-    public SiteJobInstance createManualJobInstance(Integer siteId, Integer schemeId, Integer departmentId,
+    public Task createManualJobInstance(Integer siteId, Integer taskTemplateId, Integer departmentId,
                                                     String creator) {
         // 查询站点
         Site site = siteRepository.findById(siteId)
                 .orElseThrow(() -> new IllegalArgumentException("站点不存在"));
 
-        // 查询方案（包含方案项）
-        Scheme scheme = schemeDomainService.getSchemeByIdWithItems(schemeId);
-        if (scheme == null) {
-            throw new IllegalArgumentException("方案不存在");
+        // 查询任务模版（包含任务模版项）
+        TaskTemplate taskTemplate = taskTemplateDomainService.getTaskTemplateByIdWithItems(taskTemplateId);
+        if (taskTemplate == null) {
+            throw new IllegalArgumentException("任务模版不存在");
         }
 
         // 查询部门
@@ -404,34 +404,34 @@ public class MaintenanceApplicationService {
         // 触发时间为当前时间
         java.time.LocalDateTime triggerTime = java.time.LocalDateTime.now();
 
-        // 计算过期时间（根据方案中作业类别的最大逾期天数）
+        // 计算过期时间（根据任务模版中步骤模版的最大逾期天数）
         int maxOverdueDays = 7; // 默认7天
-        if (scheme.getItems() != null && !scheme.getItems().isEmpty()) {
-            maxOverdueDays = scheme.getItems().stream()
-                    .filter(item -> item.getJobCategory() != null && item.getJobCategory().getOverdueDays() != null)
-                    .mapToInt(item -> item.getJobCategory().getOverdueDays())
+        if (taskTemplate.getItems() != null && !taskTemplate.getItems().isEmpty()) {
+            maxOverdueDays = taskTemplate.getItems().stream()
+                    .filter(item -> item.getStepTemplate() != null && item.getStepTemplate().getOverdueDays() != null)
+                    .mapToInt(item -> item.getStepTemplate().getOverdueDays())
                     .max()
                     .orElse(7);
         }
         java.time.LocalDateTime expiredTime = triggerTime.plusDays(maxOverdueDays);
 
-        // 检查是否已存在相同站点在相同时间的任务实例
-        SiteJobInstance existingInstance = siteJobInstanceDomainService.getInstanceBySiteIdAndTriggerTime(siteId, triggerTime);
+        // 检查是否已存在相同站点在相同时间的任务
+        Task existingInstance = taskDomainService.getInstanceBySiteIdAndTriggerTime(siteId, triggerTime);
         if (existingInstance != null) {
-            throw new IllegalArgumentException("该站点在该时间点的任务实例已存在");
+            throw new IllegalArgumentException("该站点在该时间点的任务已存在");
         }
 
-        // 直接创建任务实例，不依赖任务计划
-        SiteJobInstance instance = SiteJobInstance.builder()
+        // 直接创建任务，不依赖任务调度
+        Task instance = Task.builder()
                 .siteId(siteId)
                 .site(site)
-                .schemeId(schemeId)
-                .scheme(scheme)
+                .taskTemplateId(taskTemplateId)
+                .taskTemplate(taskTemplate)
                 .departmentId(departmentId)
                 .department(department)
-                .siteJobPlanId(null) // 手动创建的任务不关联任务计划
+                .taskSchedulerId(null) // 手动创建的任务不关联任务调度
                 .triggerTime(triggerTime)
-                .status(com.aquainsight.domain.maintenance.types.JobInstanceStatus.PENDING)
+                .status(com.aquainsight.domain.maintenance.types.TaskStatus.PENDING)
                 .expiredTime(expiredTime)
                 .creator(creator)
                 .createTime(java.time.LocalDateTime.now())
@@ -439,6 +439,6 @@ public class MaintenanceApplicationService {
                 .deleted(0)
                 .build();
 
-        return siteJobInstanceDomainService.saveInstance(instance);
+        return taskDomainService.saveInstance(instance);
     }
 }

@@ -3,11 +3,11 @@ package com.aquainsight.interfaces.rest.controller;
 import com.aquainsight.application.service.MaintenanceApplicationService;
 import com.aquainsight.common.util.Response;
 import com.aquainsight.common.util.ThreadLocalUtil;
-import com.aquainsight.domain.maintenance.entity.JobCategory;
-import com.aquainsight.domain.maintenance.entity.Scheme;
-import com.aquainsight.domain.maintenance.entity.SchemeItem;
-import com.aquainsight.domain.maintenance.entity.SiteJobPlan;
-import com.aquainsight.domain.maintenance.types.JobParameter;
+import com.aquainsight.domain.maintenance.entity.StepTemplate;
+import com.aquainsight.domain.maintenance.entity.TaskTemplate;
+import com.aquainsight.domain.maintenance.entity.TaskTemplateItem;
+import com.aquainsight.domain.maintenance.entity.TaskScheduler;
+import com.aquainsight.domain.maintenance.types.StepParameter;
 import com.aquainsight.domain.maintenance.types.ParameterType;
 import com.aquainsight.domain.maintenance.types.PeriodConfig;
 import com.aquainsight.domain.maintenance.types.PeriodType;
@@ -46,79 +46,79 @@ public class MaintenanceController {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     /**
-     * 创建作业类别
+     * 创建步骤模版
      */
-    @PostMapping("/job-categories")
-    public Response<JobCategoryVO> createJobCategory(@Valid @RequestBody CreateJobCategoryRequest request) {
+    @PostMapping("/step-templates")
+    public Response<StepTemplateVO> createStepTemplate(@Valid @RequestBody CreateStepTemplateRequest request) {
         try {
             // 转换 DTO 为领域对象
-            List<JobParameter> parameters = convertToJobParameters(request.getParameters());
+            List<StepParameter> parameters = convertToJobParameters(request.getParameters());
 
-            JobCategory jobCategory = maintenanceApplicationService.createJobCategory(
+            StepTemplate stepTemplate = maintenanceApplicationService.createStepTemplate(
                     request.getName(),
                     request.getCode(),
                     parameters,
                     request.getOverdueDays(),
                     request.getDescription()
             );
-            return Response.success(convertToVO(jobCategory));
+            return Response.success(convertToVO(stepTemplate));
         } catch (Exception e) {
             return Response.error(e.getMessage());
         }
     }
 
     /**
-     * 更新作业类别
+     * 更新步骤模版
      */
-    @PutMapping("/job-categories/{id}")
-    public Response<JobCategoryVO> updateJobCategory(@PathVariable Integer id,
-                                                     @RequestBody UpdateJobCategoryRequest request) {
+    @PutMapping("/step-templates/{id}")
+    public Response<StepTemplateVO> updateStepTemplate(@PathVariable Integer id,
+                                                     @RequestBody UpdateStepTemplateRequest request) {
         try {
             // 转换 DTO 为领域对象
-            List<JobParameter> parameters = convertToJobParameters(request.getParameters());
+            List<StepParameter> parameters = convertToJobParameters(request.getParameters());
 
-            JobCategory jobCategory = maintenanceApplicationService.updateJobCategory(
+            StepTemplate stepTemplate = maintenanceApplicationService.updateStepTemplate(
                     id,
                     request.getName(),
                     parameters,
                     request.getOverdueDays(),
                     request.getDescription()
             );
-            return Response.success(convertToVO(jobCategory));
+            return Response.success(convertToVO(stepTemplate));
         } catch (Exception e) {
             return Response.error(e.getMessage());
         }
     }
 
     /**
-     * 获取作业类别详情
+     * 获取步骤模版详情
      */
-    @GetMapping("/job-categories/{id}")
-    public Response<JobCategoryVO> getJobCategoryById(@PathVariable Integer id) {
+    @GetMapping("/step-templates/{id}")
+    public Response<StepTemplateVO> getStepTemplateById(@PathVariable Integer id) {
         try {
-            JobCategory jobCategory = maintenanceApplicationService.getJobCategory(id);
-            if (jobCategory == null) {
-                return Response.error("作业类别不存在");
+            StepTemplate stepTemplate = maintenanceApplicationService.getStepTemplate(id);
+            if (stepTemplate == null) {
+                return Response.error("步骤模版不存在");
             }
-            return Response.success(convertToVO(jobCategory));
+            return Response.success(convertToVO(stepTemplate));
         } catch (Exception e) {
             return Response.error(e.getMessage());
         }
     }
 
     /**
-     * 获取所有作业类别
+     * 获取所有步骤模版
      */
-    @GetMapping("/job-categories")
-    public Response<List<JobCategoryVO>> listJobCategories(@RequestParam(required = false) String name) {
+    @GetMapping("/step-templates")
+    public Response<List<StepTemplateVO>> listJobCategories(@RequestParam(required = false) String name) {
         try {
-            List<JobCategory> jobCategories;
+            List<StepTemplate> jobCategories;
             if (name != null && !name.trim().isEmpty()) {
                 jobCategories = maintenanceApplicationService.searchJobCategories(name);
             } else {
                 jobCategories = maintenanceApplicationService.getAllJobCategories();
             }
-            List<JobCategoryVO> voList = jobCategories.stream()
+            List<StepTemplateVO> voList = jobCategories.stream()
                     .map(this::convertToVO)
                     .collect(Collectors.toList());
             return Response.success(voList);
@@ -128,12 +128,12 @@ public class MaintenanceController {
     }
 
     /**
-     * 删除作业类别
+     * 删除步骤模版
      */
-    @DeleteMapping("/job-categories/{id}")
-    public Response<Void> deleteJobCategory(@PathVariable Integer id) {
+    @DeleteMapping("/step-templates/{id}")
+    public Response<Void> deleteStepTemplate(@PathVariable Integer id) {
         try {
-            maintenanceApplicationService.deleteJobCategory(id);
+            maintenanceApplicationService.deleteStepTemplate(id);
             return Response.success();
         } catch (Exception e) {
             return Response.error(e.getMessage());
@@ -141,9 +141,9 @@ public class MaintenanceController {
     }
 
     /**
-     * 批量删除作业类别
+     * 批量删除步骤模版
      */
-    @DeleteMapping("/job-categories")
+    @DeleteMapping("/step-templates")
     public Response<Void> deleteJobCategories(@RequestBody List<Integer> ids) {
         try {
             maintenanceApplicationService.deleteJobCategories(ids);
@@ -153,81 +153,81 @@ public class MaintenanceController {
         }
     }
 
-    // ========== 方案管理 ==========
+    // ========== 任务模版管理 ==========
 
     /**
-     * 创建方案
+     * 创建任务模版
      */
-    @PostMapping("/schemes")
-    public Response<SchemeVO> createScheme(@Valid @RequestBody CreateSchemeRequest request) {
+    @PostMapping("/taskTemplates")
+    public Response<TaskTemplateVO> createTaskTemplate(@Valid @RequestBody CreateTaskTemplateRequest request) {
         try {
             User creator = ThreadLocalUtil.getUser();
-            Scheme scheme = maintenanceApplicationService.createScheme(
+            TaskTemplate taskTemplate = maintenanceApplicationService.createTaskTemplate(
                     request.getName(),
                     request.getCode(),
                     creator.getName()
             );
-            return Response.success(convertSchemeToVO(scheme));
+            return Response.success(convertTaskTemplateToVO(taskTemplate));
         } catch (Exception e) {
             return Response.error(e.getMessage());
         }
     }
 
     /**
-     * 更新方案
+     * 更新任务模版
      */
-    @PutMapping("/schemes/{id}")
-    public Response<SchemeVO> updateScheme(@PathVariable Integer id,
-                                           @Valid @RequestBody UpdateSchemeRequest request) {
+    @PutMapping("/taskTemplates/{id}")
+    public Response<TaskTemplateVO> updateTaskTemplate(@PathVariable Integer id,
+                                           @Valid @RequestBody UpdateTaskTemplateRequest request) {
         try {
             User updater = ThreadLocalUtil.getUser();
-            Scheme scheme = maintenanceApplicationService.updateScheme(
+            TaskTemplate taskTemplate = maintenanceApplicationService.updateTaskTemplate(
                     id,
                     request.getName(),
                     updater.getName()
             );
-            return Response.success(convertSchemeToVO(scheme));
+            return Response.success(convertTaskTemplateToVO(taskTemplate));
         } catch (Exception e) {
             return Response.error(e.getMessage());
         }
     }
 
     /**
-     * 获取方案详情
+     * 获取任务模版详情
      */
-    @GetMapping("/schemes/{id}")
-    public Response<SchemeVO> getSchemeById(@PathVariable Integer id,
+    @GetMapping("/taskTemplates/{id}")
+    public Response<TaskTemplateVO> getTaskTemplateById(@PathVariable Integer id,
                                             @RequestParam(required = false, defaultValue = "false") Boolean withItems) {
         try {
-            Scheme scheme;
+            TaskTemplate taskTemplate;
             if (withItems) {
-                scheme = maintenanceApplicationService.getSchemeWithItems(id);
+                taskTemplate = maintenanceApplicationService.getTaskTemplateWithItems(id);
             } else {
-                scheme = maintenanceApplicationService.getScheme(id);
+                taskTemplate = maintenanceApplicationService.getTaskTemplate(id);
             }
-            if (scheme == null) {
-                return Response.error("方案不存在");
+            if (taskTemplate == null) {
+                return Response.error("任务模版不存在");
             }
-            return Response.success(convertSchemeToVO(scheme));
+            return Response.success(convertTaskTemplateToVO(taskTemplate));
         } catch (Exception e) {
             return Response.error(e.getMessage());
         }
     }
 
     /**
-     * 获取所有方案
+     * 获取所有任务模版
      */
-    @GetMapping("/schemes")
-    public Response<List<SchemeVO>> listSchemes(@RequestParam(required = false) String name) {
+    @GetMapping("/taskTemplates")
+    public Response<List<TaskTemplateVO>> listTaskTemplates(@RequestParam(required = false) String name) {
         try {
-            List<Scheme> schemes;
+            List<TaskTemplate> taskTemplates;
             if (name != null && !name.trim().isEmpty()) {
-                schemes = maintenanceApplicationService.searchSchemes(name);
+                taskTemplates = maintenanceApplicationService.searchTaskTemplates(name);
             } else {
-                schemes = maintenanceApplicationService.getAllSchemes();
+                taskTemplates = maintenanceApplicationService.getAllTaskTemplates();
             }
-            List<SchemeVO> voList = schemes.stream()
-                    .map(this::convertSchemeToVO)
+            List<TaskTemplateVO> voList = taskTemplates.stream()
+                    .map(this::convertTaskTemplateToVO)
                     .collect(Collectors.toList());
             return Response.success(voList);
         } catch (Exception e) {
@@ -236,12 +236,12 @@ public class MaintenanceController {
     }
 
     /**
-     * 删除方案
+     * 删除任务模版
      */
-    @DeleteMapping("/schemes/{id}")
-    public Response<Void> deleteScheme(@PathVariable Integer id) {
+    @DeleteMapping("/taskTemplates/{id}")
+    public Response<Void> deleteTaskTemplate(@PathVariable Integer id) {
         try {
-            maintenanceApplicationService.deleteScheme(id);
+            maintenanceApplicationService.deleteTaskTemplate(id);
             return Response.success();
         } catch (Exception e) {
             return Response.error(e.getMessage());
@@ -249,64 +249,64 @@ public class MaintenanceController {
     }
 
     /**
-     * 批量删除方案
+     * 批量删除任务模版
      */
-    @DeleteMapping("/schemes")
-    public Response<Void> deleteSchemes(@RequestBody List<Integer> ids) {
+    @DeleteMapping("/taskTemplates")
+    public Response<Void> deleteTaskTemplates(@RequestBody List<Integer> ids) {
         try {
-            maintenanceApplicationService.deleteSchemes(ids);
+            maintenanceApplicationService.deleteTaskTemplates(ids);
             return Response.success();
         } catch (Exception e) {
             return Response.error(e.getMessage());
         }
     }
 
-    // ========== 方案项目管理 ==========
+    // ========== 任务模版项目管理 ==========
 
     /**
-     * 添加方案项目
+     * 添加任务模版项目
      */
-    @PostMapping("/scheme-items")
-    public Response<SchemeItemVO> addSchemeItem(@Valid @RequestBody CreateSchemeItemRequest request) {
+    @PostMapping("/taskTemplate-items")
+    public Response<TaskTemplateItemVO> addTaskTemplateItem(@Valid @RequestBody CreateTaskTemplateItemRequest request) {
         try {
-            SchemeItem schemeItem = SchemeItem.builder()
-                    .jobCategoryId(request.getJobCategoryId())
+            TaskTemplateItem taskTemplateItem = TaskTemplateItem.builder()
+                    .stepTemplateId(request.getStepTemplateId())
                     .itemName(request.getItemName())
                     .description(request.getDescription())
                     .build();
-            SchemeItem savedItem = maintenanceApplicationService.addSchemeItem(request.getSchemeId(), schemeItem);
-            return Response.success(convertSchemeItemToVO(savedItem));
+            TaskTemplateItem savedItem = maintenanceApplicationService.addTaskTemplateItem(request.getTaskTemplateId(), taskTemplateItem);
+            return Response.success(convertTaskTemplateItemToVO(savedItem));
         } catch (Exception e) {
             return Response.error(e.getMessage());
         }
     }
 
     /**
-     * 更新方案项目
+     * 更新任务模版项目
      */
-    @PutMapping("/scheme-items/{id}")
-    public Response<SchemeItemVO> updateSchemeItem(@PathVariable Integer id,
-                                                   @Valid @RequestBody UpdateSchemeItemRequest request) {
+    @PutMapping("/taskTemplate-items/{id}")
+    public Response<TaskTemplateItemVO> updateTaskTemplateItem(@PathVariable Integer id,
+                                                   @Valid @RequestBody UpdateTaskTemplateItemRequest request) {
         try {
-            SchemeItem schemeItem = SchemeItem.builder()
+            TaskTemplateItem taskTemplateItem = TaskTemplateItem.builder()
                     .id(id)
                     .itemName(request.getItemName())
                     .description(request.getDescription())
                     .build();
-            SchemeItem updatedItem = maintenanceApplicationService.updateSchemeItem(schemeItem);
-            return Response.success(convertSchemeItemToVO(updatedItem));
+            TaskTemplateItem updatedItem = maintenanceApplicationService.updateTaskTemplateItem(taskTemplateItem);
+            return Response.success(convertTaskTemplateItemToVO(updatedItem));
         } catch (Exception e) {
             return Response.error(e.getMessage());
         }
     }
 
     /**
-     * 删除方案项目
+     * 删除任务模版项目
      */
-    @DeleteMapping("/scheme-items/{id}")
-    public Response<Void> deleteSchemeItem(@PathVariable Integer id) {
+    @DeleteMapping("/taskTemplate-items/{id}")
+    public Response<Void> deleteTaskTemplateItem(@PathVariable Integer id) {
         try {
-            maintenanceApplicationService.deleteSchemeItem(id);
+            maintenanceApplicationService.deleteTaskTemplateItem(id);
             return Response.success();
         } catch (Exception e) {
             return Response.error(e.getMessage());
@@ -314,14 +314,14 @@ public class MaintenanceController {
     }
 
     /**
-     * 获取方案的所有项目
+     * 获取任务模版的所有项目
      */
-    @GetMapping("/schemes/{schemeId}/items")
-    public Response<List<SchemeItemVO>> getSchemeItems(@PathVariable Integer schemeId) {
+    @GetMapping("/taskTemplates/{taskTemplateId}/items")
+    public Response<List<TaskTemplateItemVO>> getTaskTemplateItems(@PathVariable Integer taskTemplateId) {
         try {
-            List<SchemeItem> items = maintenanceApplicationService.getSchemeItems(schemeId);
-            List<SchemeItemVO> voList = items.stream()
-                    .map(this::convertSchemeItemToVO)
+            List<TaskTemplateItem> items = maintenanceApplicationService.getTaskTemplateItems(taskTemplateId);
+            List<TaskTemplateItemVO> voList = items.stream()
+                    .map(this::convertTaskTemplateItemToVO)
                     .collect(Collectors.toList());
             return Response.success(voList);
         } catch (Exception e) {
@@ -330,12 +330,12 @@ public class MaintenanceController {
     }
 
     /**
-     * 将作业类别实体转换为VO
+     * 将步骤模版实体转换为VO
      */
-    private JobCategoryVO convertToVO(JobCategory jobCategory) {
+    private StepTemplateVO convertToVO(StepTemplate stepTemplate) {
         List<JobParameterDTO> parameterDTOs = null;
-        if (jobCategory.getParameters() != null) {
-            parameterDTOs = jobCategory.getParameters().stream()
+        if (stepTemplate.getParameters() != null) {
+            parameterDTOs = stepTemplate.getParameters().stream()
                     .map(param -> JobParameterDTO.builder()
                             .name(param.getName())
                             .type(param.getType() != null ? param.getType().name() : null)
@@ -344,27 +344,27 @@ public class MaintenanceController {
                     .collect(Collectors.toList());
         }
 
-        return JobCategoryVO.builder()
-                .id(jobCategory.getId())
-                .name(jobCategory.getName())
-                .code(jobCategory.getCode())
+        return StepTemplateVO.builder()
+                .id(stepTemplate.getId())
+                .name(stepTemplate.getName())
+                .code(stepTemplate.getCode())
                 .parameters(parameterDTOs)
-                .overdueDays(jobCategory.getOverdueDays())
-                .description(jobCategory.getDescription())
-                .createTime(jobCategory.getCreateTime() != null ? jobCategory.getCreateTime().format(DATE_FORMATTER) : null)
-                .updateTime(jobCategory.getUpdateTime() != null ? jobCategory.getUpdateTime().format(DATE_FORMATTER) : null)
+                .overdueDays(stepTemplate.getOverdueDays())
+                .description(stepTemplate.getDescription())
+                .createTime(stepTemplate.getCreateTime() != null ? stepTemplate.getCreateTime().format(DATE_FORMATTER) : null)
+                .updateTime(stepTemplate.getUpdateTime() != null ? stepTemplate.getUpdateTime().format(DATE_FORMATTER) : null)
                 .build();
     }
 
     /**
      * 将 DTO 列表转换为 JobParameter 列表
      */
-    private List<JobParameter> convertToJobParameters(List<JobParameterDTO> dtos) {
+    private List<StepParameter> convertToJobParameters(List<JobParameterDTO> dtos) {
         if (dtos == null || dtos.isEmpty()) {
             return null;
         }
         return dtos.stream()
-                .map(dto -> JobParameter.builder()
+                .map(dto -> StepParameter.builder()
                         .name(dto.getName())
                         .type(ParameterType.valueOf(dto.getType()))
                         .required(dto.getRequired())
@@ -373,21 +373,21 @@ public class MaintenanceController {
     }
 
     /**
-     * 将方案实体转换为VO
+     * 将任务模版实体转换为VO
      */
-    private SchemeVO convertSchemeToVO(Scheme scheme) {
-        SchemeVO vo = SchemeVO.builder()
-                .id(scheme.getId())
-                .name(scheme.getName())
-                .code(scheme.getCode())
-                .creator(scheme.getCreator())
-                .createTime(scheme.getCreateTime())
-                .updateTime(scheme.getUpdateTime())
+    private TaskTemplateVO convertTaskTemplateToVO(TaskTemplate taskTemplate) {
+        TaskTemplateVO vo = TaskTemplateVO.builder()
+                .id(taskTemplate.getId())
+                .name(taskTemplate.getName())
+                .code(taskTemplate.getCode())
+                .creator(taskTemplate.getCreator())
+                .createTime(taskTemplate.getCreateTime())
+                .updateTime(taskTemplate.getUpdateTime())
                 .build();
 
-        if (scheme.getItems() != null) {
-            List<SchemeItemVO> itemVOs = scheme.getItems().stream()
-                    .map(this::convertSchemeItemToVO)
+        if (taskTemplate.getItems() != null) {
+            List<TaskTemplateItemVO> itemVOs = taskTemplate.getItems().stream()
+                    .map(this::convertTaskTemplateItemToVO)
                     .collect(Collectors.toList());
             vo.setItems(itemVOs);
         }
@@ -396,33 +396,33 @@ public class MaintenanceController {
     }
 
     /**
-     * 将方案项目实体转换为VO
+     * 将任务模版项目实体转换为VO
      */
-    private SchemeItemVO convertSchemeItemToVO(SchemeItem item) {
-        SchemeItemVO vo = SchemeItemVO.builder()
+    private TaskTemplateItemVO convertTaskTemplateItemToVO(TaskTemplateItem item) {
+        TaskTemplateItemVO vo = TaskTemplateItemVO.builder()
                 .id(item.getId())
-                .schemeId(item.getSchemeId())
-                .jobCategoryId(item.getJobCategoryId())
+                .taskTemplateId(item.getTaskTemplateId())
+                .stepTemplateId(item.getStepTemplateId())
                 .itemName(item.getItemName())
                 .description(item.getDescription())
                 .createTime(item.getCreateTime())
                 .updateTime(item.getUpdateTime())
                 .build();
 
-        if (item.getJobCategory() != null) {
-            vo.setJobCategory(convertToVO(item.getJobCategory()));
+        if (item.getStepTemplate() != null) {
+            vo.setStepTemplate(convertToVO(item.getStepTemplate()));
         }
 
         return vo;
     }
 
-    // ========== 站点任务计划管理 ==========
+    // ========== 站点任务调度管理 ==========
 
     /**
-     * 配置站点任务计划
+     * 配置站点任务调度
      */
-    @PostMapping("/site-job-plans")
-    public Response<SiteJobPlanVO> configureSiteJobPlan(@Valid @RequestBody ConfigureSiteJobPlanRequest request) {
+    @PostMapping("/site-task-schedulers")
+    public Response<TaskSchedulerVO> configureTaskScheduler(@Valid @RequestBody ConfigureTaskSchedulerRequest request) {
         User currentUser = ThreadLocalUtil.getUser();
         String operator = currentUser.getName();
 
@@ -432,8 +432,8 @@ public class MaintenanceController {
             return Response.error("站点不存在");
         }
 
-        // 获取方案
-        Scheme scheme = maintenanceApplicationService.getScheme(request.getSchemeId());
+        // 获取任务模版
+        TaskTemplate taskTemplate = maintenanceApplicationService.getTaskTemplate(request.getTaskTemplateId());
 
         // 构建周期配置
         PeriodConfig periodConfig = new PeriodConfig();
@@ -448,37 +448,37 @@ public class MaintenanceController {
             department = departmentDomainService.getDepartmentById(request.getDepartmentId()).orElse(null);
         }
 
-        SiteJobPlan siteJobPlan = maintenanceApplicationService.configureSiteJobPlan(
-                site, periodConfig, scheme, department, operator);
+        TaskScheduler taskScheduler = maintenanceApplicationService.configureTaskScheduler(
+                site, periodConfig, taskTemplate, department, operator);
 
-        return Response.success(convertSiteJobPlanToVO(siteJobPlan));
+        return Response.success(convertTaskSchedulerToVO(taskScheduler));
     }
 
     /**
-     * 根据站点ID获取任务计划
+     * 根据站点ID获取任务调度
      */
-    @GetMapping("/site-job-plans/site/{siteId}")
-    public Response<SiteJobPlanVO> getSiteJobPlanBySiteId(@PathVariable Integer siteId) {
+    @GetMapping("/site-task-schedulers/site/{siteId}")
+    public Response<TaskSchedulerVO> getTaskSchedulerBySiteId(@PathVariable Integer siteId) {
         try {
-            SiteJobPlan siteJobPlan = maintenanceApplicationService.getSiteJobPlanBySiteIdWithDetails(siteId);
-            if (siteJobPlan == null) {
+            TaskScheduler taskScheduler = maintenanceApplicationService.getTaskSchedulerBySiteIdWithDetails(siteId);
+            if (taskScheduler == null) {
                 return Response.success(null);
             }
-            return Response.success(convertSiteJobPlanToVO(siteJobPlan));
+            return Response.success(convertTaskSchedulerToVO(taskScheduler));
         } catch (Exception e) {
             return Response.error(e.getMessage());
         }
     }
 
     /**
-     * 获取所有站点任务计划
+     * 获取所有站点任务调度
      */
-    @GetMapping("/site-job-plans/all")
-    public Response<List<SiteJobPlanVO>> getAllSiteJobPlans() {
+    @GetMapping("/site-task-schedulers/all")
+    public Response<List<TaskSchedulerVO>> getAllTaskSchedulers() {
         try {
-            List<SiteJobPlan> plans = maintenanceApplicationService.getAllSiteJobPlans();
-            List<SiteJobPlanVO> voList = plans.stream()
-                    .map(this::convertSiteJobPlanToVO)
+            List<TaskScheduler> schedulers = maintenanceApplicationService.getAllTaskSchedulers();
+            List<TaskSchedulerVO> voList = schedulers.stream()
+                    .map(this::convertTaskSchedulerToVO)
                     .collect(Collectors.toList());
             return Response.success(voList);
         } catch (Exception e) {
@@ -487,7 +487,7 @@ public class MaintenanceController {
     }
 
     /**
-     * 分页查询站点任务计划
+     * 分页查询站点任务调度
      *
      * @param pageNum 页码
      * @param pageSize 每页大小
@@ -497,8 +497,8 @@ public class MaintenanceController {
      * @param departmentId 运维小组（部门ID）
      * @return 分页结果
      */
-    @GetMapping("/site-job-plans")
-    public Response<PageResult<SiteJobPlanVO>> getSiteJobPlanPage(
+    @GetMapping("/site-task-schedulers")
+    public Response<PageResult<TaskSchedulerVO>> getTaskSchedulerPage(
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize,
             @RequestParam(required = false) String siteName,
@@ -506,14 +506,14 @@ public class MaintenanceController {
             @RequestParam(required = false) Integer siteId,
             @RequestParam(required = false) Integer departmentId) {
         try {
-            IPage<SiteJobPlan> page = maintenanceApplicationService.getSiteJobPlanPage(
+            IPage<TaskScheduler> page = maintenanceApplicationService.getTaskSchedulerPage(
                     pageNum, pageSize, siteName, enterpriseId, siteId, departmentId);
 
-            List<SiteJobPlanVO> voList = page.getRecords().stream()
-                    .map(this::convertSiteJobPlanToVO)
+            List<TaskSchedulerVO> voList = page.getRecords().stream()
+                    .map(this::convertTaskSchedulerToVO)
                     .collect(Collectors.toList());
 
-            PageResult<SiteJobPlanVO> result = PageResult.of(voList, page.getTotal(), pageNum, pageSize);
+            PageResult<TaskSchedulerVO> result = PageResult.of(voList, page.getTotal(), pageNum, pageSize);
             return Response.success(result);
         } catch (Exception e) {
             return Response.error(e.getMessage());
@@ -521,12 +521,12 @@ public class MaintenanceController {
     }
 
     /**
-     * 删除站点任务计划
+     * 删除站点任务调度
      */
-    @DeleteMapping("/site-job-plans/{id}")
-    public Response<Void> deleteSiteJobPlan(@PathVariable Integer id) {
+    @DeleteMapping("/site-task-schedulers/{id}")
+    public Response<Void> deleteTaskScheduler(@PathVariable Integer id) {
         try {
-            maintenanceApplicationService.deleteSiteJobPlan(id);
+            maintenanceApplicationService.deleteTaskScheduler(id);
             return Response.success(null);
         } catch (Exception e) {
             return Response.error(e.getMessage());
@@ -534,10 +534,10 @@ public class MaintenanceController {
     }
 
     /**
-     * 分页查询站点及其任务计划
+     * 分页查询站点及其任务调度
      */
-    @GetMapping("/sites-with-job-plans")
-    public Response<PageResult<SiteWithJobPlanVO>> getSitesWithJobPlans(
+    @GetMapping("/sites-with-task-schedulers")
+    public Response<PageResult<SiteWithTaskSchedulerVO>> getSitesWithTaskSchedulers(
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize,
             @RequestParam(required = false) String siteType,
@@ -546,26 +546,26 @@ public class MaintenanceController {
             // 获取站点分页列表
             IPage<Site> page = siteDomainService.getSitePage(pageNum, pageSize, siteType, enterpriseId);
 
-            // 转换为带任务计划的VO列表
-            List<SiteWithJobPlanVO> voList = page.getRecords().stream()
+            // 转换为带任务调度的VO列表
+            List<SiteWithTaskSchedulerVO> voList = page.getRecords().stream()
                     .map(site -> {
-                        SiteWithJobPlanVO vo = convertSiteToWithJobPlanVO(site);
+                        SiteWithTaskSchedulerVO vo = convertSiteToWithTaskSchedulerVO(site);
 
-                        // 查询该站点的任务计划
+                        // 查询该站点的任务调度
                         try {
-                            SiteJobPlan jobPlan = maintenanceApplicationService.getSiteJobPlanBySiteIdWithDetails(site.getId());
-                            if (jobPlan != null) {
-                                fillJobPlanInfo(vo, jobPlan);
+                            TaskScheduler taskScheduler = maintenanceApplicationService.getTaskSchedulerBySiteIdWithDetails(site.getId());
+                            if (taskScheduler != null) {
+                                fillTaskSchedulerInfo(vo, taskScheduler);
                             }
                         } catch (Exception e) {
-                            // 站点没有任务计划，忽略
+                            // 站点没有任务调度，忽略
                         }
 
                         return vo;
                     })
                     .collect(Collectors.toList());
 
-            PageResult<SiteWithJobPlanVO> result = PageResult.of(voList, page.getTotal(), pageNum, pageSize);
+            PageResult<SiteWithTaskSchedulerVO> result = PageResult.of(voList, page.getTotal(), pageNum, pageSize);
 
             return Response.success(result);
         } catch (Exception e) {
@@ -574,10 +574,10 @@ public class MaintenanceController {
     }
 
     /**
-     * 将站点实体转换为SiteWithJobPlanVO
+     * 将站点实体转换为SiteWithTaskSchedulerVO
      */
-    private SiteWithJobPlanVO convertSiteToWithJobPlanVO(Site site) {
-        return SiteWithJobPlanVO.builder()
+    private SiteWithTaskSchedulerVO convertSiteToWithTaskSchedulerVO(Site site) {
+        return SiteWithTaskSchedulerVO.builder()
                 .id(site.getId())
                 .siteCode(site.getSiteCode())
                 .siteName(site.getSiteName())
@@ -595,93 +595,93 @@ public class MaintenanceController {
     }
 
     /**
-     * 填充任务计划信息到VO
+     * 填充任务调度信息到VO
      */
-    private void fillJobPlanInfo(SiteWithJobPlanVO vo, SiteJobPlan jobPlan) {
-        vo.setJobPlanId(jobPlan.getId());
-        vo.setJobPlanState(jobPlan.getJobPlanState() != null ? jobPlan.getJobPlanState().getDescription() : null);
-        vo.setJobPlanCreator(jobPlan.getCreator());
-        vo.setJobPlanCreateTime(jobPlan.getCreateTime() != null ? jobPlan.getCreateTime().format(DATE_FORMATTER) : null);
-        vo.setJobPlanUpdater(jobPlan.getUpdater());
-        vo.setJobPlanUpdateTime(jobPlan.getUpdateTime() != null ? jobPlan.getUpdateTime().format(DATE_FORMATTER) : null);
+    private void fillTaskSchedulerInfo(SiteWithTaskSchedulerVO vo, TaskScheduler taskScheduler) {
+        vo.setTaskSchedulerId(taskScheduler.getId());
+        vo.setTaskSchedulerState(taskScheduler.getTaskSchedulerState() != null ? taskScheduler.getTaskSchedulerState().getDescription() : null);
+        vo.setTaskSchedulerCreator(taskScheduler.getCreator());
+        vo.setTaskSchedulerCreateTime(taskScheduler.getCreateTime() != null ? taskScheduler.getCreateTime().format(DATE_FORMATTER) : null);
+        vo.setTaskSchedulerUpdater(taskScheduler.getUpdater());
+        vo.setTaskSchedulerUpdateTime(taskScheduler.getUpdateTime() != null ? taskScheduler.getUpdateTime().format(DATE_FORMATTER) : null);
 
         // 部门信息
-        if (jobPlan.getDepartment() != null) {
-            vo.setDepartmentId(jobPlan.getDepartment().getId());
-            vo.setDepartmentName(jobPlan.getDepartment().getName());
+        if (taskScheduler.getDepartment() != null) {
+            vo.setDepartmentId(taskScheduler.getDepartment().getId());
+            vo.setDepartmentName(taskScheduler.getDepartment().getName());
         }
 
-        // 方案信息
-        if (jobPlan.getScheme() != null) {
-            vo.setSchemeId(jobPlan.getScheme().getId());
-            vo.setSchemeName(jobPlan.getScheme().getName());
-            vo.setSchemeCode(jobPlan.getScheme().getCode());
+        // 任务模版信息
+        if (taskScheduler.getTaskTemplate() != null) {
+            vo.setTaskTemplateId(taskScheduler.getTaskTemplate().getId());
+            vo.setTaskTemplateName(taskScheduler.getTaskTemplate().getName());
+            vo.setTaskTemplateCode(taskScheduler.getTaskTemplate().getCode());
         }
 
         // 周期配置
-        if (jobPlan.getPeriodConfig() != null && jobPlan.getPeriodConfig().getPertioType() != null) {
-            SiteWithJobPlanVO.PeriodConfigVO periodConfigVO = SiteWithJobPlanVO.PeriodConfigVO.builder()
-                    .periodType(jobPlan.getPeriodConfig().getPertioType().name())
-                    .n(jobPlan.getPeriodConfig().getN())
+        if (taskScheduler.getPeriodConfig() != null && taskScheduler.getPeriodConfig().getPertioType() != null) {
+            SiteWithTaskSchedulerVO.PeriodConfigVO periodConfigVO = SiteWithTaskSchedulerVO.PeriodConfigVO.builder()
+                    .periodType(taskScheduler.getPeriodConfig().getPertioType().name())
+                    .n(taskScheduler.getPeriodConfig().getN())
                     .build();
             vo.setPeriodConfig(periodConfigVO);
         }
     }
 
     /**
-     * 将站点任务计划实体转换为VO
+     * 将站点任务调度实体转换为VO
      */
-    private SiteJobPlanVO convertSiteJobPlanToVO(SiteJobPlan plan) {
-        SiteJobPlanVO vo = SiteJobPlanVO.builder()
-                .id(plan.getId())
-                .jobPlanState(plan.getJobPlanState() != null ? plan.getJobPlanState().getDescription() : null)
-                .creator(plan.getCreator())
-                .createTime(plan.getCreateTime())
-                .updater(plan.getUpdater())
-                .updateTime(plan.getUpdateTime())
+    private TaskSchedulerVO convertTaskSchedulerToVO(TaskScheduler taskScheduler) {
+        TaskSchedulerVO vo = TaskSchedulerVO.builder()
+                .id(taskScheduler.getId())
+                .taskSchedulerState(taskScheduler.getTaskSchedulerState() != null ? taskScheduler.getTaskSchedulerState().getDescription() : null)
+                .creator(taskScheduler.getCreator())
+                .createTime(taskScheduler.getCreateTime())
+                .updater(taskScheduler.getUpdater())
+                .updateTime(taskScheduler.getUpdateTime())
                 .build();
 
         // 周期配置
-        if (plan.getPeriodConfig() != null && plan.getPeriodConfig().getPertioType() != null) {
-            SiteJobPlanVO.PeriodConfigVO periodConfigVO = SiteJobPlanVO.PeriodConfigVO.builder()
-                    .periodType(plan.getPeriodConfig().getPertioType().name())
-                    .n(plan.getPeriodConfig().getN())
+        if (taskScheduler.getPeriodConfig() != null && taskScheduler.getPeriodConfig().getPertioType() != null) {
+            TaskSchedulerVO.PeriodConfigVO periodConfigVO = TaskSchedulerVO.PeriodConfigVO.builder()
+                    .periodType(taskScheduler.getPeriodConfig().getPertioType().name())
+                    .n(taskScheduler.getPeriodConfig().getN())
                     .build();
             vo.setPeriodConfig(periodConfigVO);
         }
 
         // 站点信息
-        if (plan.getSite() != null) {
-            vo.setSiteId(plan.getSite().getId());
-            vo.setSiteName(plan.getSite().getSiteName());
-            vo.setSiteCode(plan.getSite().getSiteCode());
+        if (taskScheduler.getSite() != null) {
+            vo.setSiteId(taskScheduler.getSite().getId());
+            vo.setSiteName(taskScheduler.getSite().getSiteName());
+            vo.setSiteCode(taskScheduler.getSite().getSiteCode());
 
             // 企业信息
-            if (plan.getSite().getEnterprise() != null) {
-                vo.setEnterpriseId(plan.getSite().getEnterprise().getId());
-                vo.setEnterpriseName(plan.getSite().getEnterprise().getEnterpriseName());
+            if (taskScheduler.getSite().getEnterprise() != null) {
+                vo.setEnterpriseId(taskScheduler.getSite().getEnterprise().getId());
+                vo.setEnterpriseName(taskScheduler.getSite().getEnterprise().getEnterpriseName());
             }
         }
 
-        // 方案信息
-        if (plan.getScheme() != null) {
-            vo.setSchemeId(plan.getScheme().getId());
-            vo.setSchemeName(plan.getScheme().getName());
+        // 任务模版信息
+        if (taskScheduler.getTaskTemplate() != null) {
+            vo.setTaskTemplateId(taskScheduler.getTaskTemplate().getId());
+            vo.setTaskTemplateName(taskScheduler.getTaskTemplate().getName());
         }
 
         // 部门信息
-        if (plan.getDepartment() != null) {
-            vo.setDepartmentId(plan.getDepartment().getId());
-            vo.setDepartmentName(plan.getDepartment().getName());
+        if (taskScheduler.getDepartment() != null) {
+            vo.setDepartmentId(taskScheduler.getDepartment().getId());
+            vo.setDepartmentName(taskScheduler.getDepartment().getName());
         }
 
         return vo;
     }
 
-    // ========== 任务实例查询接口 ==========
+    // ========== 任务查询接口 ==========
 
     /**
-     * 分页查询任务实例
+     * 分页查询任务
      *
      * @param pageNum 页码
      * @param pageSize 每页大小
@@ -693,8 +693,8 @@ public class MaintenanceController {
      * @param departmentId 运维小组（部门ID）
      * @return 分页结果
      */
-    @GetMapping("/job-instances")
-    public Response<PageResult<SiteJobInstanceVO>> getSiteJobInstancePage(
+    @GetMapping("/task")
+    public Response<PageResult<TaskVO>> getTaskPage(
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize,
             @RequestParam(required = false) String siteName,
@@ -704,15 +704,15 @@ public class MaintenanceController {
             @RequestParam(required = false) String creator,
             @RequestParam(required = false) Integer departmentId) {
         try {
-            IPage<com.aquainsight.domain.maintenance.entity.SiteJobInstance> page =
-                    maintenanceApplicationService.getSiteJobInstancePage(
+            IPage<com.aquainsight.domain.maintenance.entity.Task> page =
+                    maintenanceApplicationService.getTaskPage(
                             pageNum, pageSize, siteName, status, startTime, endTime, creator, departmentId);
 
-            List<SiteJobInstanceVO> voList = page.getRecords().stream()
-                    .map(this::convertSiteJobInstanceToVO)
+            List<TaskVO> voList = page.getRecords().stream()
+                    .map(this::convertTaskToVO)
                     .collect(Collectors.toList());
 
-            PageResult<SiteJobInstanceVO> result = PageResult.of(voList, page.getTotal(), pageNum, pageSize);
+            PageResult<TaskVO> result = PageResult.of(voList, page.getTotal(), pageNum, pageSize);
             return Response.success(result);
         } catch (Exception e) {
             return Response.error(e.getMessage());
@@ -720,10 +720,10 @@ public class MaintenanceController {
     }
 
     /**
-     * 将站点任务实例实体转换为VO
+     * 将站点任务实体转换为VO
      */
-    private SiteJobInstanceVO convertSiteJobInstanceToVO(com.aquainsight.domain.maintenance.entity.SiteJobInstance instance) {
-        SiteJobInstanceVO vo = SiteJobInstanceVO.builder()
+    private TaskVO convertTaskToVO(com.aquainsight.domain.maintenance.entity.Task instance) {
+        TaskVO vo = TaskVO.builder()
                 .id(instance.getId())
                 .triggerTime(instance.getTriggerTime())
                 .startTime(instance.getStartTime())
@@ -736,10 +736,10 @@ public class MaintenanceController {
                 .updateTime(instance.getUpdateTime())
                 .build();
 
-        // 填充任务计划ID（仅作为标记）
-        vo.setSiteJobPlanId(instance.getSiteJobPlanId());
+        // 填充任务调度ID（仅作为标记）
+        vo.setTaskSchedulerId(instance.getTaskSchedulerId());
 
-        // 填充站点信息（直接从任务实例获取）
+        // 填充站点信息（直接从任务获取）
         if (instance.getSite() != null) {
             vo.setSiteId(instance.getSite().getId());
             vo.setSiteName(instance.getSite().getSiteName());
@@ -752,20 +752,20 @@ public class MaintenanceController {
             }
         }
 
-        // 填充方案信息（直接从任务实例获取）
-        if (instance.getScheme() != null) {
-            vo.setSchemeId(instance.getScheme().getId());
-            vo.setSchemeName(instance.getScheme().getName());
+        // 填充任务模版信息（直接从任务获取）
+        if (instance.getTaskTemplate() != null) {
+            vo.setTaskTemplateId(instance.getTaskTemplate().getId());
+            vo.setTaskTemplateName(instance.getTaskTemplate().getName());
 
             // 计算任务项量
-            if (instance.getScheme().getItems() != null) {
-                vo.setTaskItemCount(instance.getScheme().getItems().size());
+            if (instance.getTaskTemplate().getItems() != null) {
+                vo.setTaskItemCount(instance.getTaskTemplate().getItems().size());
             } else {
                 vo.setTaskItemCount(0);
             }
         }
 
-        // 填充部门信息（直接从任务实例获取）
+        // 填充部门信息（直接从任务获取）
         if (instance.getDepartment() != null) {
             vo.setDepartmentId(instance.getDepartment().getId());
             vo.setDepartmentName(instance.getDepartment().getName());
@@ -774,22 +774,22 @@ public class MaintenanceController {
         return vo;
     }
 
-    // ========== 任务实例补齐接口 ==========
+    // ========== 任务补齐接口 ==========
 
     /**
-     * 补齐任务实例
-     * 根据任务计划和时间范围，自动补齐缺失的任务实例
+     * 补齐任务
+     * 根据任务调度和时间范围，自动补齐缺失的任务
      */
-    @PostMapping("/job-instances/backfill")
-    public Response<BackfillResultVO> backfillJobInstances(@Valid @RequestBody BackfillJobInstancesRequest request) {
+    @PostMapping("/task/backfill")
+    public Response<BackfillResultVO> backfillTask(@Valid @RequestBody BackfillTaskRequest request) {
         try {
             // 获取当前用户
             User currentUser = ThreadLocalUtil.getUser();
 
-            // 调用应用服务补齐任务实例
-            List<com.aquainsight.domain.maintenance.entity.SiteJobInstance> backfilledInstances =
-                    maintenanceApplicationService.backfillJobInstancesForPlan(
-                            request.getSiteJobPlanId(),
+            // 调用应用服务补齐任务
+            List<com.aquainsight.domain.maintenance.entity.Task> backfilledInstances =
+                    maintenanceApplicationService.backfillTaskForScheduler(
+                            request.getTaskSchedulerId(),
                             request.getStartTime(),
                             request.getEndTime(),
                             currentUser.getName()
@@ -816,38 +816,38 @@ public class MaintenanceController {
         } catch (IllegalArgumentException e) {
             return Response.error(e.getMessage());
         } catch (Exception e) {
-            return Response.error("补齐任务实例失败: " + e.getMessage());
+            return Response.error("补齐任务失败: " + e.getMessage());
         }
     }
 
     /**
-     * 手动创建任务实例
-     * 根据站点、方案、部门信息创建一个任务实例（触发时间为当前时间）
+     * 手动创建任务
+     * 根据站点、任务模版、部门信息创建一个任务（触发时间为当前时间）
      */
-    @PostMapping("/job-instances")
-    public Response<SiteJobInstanceVO> createManualJobInstance(@Valid @RequestBody CreateManualJobInstanceRequest request) {
+    @PostMapping("/task")
+    public Response<TaskVO> createManualJobInstance(@Valid @RequestBody CreateManualJobInstanceRequest request) {
         try {
             // 获取当前用户
             User currentUser = ThreadLocalUtil.getUser();
 
-            // 调用应用服务创建任务实例
-            com.aquainsight.domain.maintenance.entity.SiteJobInstance instance =
+            // 调用应用服务创建任务
+            com.aquainsight.domain.maintenance.entity.Task instance =
                     maintenanceApplicationService.createManualJobInstance(
                             request.getSiteId(),
-                            request.getSchemeId(),
+                            request.getTaskTemplateId(),
                             request.getDepartmentId(),
                             currentUser.getName()
                     );
 
             // 转换为VO
-            SiteJobInstanceVO vo = convertSiteJobInstanceToVO(instance);
+            TaskVO vo = convertTaskToVO(instance);
 
             return Response.success(vo);
 
         } catch (IllegalArgumentException e) {
             return Response.error(e.getMessage());
         } catch (Exception e) {
-            return Response.error("创建任务实例失败: " + e.getMessage());
+            return Response.error("创建任务失败: " + e.getMessage());
         }
     }
 }

@@ -6,7 +6,7 @@ export type JobParameter = {
   required: boolean
 }
 
-export type JobCategory = {
+export type StepTemplate = {
   id: number
   name: string
   code: string
@@ -17,7 +17,7 @@ export type JobCategory = {
   updateTime: string
 }
 
-export type CreateJobCategoryRequest = {
+export type CreateStepTemplateRequest = {
   name: string
   code: string
   parameters?: JobParameter[]
@@ -25,206 +25,206 @@ export type CreateJobCategoryRequest = {
   description?: string
 }
 
-export type UpdateJobCategoryRequest = {
+export type UpdateStepTemplateRequest = {
   name?: string
   parameters?: JobParameter[]
   overdueDays?: number
   description?: string
 }
 
-// 获取作业类别列表
-export const getJobCategoryList = (name?: string) => {
-  return request.get<JobCategory[]>('/maintenance/job-categories', {
+// 获取步骤模版列表
+export const getStepTemplateList = (name?: string) => {
+  return request.get<StepTemplate[]>('/maintenance/step-templates', {
     params: { name },
   })
 }
 
-// 创建作业类别
-export const createJobCategory = (data: CreateJobCategoryRequest) => {
-  return request.post<JobCategory>('/maintenance/job-categories', data)
+// 创建步骤模版
+export const createStepTemplate = (data: CreateStepTemplateRequest) => {
+  return request.post<StepTemplate>('/maintenance/step-templates', data)
 }
 
-// 更新作业类别
-export const updateJobCategory = (id: number, data: UpdateJobCategoryRequest) => {
-  return request.put<JobCategory>(`/maintenance/job-categories/${id}`, data)
+// 更新步骤模版
+export const updateStepTemplate = (id: number, data: UpdateStepTemplateRequest) => {
+  return request.put<StepTemplate>(`/maintenance/step-templates/${id}`, data)
 }
 
-// 删除作业类别
-export const deleteJobCategory = (id: number) => {
-  return request.delete(`/maintenance/job-categories/${id}`)
+// 删除步骤模版
+export const deleteStepTemplate = (id: number) => {
+  return request.delete(`/maintenance/step-templates/${id}`)
 }
 
-// 批量删除作业类别
+// 批量删除步骤模版
 export const batchDeleteJobCategories = (ids: number[]) => {
-  return request.delete('/maintenance/job-categories', { data: ids })
+  return request.delete('/maintenance/step-templates', { data: ids })
 }
 
-// 获取作业类别详情
-export const getJobCategoryDetail = (id: number) => {
-  return request.get<JobCategory>(`/maintenance/job-categories/${id}`)
+// 获取步骤模版详情
+export const getStepTemplateDetail = (id: number) => {
+  return request.get<StepTemplate>(`/maintenance/step-templates/${id}`)
 }
 
-// ========== 方案管理 ==========
+// ========== 任务模版管理 ==========
 
-export type SchemeItem = {
+export type TaskTemplateItem = {
   id: number
-  schemeId: number
-  jobCategoryId: number
-  jobCategory?: JobCategory
+  taskTemplateId: number
+  stepTemplateId: number
+  stepTemplate?: StepTemplate
   itemName: string
   description: string | null
   createTime: string
   updateTime: string
 }
 
-export type Scheme = {
+export type TaskTemplate = {
   id: number
   name: string
   code: string
   creator: string | null
   createTime: string
   updateTime: string
-  items?: SchemeItem[]
+  items?: TaskTemplateItem[]
 }
 
-export type CreateSchemeRequest = {
+export type CreateTaskTemplateRequest = {
   name: string
   code: string
 }
 
-export type UpdateSchemeRequest = {
+export type UpdateTaskTemplateRequest = {
   name: string
 }
 
-export type CreateSchemeItemRequest = {
-  schemeId: number
-  jobCategoryId: number
+export type CreateTaskTemplateItemRequest = {
+  taskTemplateId: number
+  stepTemplateId: number
   itemName: string
   description?: string
 }
 
-export type UpdateSchemeItemRequest = {
+export type UpdateTaskTemplateItemRequest = {
   itemName: string
   description?: string
 }
 
-// 获取方案列表
-export const getSchemeList = (name?: string) => {
-  return request.get<Scheme[]>('/maintenance/schemes', {
+// 获取任务模版列表
+export const getTaskTemplateList = (name?: string) => {
+  return request.get<TaskTemplate[]>('/maintenance/taskTemplates', {
     params: { name },
   })
 }
 
-// 创建方案
-export const createScheme = (data: CreateSchemeRequest) => {
-  return request.post<Scheme>('/maintenance/schemes', data)
+// 创建任务模版
+export const createTaskTemplate = (data: CreateTaskTemplateRequest) => {
+  return request.post<TaskTemplate>('/maintenance/taskTemplates', data)
 }
 
-// 更新方案
-export const updateScheme = (id: number, data: UpdateSchemeRequest) => {
-  return request.put<Scheme>(`/maintenance/schemes/${id}`, data)
+// 更新任务模版
+export const updateTaskTemplate = (id: number, data: UpdateTaskTemplateRequest) => {
+  return request.put<TaskTemplate>(`/maintenance/taskTemplates/${id}`, data)
 }
 
-// 删除方案
-export const deleteScheme = (id: number) => {
-  return request.delete(`/maintenance/schemes/${id}`)
+// 删除任务模版
+export const deleteTaskTemplate = (id: number) => {
+  return request.delete(`/maintenance/taskTemplates/${id}`)
 }
 
-// 批量删除方案
-export const batchDeleteSchemes = (ids: number[]) => {
-  return request.delete('/maintenance/schemes', { data: ids })
+// 批量删除任务模版
+export const batchDeleteTaskTemplates = (ids: number[]) => {
+  return request.delete('/maintenance/taskTemplates', { data: ids })
 }
 
-// 获取方案详情（包含方案项目）
-export const getSchemeDetail = (id: number, withItems: boolean = true) => {
-  return request.get<Scheme>(`/maintenance/schemes/${id}`, {
+// 获取任务模版详情（包含任务模版项目）
+export const getTaskTemplateDetail = (id: number, withItems: boolean = true) => {
+  return request.get<TaskTemplate>(`/maintenance/taskTemplates/${id}`, {
     params: { withItems },
   })
 }
 
-// 获取方案的所有项目
-export const getSchemeItems = (schemeId: number) => {
-  return request.get<SchemeItem[]>(`/maintenance/schemes/${schemeId}/items`)
+// 获取任务模版的所有项目
+export const getTaskTemplateItems = (taskTemplateId: number) => {
+  return request.get<TaskTemplateItem[]>(`/maintenance/taskTemplates/${taskTemplateId}/items`)
 }
 
-// 添加方案项目
-export const addSchemeItem = (data: CreateSchemeItemRequest) => {
-  return request.post<SchemeItem>('/maintenance/scheme-items', data)
+// 添加任务模版项目
+export const addTaskTemplateItem = (data: CreateTaskTemplateItemRequest) => {
+  return request.post<TaskTemplateItem>('/maintenance/taskTemplate-items', data)
 }
 
-// 更新方案项目
-export const updateSchemeItem = (id: number, data: UpdateSchemeItemRequest) => {
-  return request.put<SchemeItem>(`/maintenance/scheme-items/${id}`, data)
+// 更新任务模版项目
+export const updateTaskTemplateItem = (id: number, data: UpdateTaskTemplateItemRequest) => {
+  return request.put<TaskTemplateItem>(`/maintenance/taskTemplate-items/${id}`, data)
 }
 
-// 删除方案项目
-export const deleteSchemeItem = (id: number) => {
-  return request.delete(`/maintenance/scheme-items/${id}`)
+// 删除任务模版项目
+export const deleteTaskTemplateItem = (id: number) => {
+  return request.delete(`/maintenance/taskTemplate-items/${id}`)
 }
 
-// ========== 站点任务计划管理 ==========
+// ========== 站点任务调度管理 ==========
 
 export type PeriodConfig = {
   periodType: 'INTERVAL' | 'WEEK' | 'MONTH'
   n?: number
 }
 
-export type SiteJobPlan = {
+export type TaskScheduler = {
   id: number
   siteId: number
   siteName?: string
   periodConfig: PeriodConfig
-  schemeId: number
-  schemeName?: string
-  schemeCode?: string
+  taskTemplateId: number
+  taskTemplateName?: string
+  taskTemplateCode?: string
   departmentId: number
   departmentName?: string
-  jobPlanState?: string
+  taskSchedulerState?: string
   creator: string
   createTime: string
   updater: string
   updateTime: string
 }
 
-export type ConfigureSiteJobPlanRequest = {
+export type ConfigureTaskSchedulerRequest = {
   siteId: number
   periodConfig: {
     periodType: 'INTERVAL' | 'WEEK' | 'MONTH'
     n?: number
   }
-  schemeId: number
+  taskTemplateId: number
   departmentId: number
 }
 
-// 配置站点任务计划（新增或更新）
-export const configureSiteJobPlan = (data: ConfigureSiteJobPlanRequest) => {
-  return request.post<SiteJobPlan>('/maintenance/site-job-plans', data)
+// 配置站点任务调度（新增或更新）
+export const configureTaskScheduler = (data: ConfigureTaskSchedulerRequest) => {
+  return request.post<TaskScheduler>('/maintenance/site-task-schedulers', data)
 }
 
-// 根据站点ID获取任务计划
-export const getSiteJobPlanBySiteId = (siteId: number) => {
-  return request.get<SiteJobPlan>(`/maintenance/site-job-plans/site/${siteId}`)
+// 根据站点ID获取任务调度
+export const getTaskSchedulerBySiteId = (siteId: number) => {
+  return request.get<TaskScheduler>(`/maintenance/site-task-schedulers/site/${siteId}`)
 }
 
-// 删除站点任务计划
-export const deleteSiteJobPlan = (id: number) => {
-  return request.delete(`/maintenance/site-job-plans/${id}`)
+// 删除站点任务调度
+export const deleteTaskScheduler = (id: number) => {
+  return request.delete(`/maintenance/site-task-schedulers/${id}`)
 }
 
-// 分页查询站点及其任务计划
-export const getSitesWithJobPlans = (
+// 分页查询站点及其任务调度
+export const getSitesWithTaskSchedulers = (
   pageNum: number = 1,
   pageSize: number = 10,
   siteType?: string,
   enterpriseId?: number
 ) => {
-  return request.get<any>('/maintenance/sites-with-job-plans', {
+  return request.get<any>('/maintenance/sites-with-task-schedulers', {
     params: { pageNum, pageSize, siteType, enterpriseId },
   })
 }
 
-// 分页查询站点任务计划
-export const getSiteJobPlanPage = (params: {
+// 分页查询站点任务调度
+export const getTaskSchedulerPage = (params: {
   pageNum?: number
   pageSize?: number
   siteName?: string
@@ -232,15 +232,15 @@ export const getSiteJobPlanPage = (params: {
   siteId?: number
   departmentId?: number
 }) => {
-  return request.get<any>('/maintenance/site-job-plans', {
+  return request.get<any>('/maintenance/site-task-schedulers', {
     params,
   })
 }
 
-// ========== 任务实例补齐 ==========
+// ========== 任务补齐 ==========
 
-export type BackfillJobInstancesRequest = {
-  siteJobPlanId: number
+export type BackfillTaskRequest = {
+  taskSchedulerId: number
   startTime: string // 格式: yyyy-MM-dd HH:mm:ss
   endTime: string   // 格式: yyyy-MM-dd HH:mm:ss
 }
@@ -258,16 +258,16 @@ export type BackfillResultVO = {
   instances: JobInstanceInfo[]
 }
 
-// 补齐任务实例
-export const backfillJobInstances = (data: BackfillJobInstancesRequest) => {
-  return request.post<BackfillResultVO>('/maintenance/job-instances/backfill', data)
+// 补齐任务
+export const backfillTask = (data: BackfillTaskRequest) => {
+  return request.post<BackfillResultVO>('/maintenance/task/backfill', data)
 }
 
-// ========== 任务实例查询 ==========
+// ========== 任务查询 ==========
 
-export type SiteJobInstance = {
+export type Task = {
   id: number
-  siteJobPlanId: number
+  taskSchedulerId: number
   siteId: number
   siteName: string
   siteCode: string
@@ -278,8 +278,8 @@ export type SiteJobInstance = {
   endTime: string | null
   status: string
   expiredTime: string
-  schemeId: number
-  schemeName: string
+  taskTemplateId: number
+  taskTemplateName: string
   taskItemCount: number
   departmentId: number
   departmentName: string
@@ -289,8 +289,8 @@ export type SiteJobInstance = {
   updateTime: string
 }
 
-// 分页查询任务实例
-export const getSiteJobInstancePage = (params: {
+// 分页查询任务
+export const getTaskPage = (params: {
   pageNum?: number
   pageSize?: number
   siteName?: string
@@ -300,20 +300,20 @@ export const getSiteJobInstancePage = (params: {
   creator?: string
   departmentId?: number
 }) => {
-  return request.get<any>('/maintenance/job-instances', {
+  return request.get<any>('/maintenance/task', {
     params,
   })
 }
 
-// ========== 手动创建任务实例 ==========
+// ========== 手动创建任务 ==========
 
 export type CreateManualJobInstanceRequest = {
   siteId: number
-  schemeId: number
+  taskTemplateId: number
   departmentId: number
 }
 
-// 手动创建任务实例
+// 手动创建任务
 export const createManualJobInstance = (data: CreateManualJobInstanceRequest) => {
-  return request.post<SiteJobInstance>('/maintenance/job-instances', data)
+  return request.post<Task>('/maintenance/task', data)
 }

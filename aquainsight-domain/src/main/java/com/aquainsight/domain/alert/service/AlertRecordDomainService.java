@@ -12,9 +12,9 @@ import com.aquainsight.domain.alert.types.AlertStatus;
 import com.aquainsight.domain.alert.types.AlertTargetType;
 import com.aquainsight.domain.alert.types.NotifyStatus;
 import com.aquainsight.domain.alert.types.NotifyType;
-import com.aquainsight.domain.maintenance.entity.SiteJobInstance;
-import com.aquainsight.domain.maintenance.entity.SiteJobPlan;
-import com.aquainsight.domain.maintenance.repository.SiteJobInstanceRepository;
+import com.aquainsight.domain.maintenance.entity.Task;
+import com.aquainsight.domain.maintenance.entity.TaskScheduler;
+import com.aquainsight.domain.maintenance.repository.TaskRepository;
 import com.aquainsight.domain.monitoring.entity.Site;
 import com.aquainsight.domain.monitoring.repository.SiteRepository;
 import com.aquainsight.domain.user.entity.User;
@@ -44,7 +44,7 @@ public class AlertRecordDomainService {
     private final AlertRuleRepository alertRuleRepository;
     private final UserRepository userRepository;
     private final SiteRepository siteRepository;
-    private final SiteJobInstanceRepository siteJobInstanceRepository;
+    private final TaskRepository taskRepository;
     private final UserDepartmentRepository userDepartmentRepository;
 
     /**
@@ -53,7 +53,7 @@ public class AlertRecordDomainService {
     public AlertRecord createAlertRecord(AlertRule rule, AlertTargetType targetType,
                                         Integer targetId, String targetName,
                                         String alertMessage, String alertData,
-                                        Integer jobInstanceId, boolean isSelfTask) {
+                                        Integer taskId, boolean isSelfTask) {
         // 验证必填字段
         if (rule == null) {
             throw new IllegalArgumentException("告警规则不能为空");
@@ -74,7 +74,7 @@ public class AlertRecordDomainService {
                 .alertLevel(rule.getAlertLevel())
                 .alertMessage(alertMessage)
                 .alertData(alertData)
-                .jobInstanceId(jobInstanceId)
+                .taskId(taskId)
                 .isSelfTask(isSelfTask ? 1 : 0)
                 .status(AlertStatus.PENDING)
                 .notifyStatus(NotifyStatus.PENDING)
@@ -152,13 +152,13 @@ public class AlertRecordDomainService {
     }
 
     /**
-     * 关联任务实例
+     * 关联任务
      */
-    public AlertRecord associateJobInstance(Integer recordId, Integer jobInstanceId, boolean isSelfTask) {
+    public AlertRecord associateJobInstance(Integer recordId, Integer taskId, boolean isSelfTask) {
         AlertRecord record = alertRecordRepository.findById(recordId)
                 .orElseThrow(() -> new IllegalArgumentException("告警记录不存在"));
 
-        record.associateJobInstance(jobInstanceId, isSelfTask);
+        record.associateJobInstance(taskId, isSelfTask);
         return alertRecordRepository.update(record);
     }
 
@@ -394,15 +394,15 @@ public class AlertRecordDomainService {
 
     /**
      * 获取任务负责人
-     * 返回任务实例所属 plan 中 department 的所有成员
+     * 返回任务所属 plan 中 department 的所有成员
      */
     private List<User> getTaskRecipients(Integer taskId) {
         List<User> recipients = new ArrayList<>();
 
         try {
-            SiteJobInstance jobInstance = siteJobInstanceRepository.findById(taskId);
+            Task jobInstance = taskRepository.findById(taskId);
             if (jobInstance != null) {
-                // 获取任务实例中的部门ID
+                // 获取任务中的部门ID
                 Integer departmentId = jobInstance.getDepartmentId();
 
                 if (departmentId != null) {

@@ -30,7 +30,7 @@ public class AlertRuleDomainService {
      * 创建告警规则
      */
     public AlertRule createRule(String ruleName, AlertTargetType alertTargetType, List<RuleCondition> conditionConfigs,
-                                AlertLevel alertLevel, String alertMessage, Integer schemeId,
+                                AlertLevel alertLevel, String alertMessage, Integer taskTemplateId,
                                 String notifyTypes, String notifyUsers, String notifyDepartments,
                                 Integer quietPeriod, String description, String creator) {
         // 验证必填字段
@@ -55,7 +55,7 @@ public class AlertRuleDomainService {
                 .conditionConfigs(conditionConfigs)
                 .alertLevel(alertLevel)
                 .alertMessage(alertMessage)
-                .schemeId(schemeId)
+                .taskTemplateId(taskTemplateId)
                 .notifyTypes(notifyTypes)
                 .notifyUsers(notifyUsers)
                 .notifyDepartments(notifyDepartments)
@@ -81,7 +81,7 @@ public class AlertRuleDomainService {
      */
     public AlertRule updateRule(Integer ruleId, String ruleName, AlertTargetType alertTargetType,
                                 List<RuleCondition> conditionConfigs, AlertLevel alertLevel,
-                                String alertMessage, Integer schemeId, String notifyTypes,
+                                String alertMessage, Integer taskTemplateId, String notifyTypes,
                                 String notifyUsers, String notifyDepartments, Integer quietPeriod,
                                 String description, String updater) {
         AlertRule rule = alertRuleRepository.findById(ruleId)
@@ -95,7 +95,7 @@ public class AlertRuleDomainService {
         }
 
         rule.updateInfo(ruleName, alertTargetType, conditionConfigs, alertLevel, alertMessage,
-                schemeId, notifyTypes, notifyUsers, notifyDepartments, quietPeriod,
+                taskTemplateId, notifyTypes, notifyUsers, notifyDepartments, quietPeriod,
                 description, updater);
 
         // 验证条件配置
@@ -176,10 +176,10 @@ public class AlertRuleDomainService {
     }
 
     /**
-     * 根据方案ID获取关联的告警规则
+     * 根据任务模版ID获取关联的告警规则
      */
-    public List<AlertRule> getRulesBySchemeId(Integer schemeId) {
-        return alertRuleRepository.findBySchemeId(schemeId);
+    public List<AlertRule> getRulesByTaskTemplateId(Integer taskTemplateId) {
+        return alertRuleRepository.findByTaskTemplateId(taskTemplateId);
     }
 
     /**

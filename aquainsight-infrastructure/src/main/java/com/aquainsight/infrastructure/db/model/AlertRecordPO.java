@@ -70,9 +70,9 @@ public class AlertRecordPO {
     private String alertData;
 
     /**
-     * 关联的任务实例ID
+     * 关联的任务ID
      */
-    private Integer jobInstanceId;
+    private Integer taskId;
 
     /**
      * 是否关联自身任务(0-关联新创建任务,1-关联触发告警的任务本身)

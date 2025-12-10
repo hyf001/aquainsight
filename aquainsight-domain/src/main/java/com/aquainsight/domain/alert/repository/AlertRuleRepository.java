@@ -38,9 +38,9 @@ public interface AlertRuleRepository {
     List<AlertRule> findEnabledByAlertTargetType(AlertTargetType alertTargetType);
 
     /**
-     * 根据方案ID查找告警规则
+     * 根据任务模版ID查找告警规则
      */
-    List<AlertRule> findBySchemeId(Integer schemeId);
+    List<AlertRule> findByTaskTemplateId(Integer taskTemplateId);
 
     /**
      * 更新告警规则

@@ -50,9 +50,9 @@ public class AlertRulePO {
     private String alertMessage;
 
     /**
-     * 关联方案ID(用于创建处理任务实例)
+     * 关联任务模版ID(用于创建处理任务)
      */
-    private Integer schemeId;
+    private Integer taskTemplateId;
 
     /**
      * 通知方式(多个用逗号分隔: SMS,EMAIL,WECHAT)

@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 补齐任务实例结果视图对象
+ * 补齐任务结果视图对象
  */
 @Data
 @Builder
@@ -19,17 +19,17 @@ import java.util.List;
 public class BackfillResultVO {
 
     /**
-     * 总共补齐的任务实例数量
+     * 总共补齐的任务数量
      */
     private Integer totalCount;
 
     /**
-     * 补齐的任务实例列表
+     * 补齐的任务列表
      */
     private List<JobInstanceInfo> instances;
 
     /**
-     * 任务实例简要信息
+     * 任务简要信息
      */
     @Data
     @Builder
@@ -37,7 +37,7 @@ public class BackfillResultVO {
     @AllArgsConstructor
     public static class JobInstanceInfo {
         /**
-         * 任务实例ID
+         * 任务ID
          */
         private Integer id;
 

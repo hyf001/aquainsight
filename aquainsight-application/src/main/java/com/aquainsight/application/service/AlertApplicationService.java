@@ -11,7 +11,7 @@ import com.aquainsight.domain.alert.types.AlertStatus;
 import com.aquainsight.domain.alert.types.AlertTargetType;
 import com.aquainsight.domain.alert.types.NotifyStatus;
 import com.aquainsight.domain.alert.types.RuleEvaluationResult;
-import com.aquainsight.domain.maintenance.repository.SiteJobInstanceRepository;
+import com.aquainsight.domain.maintenance.repository.TaskRepository;
 import com.aquainsight.domain.monitoring.repository.DeviceRepository;
 import com.aquainsight.domain.monitoring.repository.SiteRepository;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +37,7 @@ public class AlertApplicationService {
     private final AlertRecordRepository alertRecordRepository;
     private final SiteRepository siteRepository;
     private final DeviceRepository deviceRepository;
-    private final SiteJobInstanceRepository siteJobInstanceRepository;
+    private final TaskRepository taskRepository;
 
     /**
      * 扫描并评估所有启用的告警规则
@@ -214,8 +214,8 @@ public class AlertApplicationService {
                             .orElse("未知设备");
 
                 case "task":
-                    return siteJobInstanceRepository.findByIdWithPlan(targetId) != null
-                            ? "任务实例-" + targetId
+                    return taskRepository.findByIdWithPlan(targetId) != null
+                            ? "任务-" + targetId
                             : "未知任务";
 
                 default:
@@ -395,7 +395,7 @@ public class AlertApplicationService {
                 case "device":
                     return deviceRepository.findById(targetId) != null;
                 case "task":
-                    return siteJobInstanceRepository.findById(targetId) != null;
+                    return taskRepository.findById(targetId) != null;
                 default:
                     log.warn("未知的目标类型: {}", targetType);
                     return true; // 未知类型默认认为存在，避免误删

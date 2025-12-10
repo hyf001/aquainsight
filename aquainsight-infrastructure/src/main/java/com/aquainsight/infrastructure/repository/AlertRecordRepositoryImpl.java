@@ -88,10 +88,10 @@ public class AlertRecordRepositoryImpl implements AlertRecordRepository {
     }
 
     @Override
-    public List<AlertRecord> findByJobInstanceId(Integer jobInstanceId) {
+    public List<AlertRecord> findByJobInstanceId(Integer taskId) {
         LambdaQueryWrapper<AlertRecordPO> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(AlertRecordPO::getTargetType, AlertTargetType.TASK.getCode());
-        queryWrapper.eq(AlertRecordPO::getTargetId, jobInstanceId);
+        queryWrapper.eq(AlertRecordPO::getTargetId, taskId);
         queryWrapper.orderByDesc(AlertRecordPO::getCreateTime);
         List<AlertRecordPO> poList = alertRecordDao.selectList(queryWrapper);
         return converter.toEntityList(poList);

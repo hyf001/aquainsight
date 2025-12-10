@@ -67,9 +67,9 @@ public class AlertRuleRepositoryImpl implements AlertRuleRepository {
     }
 
     @Override
-    public List<AlertRule> findBySchemeId(Integer schemeId) {
+    public List<AlertRule> findByTaskTemplateId(Integer taskTemplateId) {
         LambdaQueryWrapper<AlertRulePO> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(AlertRulePO::getSchemeId, schemeId);
+        queryWrapper.eq(AlertRulePO::getTaskTemplateId, taskTemplateId);
         queryWrapper.orderByDesc(AlertRulePO::getCreateTime);
         List<AlertRulePO> poList = alertRuleDao.selectList(queryWrapper);
         return converter.toEntityList(poList);

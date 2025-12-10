@@ -7,14 +7,14 @@ import com.aquainsight.infrastructure.db.dao.DepartmentDao;
 import com.aquainsight.infrastructure.db.dao.DeviceDao;
 import com.aquainsight.infrastructure.db.dao.EnterpriseDao;
 import com.aquainsight.infrastructure.db.dao.SiteDao;
-import com.aquainsight.infrastructure.db.dao.SiteJobInstanceDao;
+import com.aquainsight.infrastructure.db.dao.TaskDao;
 import com.aquainsight.infrastructure.db.dao.UserDao;
 import com.aquainsight.infrastructure.db.model.AlertRecordPO;
 import com.aquainsight.infrastructure.db.model.DepartmentPO;
 import com.aquainsight.infrastructure.db.model.DevicePO;
 import com.aquainsight.infrastructure.db.model.EnterprisePO;
 import com.aquainsight.infrastructure.db.model.SitePO;
-import com.aquainsight.infrastructure.db.model.SiteJobInstancePO;
+import com.aquainsight.infrastructure.db.model.TaskPO;
 import com.aquainsight.infrastructure.db.model.UserPO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +35,7 @@ public class DashboardApplicationService {
 
     private final SiteDao siteDao;
     private final DeviceDao deviceDao;
-    private final SiteJobInstanceDao siteJobInstanceDao;
+    private final TaskDao taskDao;
     private final AlertRecordDao alertRecordDao;
     private final EnterpriseDao enterpriseDao;
     private final DepartmentDao departmentDao;
@@ -123,39 +123,39 @@ public class DashboardApplicationService {
     public TaskStatisticsDTO getTaskStatistics() {
         try {
             // 任务总数（@TableLogic会自动过滤已删除的记录）
-            long totalCount = siteJobInstanceDao.selectCount(new LambdaQueryWrapper<>());
+            long totalCount = taskDao.selectCount(new LambdaQueryWrapper<>());
 
             // 待处理任务数（状态=PENDING）
-            long pendingCount = siteJobInstanceDao.selectCount(
-                    new LambdaQueryWrapper<SiteJobInstancePO>()
-                            .eq(SiteJobInstancePO::getStatus, "PENDING")
+            long pendingCount = taskDao.selectCount(
+                    new LambdaQueryWrapper<TaskPO>()
+                            .eq(TaskPO::getStatus, "PENDING")
             );
 
             // 进行中任务数（状态=IN_PROGRESS）
-            long inProgressCount = siteJobInstanceDao.selectCount(
-                    new LambdaQueryWrapper<SiteJobInstancePO>()
-                            .eq(SiteJobInstancePO::getStatus, "IN_PROGRESS")
+            long inProgressCount = taskDao.selectCount(
+                    new LambdaQueryWrapper<TaskPO>()
+                            .eq(TaskPO::getStatus, "IN_PROGRESS")
             );
 
             // 已完成任务数（状态=COMPLETED）
-            long completedCount = siteJobInstanceDao.selectCount(
-                    new LambdaQueryWrapper<SiteJobInstancePO>()
-                            .eq(SiteJobInstancePO::getStatus, "COMPLETED")
+            long completedCount = taskDao.selectCount(
+                    new LambdaQueryWrapper<TaskPO>()
+                            .eq(TaskPO::getStatus, "COMPLETED")
             );
 
             // 已超期任务数（状态=OVERDUE）
-            long overdueCount = siteJobInstanceDao.selectCount(
-                    new LambdaQueryWrapper<SiteJobInstancePO>()
-                            .eq(SiteJobInstancePO::getStatus, "OVERDUE")
+            long overdueCount = taskDao.selectCount(
+                    new LambdaQueryWrapper<TaskPO>()
+                            .eq(TaskPO::getStatus, "OVERDUE")
             );
 
             // 今日新增任务数
             LocalDateTime todayStart = LocalDateTime.of(LocalDate.now(), LocalTime.MIN);
             LocalDateTime todayEnd = LocalDateTime.of(LocalDate.now(), LocalTime.MAX);
-            long todayNewCount = siteJobInstanceDao.selectCount(
-                    new LambdaQueryWrapper<SiteJobInstancePO>()
-                            .ge(SiteJobInstancePO::getCreateTime, todayStart)
-                            .le(SiteJobInstancePO::getCreateTime, todayEnd)
+            long todayNewCount = taskDao.selectCount(
+                    new LambdaQueryWrapper<TaskPO>()
+                            .ge(TaskPO::getCreateTime, todayStart)
+                            .le(TaskPO::getCreateTime, todayEnd)
             );
 
             return TaskStatisticsDTO.builder()

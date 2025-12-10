@@ -2,8 +2,8 @@ package com.aquainsight.domain.alert.service.impl;
 
 import com.aquainsight.domain.alert.entity.Metric;
 import com.aquainsight.domain.alert.service.MetricCollector;
-import com.aquainsight.domain.maintenance.entity.SiteJobInstance;
-import com.aquainsight.domain.maintenance.repository.SiteJobInstanceRepository;
+import com.aquainsight.domain.maintenance.entity.Task;
+import com.aquainsight.domain.maintenance.repository.TaskRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -21,7 +21,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TaskMetricCollector implements MetricCollector {
 
-    private final SiteJobInstanceRepository siteJobInstanceRepository;
+    private final TaskRepository taskRepository;
 
     /**
      * 支持的指标列表
@@ -36,20 +36,20 @@ public class TaskMetricCollector implements MetricCollector {
         List<Metric> metrics = new ArrayList<>();
         LocalDateTime now = LocalDateTime.now();
 
-        // 根据指标名称直接查询对应状态的任务实例
-        List<SiteJobInstance> jobInstances;
+        // 根据指标名称直接查询对应状态的任务
+        List<Task> jobInstances;
         switch (metricName) {
             case "任务即将到期":
                 // 直接查询即将过期状态的任务
-                jobInstances = siteJobInstanceRepository.findExpiringInstances();
-                for (SiteJobInstance jobInstance : jobInstances) {
+                jobInstances = taskRepository.findExpiringInstances();
+                for (Task jobInstance : jobInstances) {
                     metrics.add(collectTaskDueSoon(jobInstance, now));
                 }
                 break;
             case "任务超时":
                 // 直接查询已逾期状态的任务
-                jobInstances = siteJobInstanceRepository.findOverdueInstances();
-                for (SiteJobInstance jobInstance : jobInstances) {
+                jobInstances = taskRepository.findOverdueInstances();
+                for (Task jobInstance : jobInstances) {
                     metrics.add(collectTaskTimeout(jobInstance, now));
                 }
                 break;
@@ -65,7 +65,7 @@ public class TaskMetricCollector implements MetricCollector {
      * 采集任务即将到期指标
      * 返回值: 0-未到期, 1-即将到期
      */
-    private Metric collectTaskDueSoon(SiteJobInstance jobInstance, LocalDateTime now) {
+    private Metric collectTaskDueSoon(Task jobInstance, LocalDateTime now) {
         Metric metric = new Metric();
         metric.setName("任务即将到期");
         metric.setTargetType("task");
@@ -82,7 +82,7 @@ public class TaskMetricCollector implements MetricCollector {
      * 采集任务超时指标
      * 返回值: 0-未超时, 1-已超时
      */
-    private Metric collectTaskTimeout(SiteJobInstance jobInstance, LocalDateTime now) {
+    private Metric collectTaskTimeout(Task jobInstance, LocalDateTime now) {
         Metric metric = new Metric();
         metric.setName("任务超时");
         metric.setTargetType("task");

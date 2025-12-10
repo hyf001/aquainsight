@@ -73,9 +73,9 @@ public class AlertRecord {
     private String alertData;
 
     /**
-     * 关联的任务实例ID
+     * 关联的任务ID
      */
-    private Integer jobInstanceId;
+    private Integer taskId;
 
     /**
      * 是否关联自身任务(0-关联新创建任务,1-关联触发告警的任务本身)
@@ -279,7 +279,7 @@ public class AlertRecord {
      * 是否关联任务
      */
     public boolean hasJobInstance() {
-        return this.jobInstanceId != null && this.jobInstanceId > 0;
+        return this.taskId != null && this.taskId > 0;
     }
 
     /**
@@ -298,10 +298,10 @@ public class AlertRecord {
     }
 
     /**
-     * 关联任务实例
+     * 关联任务
      */
-    public void associateJobInstance(Integer jobInstanceId, boolean isSelfTask) {
-        this.jobInstanceId = jobInstanceId;
+    public void associateJobInstance(Integer taskId, boolean isSelfTask) {
+        this.taskId = taskId;
         this.isSelfTask = isSelfTask ? 1 : 0;
         this.updateTime = LocalDateTime.now();
     }

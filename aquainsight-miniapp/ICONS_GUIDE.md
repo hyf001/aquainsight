@@ -118,7 +118,7 @@
 - [IconFinder](https://www.iconfinder.com/)
 - [Icons8](https://icons8.com/)
 
-## 临时方案
+## 临时任务模版
 
 目前小程序使用纯文字导航栏，可以正常运行。等图标准备好后再添加即可。
 

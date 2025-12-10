@@ -41,16 +41,16 @@ const sideMenuConfig: Record<string, MenuProps['items']> = {
     { key: '/dashboard', icon: <DesktopOutlined />, label: '工作台' },
   ],
   task: [
-    { key: '/task', icon: <ToolOutlined />, label: '任务计划' },
-    { key: '/task-execution', icon: <DesktopOutlined />, label: '任务执行' },
+    { key: '/task', icon: <ToolOutlined />, label: '任务调度' },
+    { key: '/task-execution', icon: <DesktopOutlined />, label: '任务' },
     {
       key: 'task-settings',
       icon: <SettingOutlined />,
       label: '设置',
       children: [
-        { key: '/job-categories', icon: <ToolOutlined />, label: '任务类别' },
-        { key: '/schemes', icon: <ToolOutlined />, label: '方案管理' },
-        { key: '/site-configuration', icon: <SettingOutlined />, label: '站点计划配置' },
+        { key: '/step-templates', icon: <ToolOutlined />, label: '步骤模版' },
+        { key: '/taskTemplates', icon: <ToolOutlined />, label: '任务模版' },
+        { key: '/site-configuration', icon: <SettingOutlined />, label: '任务调度' },
       ],
     },
   ],

@@ -77,7 +77,7 @@ public class AlertController {
                     conditionConfigs,
                     AlertLevel.fromCode(request.getAlertLevel()),
                     request.getAlertMessage(),
-                    request.getSchemeId(),
+                    request.getTaskTemplateId(),
                     request.getNotifyTypes(),
                     request.getNotifyUsers(),
                     request.getNotifyDepartments(),
@@ -122,7 +122,7 @@ public class AlertController {
                     conditionConfigs,
                     alertLevel,
                     request.getAlertMessage(),
-                    request.getSchemeId(),
+                    request.getTaskTemplateId(),
                     request.getNotifyTypes(),
                     request.getNotifyUsers(),
                     request.getNotifyDepartments(),
@@ -478,7 +478,7 @@ public class AlertController {
                 .conditionConfigs(conditionDTOs)
                 .alertLevel(rule.getAlertLevel().getCode())
                 .alertMessage(rule.getAlertMessage())
-                .schemeId(rule.getSchemeId())
+                .taskTemplateId(rule.getTaskTemplateId())
                 .notifyTypes(rule.getNotifyTypes())
                 .notifyUsers(rule.getNotifyUsers())
                 .notifyDepartments(rule.getNotifyDepartments())
