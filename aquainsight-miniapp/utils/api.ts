@@ -1,5 +1,5 @@
 // API接口定义
-import { get, post, put, del } from './request'
+import { get, post, put, del, uploadFile } from './request'
 
 /**
  * 用户相关接口
@@ -196,6 +196,19 @@ export const notificationApi = {
     del<void>(`/notification/delete/${id}`)
 }
 
+/**
+ * 通用接口
+ */
+export const commonApi = {
+  /**
+   * 上传图片
+   * @param filePath 本地文件路径
+   * @returns 返回图片访问URL等信息
+   */
+  uploadImage: (filePath: string) =>
+    uploadFile(filePath, 'file')
+}
+
 // 导出所有API
 export default {
   user: userApi,
@@ -203,5 +216,6 @@ export default {
   alarm: alarmApi,
   task: taskApi,
   monitor: monitorApi,
-  notification: notificationApi
+  notification: notificationApi,
+  common: commonApi
 }

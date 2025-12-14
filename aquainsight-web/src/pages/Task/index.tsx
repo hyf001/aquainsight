@@ -13,22 +13,38 @@ import {
   DatePicker,
   Modal,
   Form,
+  Radio,
+  Checkbox,
+  Upload,
+  Divider,
+  Steps,
 } from 'antd'
+import { UploadOutlined } from '@ant-design/icons'
 import {
   SearchOutlined,
   ReloadOutlined,
   PlusOutlined,
+  SaveOutlined,
+  LeftOutlined,
+  RightOutlined,
+  CheckOutlined,
 } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import dayjs from 'dayjs'
 import {
   getTaskPage,
   createManualJobInstance,
+  getTaskDetail,
+  processTask,
   type Task,
+  type TaskDetail,
+  type JobParameter,
+  type StepData,
 } from '@/services/maintenance'
 import { getAllDepartments, type Department } from '@/services/organization'
 import { getEnterpriseSiteTree, type EnterpriseSiteTree } from '@/services/monitoring'
 import { getTaskTemplateList, type TaskTemplate } from '@/services/maintenance'
+import StepParameterFormItem from '@/components/StepParameterForm'
 
 const { RangePicker } = DatePicker
 
@@ -56,6 +72,14 @@ const TaskExecution: React.FC = () => {
   const [createModalVisible, setCreateModalVisible] = useState(false)
   const [createLoading, setCreateLoading] = useState(false)
   const [createForm] = Form.useForm()
+
+  // 处理任务弹窗相关
+  const [processModalVisible, setProcessModalVisible] = useState(false)
+  const [processLoading, setProcessLoading] = useState(false)
+  const [currentTask, setCurrentTask] = useState<Task | null>(null)
+  const [taskDetail, setTaskDetail] = useState<TaskDetail | null>(null)
+  const [processForm] = Form.useForm()
+  const [currentStepIndex, setCurrentStepIndex] = useState(0) // 当前步骤索引
 
   // 站点树列表
   const [enterpriseSiteTree, setEnterpriseSiteTree] = useState<EnterpriseSiteTree[]>([])
@@ -236,6 +260,191 @@ const TaskExecution: React.FC = () => {
     }
   }
 
+  // 打开处理任务弹窗
+  const handleOpenProcessModal = async (task: Task) => {
+    setCurrentTask(task)
+    setProcessModalVisible(true)
+
+    // 加载任务详情（包含步骤模板信息和已填写的步骤数据）
+    try {
+      const detail = await getTaskDetail(task.id)
+      setTaskDetail(detail)
+
+      // 预填充已有的步骤数据
+      if (detail.steps && detail.steps.length > 0) {
+        const initialValues: any = {}
+        detail.steps.forEach(step => {
+          if (step.parameterValues) {
+            step.parameterValues.forEach(pv => {
+              // 使用 stepTemplateId-parameterName 作为字段key
+              initialValues[`step_${step.stepTemplateId}_${pv.name}`] = pv.value
+            })
+          }
+        })
+        processForm.setFieldsValue(initialValues)
+      }
+    } catch (error: any) {
+      console.error('加载任务详情失败:', error)
+      message.error('加载任务详情失败')
+    }
+  }
+
+  // 关闭处理任务弹窗
+  const handleCloseProcessModal = () => {
+    setProcessModalVisible(false)
+    setCurrentTask(null)
+    setTaskDetail(null)
+    setCurrentStepIndex(0)
+    processForm.resetFields()
+  }
+
+  // 保存草稿（保存当前填写的数据，不验证必填项）
+  const handleSaveDraft = async () => {
+    try {
+      setProcessLoading(true)
+
+      if (!currentTask || !taskDetail) {
+        message.error('任务信息不完整')
+        return
+      }
+
+      // 获取表单数据（不验证）
+      const values = processForm.getFieldsValue()
+
+      // 组装步骤数据
+      const stepDataList: StepData[] = []
+
+      taskDetail.taskTemplateItems.forEach(item => {
+        if (item.stepTemplate?.parameters && item.stepTemplate.parameters.length > 0) {
+          const parameters: Record<string, any> = {}
+
+          item.stepTemplate.parameters.forEach(param => {
+            const fieldKey = `step_${item.stepTemplateId}_${param.name}`
+            if (values[fieldKey] !== undefined && values[fieldKey] !== null && values[fieldKey] !== '') {
+              parameters[param.name] = values[fieldKey]
+            }
+          })
+
+          // 只有当有参数值时才添加
+          if (Object.keys(parameters).length > 0) {
+            stepDataList.push({
+              stepTemplateId: item.stepTemplateId,
+              stepName: item.itemName,
+              parameters,
+            })
+          }
+        }
+      })
+
+      await processTask(currentTask.id, {
+        stepDataList,
+        complete: false,
+      })
+
+      message.success('草稿保存成功')
+    } catch (error: any) {
+      console.error('保存草稿失败:', error)
+      message.error(error.message || '保存草稿失败')
+    } finally {
+      setProcessLoading(false)
+    }
+  }
+
+  // 上一步
+  const handlePrevStep = () => {
+    if (currentStepIndex > 0) {
+      setCurrentStepIndex(currentStepIndex - 1)
+    }
+  }
+
+  // 下一步（验证当前步骤）
+  const handleNextStep = async () => {
+    if (!taskDetail) return
+
+    const currentItem = taskDetail.taskTemplateItems[currentStepIndex]
+    if (!currentItem) return
+
+    // 验证当前步骤的必填字段
+    if (currentItem.stepTemplate?.parameters && currentItem.stepTemplate.parameters.length > 0) {
+      const fieldsToValidate = currentItem.stepTemplate.parameters
+        .map(param => `step_${currentItem.stepTemplateId}_${param.name}`)
+
+      try {
+        await processForm.validateFields(fieldsToValidate)
+        // 验证通过，进入下一步
+        if (currentStepIndex < taskDetail.taskTemplateItems.length - 1) {
+          setCurrentStepIndex(currentStepIndex + 1)
+        }
+      } catch (error) {
+        // 验证失败，不跳转
+        return
+      }
+    } else {
+      // 没有参数，直接进入下一步
+      if (currentStepIndex < taskDetail.taskTemplateItems.length - 1) {
+        setCurrentStepIndex(currentStepIndex + 1)
+      }
+    }
+  }
+
+  // 完成任务（验证所有步骤）
+  const handleCompleteTask = async () => {
+    try {
+      const values = await processForm.validateFields()
+      setProcessLoading(true)
+
+      if (!currentTask || !taskDetail) {
+        message.error('任务信息不完整')
+        return
+      }
+
+      // 组装步骤数据
+      const stepDataList: StepData[] = []
+
+      taskDetail.taskTemplateItems.forEach(item => {
+        if (item.stepTemplate?.parameters && item.stepTemplate.parameters.length > 0) {
+          const parameters: Record<string, any> = {}
+
+          item.stepTemplate.parameters.forEach(param => {
+            const fieldKey = `step_${item.stepTemplateId}_${param.name}`
+            if (values[fieldKey] !== undefined && values[fieldKey] !== null && values[fieldKey] !== '') {
+              parameters[param.name] = values[fieldKey]
+            }
+          })
+
+          // 只有当有参数值时才添加
+          if (Object.keys(parameters).length > 0) {
+            stepDataList.push({
+              stepTemplateId: item.stepTemplateId,
+              stepName: item.itemName,
+              parameters,
+            })
+          }
+        }
+      })
+
+      await processTask(currentTask.id, {
+        stepDataList,
+        complete: true, // 完成任务
+      })
+
+      message.success('任务完成成功')
+      handleCloseProcessModal()
+      // 重新加载列表
+      loadTask()
+    } catch (error: any) {
+      if (error.errorFields) {
+        // 表单验证错误，不显示消息
+        return
+      }
+      console.error('完成任务失败:', error)
+      message.error(error.message || '完成任务失败')
+    } finally {
+      setProcessLoading(false)
+    }
+  }
+
+
   // 表格列定义
   const columns: ColumnsType<Task> = [
     {
@@ -316,18 +525,17 @@ const TaskExecution: React.FC = () => {
     },
     {
       title: '操作',
-      width: 120,
+      width: 150,
       fixed: 'right',
-      render: () => (
+      render: (_, record) => (
         <Space>
           <Button
             type="link"
             size="small"
-            onClick={() => {
-              message.info('查看详情功能待开发')
-            }}
+            onClick={() => handleOpenProcessModal(record)}
+            disabled={record.status === 'COMPLETED' || record.status === 'CANCELLED'}
           >
-            查看
+            处理
           </Button>
         </Space>
       ),
@@ -508,6 +716,152 @@ const TaskExecution: React.FC = () => {
               ))}
             </Select>
           </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* 处理任务弹窗 */}
+      <Modal
+        title={`处理任务 - ${currentTask?.siteName || ''}`}
+        open={processModalVisible}
+        onCancel={handleCloseProcessModal}
+        width={1000}
+        bodyStyle={{ maxHeight: '70vh', overflowY: 'auto' }}
+        footer={null}
+      >
+        <Form
+          form={processForm}
+          layout="vertical"
+          autoComplete="off"
+        >
+          {currentTask && (
+            <div style={{ marginBottom: 16, padding: '12px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <div><strong>任务模版:</strong> {currentTask.taskTemplateName}</div>
+                </Col>
+                <Col span={12}>
+                  <div><strong>任务状态:</strong> {STATUS_MAP[currentTask.status]?.text}</div>
+                </Col>
+              </Row>
+              <Row gutter={16} style={{ marginTop: 8 }}>
+                <Col span={12}>
+                  <div><strong>任务期限:</strong> {currentTask.expiredTime}</div>
+                </Col>
+                <Col span={12}>
+                  <div><strong>运维小组:</strong> {currentTask.departmentName}</div>
+                </Col>
+              </Row>
+            </div>
+          )}
+
+          {/* 步骤导航 */}
+          {taskDetail?.taskTemplateItems && taskDetail.taskTemplateItems.length > 1 && (
+            <Steps
+              current={currentStepIndex}
+              style={{ marginBottom: 24 }}
+              size="small"
+              items={taskDetail.taskTemplateItems.map((item, index) => ({
+                title: item.itemName,
+                description: index === currentStepIndex ? '当前步骤' : undefined,
+              }))}
+            />
+          )}
+
+          {/* 当前步骤内容 */}
+          {taskDetail?.taskTemplateItems && taskDetail.taskTemplateItems.length > 0 ? (
+            (() => {
+              const currentItem = taskDetail.taskTemplateItems[currentStepIndex]
+              if (!currentItem) return null
+
+              return (
+                <div key={currentItem.id}>
+                  <div style={{ marginBottom: 16 }}>
+                    <h4 style={{ marginBottom: 8, fontWeight: 'bold', fontSize: '16px' }}>
+                      {currentStepIndex + 1}. {currentItem.itemName}
+                    </h4>
+                    {currentItem.description && (
+                      <div style={{ color: '#666', marginBottom: 16, fontSize: '13px', padding: '8px 12px', backgroundColor: '#f9f9f9', borderRadius: '4px' }}>
+                        {currentItem.description}
+                      </div>
+                    )}
+
+                    {/* 渲染步骤参数 */}
+                    {currentItem.stepTemplate?.parameters && currentItem.stepTemplate.parameters.length > 0 ? (
+                      <div>
+                        {currentItem.stepTemplate.parameters.map(param => (
+                          <StepParameterFormItem
+                            key={`step_${currentItem.stepTemplateId}_${param.name}`}
+                            parameter={param}
+                            stepTemplateId={currentItem.stepTemplateId}
+                            form={processForm}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ textAlign: 'center', color: '#999', padding: '40px 0', backgroundColor: '#fafafa', borderRadius: '4px' }}>
+                        此步骤无需填写参数
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })()
+          ) : (
+            <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
+              <p>正在加载任务详情...</p>
+            </div>
+          )}
+
+          {/* 操作按钮 */}
+          {taskDetail?.taskTemplateItems && taskDetail.taskTemplateItems.length > 0 && (
+            <div style={{ marginTop: 24, paddingTop: 16, borderTop: '1px solid #f0f0f0' }}>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Space>
+                    <Button
+                      icon={<LeftOutlined />}
+                      onClick={handlePrevStep}
+                      disabled={currentStepIndex === 0}
+                    >
+                      上一步
+                    </Button>
+                    {currentStepIndex < taskDetail.taskTemplateItems.length - 1 ? (
+                      <Button
+                        type="primary"
+                        icon={<RightOutlined />}
+                        onClick={handleNextStep}
+                      >
+                        下一步
+                      </Button>
+                    ) : (
+                      <Button
+                        type="primary"
+                        icon={<CheckOutlined />}
+                        onClick={handleCompleteTask}
+                        loading={processLoading}
+                      >
+                        完成任务
+                      </Button>
+                    )}
+                  </Space>
+                </Col>
+                <Col span={12} style={{ textAlign: 'right' }}>
+                  <Space>
+                    <Button
+                      icon={<SaveOutlined />}
+                      onClick={handleSaveDraft}
+                      loading={processLoading}
+                    >
+                      保存草稿
+                    </Button>
+                    <Button onClick={handleCloseProcessModal}>
+                      取消
+                    </Button>
+                  </Space>
+                </Col>
+              </Row>
+            </div>
+          )}
         </Form>
       </Modal>
     </div>

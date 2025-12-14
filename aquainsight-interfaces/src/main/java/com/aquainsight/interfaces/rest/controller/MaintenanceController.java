@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -336,11 +337,7 @@ public class MaintenanceController {
         List<JobParameterDTO> parameterDTOs = null;
         if (stepTemplate.getParameters() != null) {
             parameterDTOs = stepTemplate.getParameters().stream()
-                    .map(param -> JobParameterDTO.builder()
-                            .name(param.getName())
-                            .type(param.getType() != null ? param.getType().name() : null)
-                            .required(param.getRequired())
-                            .build())
+                    .map(this::convertStepParameterToDTO)
                     .collect(Collectors.toList());
         }
 
@@ -357,6 +354,38 @@ public class MaintenanceController {
     }
 
     /**
+     * 将StepParameter转换为DTO
+     */
+    private JobParameterDTO convertStepParameterToDTO(StepParameter param) {
+        List<ParameterOptionDTO> optionDTOs = null;
+        if (param.getOptions() != null) {
+            optionDTOs = param.getOptions().stream()
+                    .map(option -> ParameterOptionDTO.builder()
+                            .value(option.getValue())
+                            .label(option.getLabel())
+                            .defaultSelected(option.getDefaultSelected())
+                            .disabled(option.getDisabled())
+                            .build())
+                    .collect(Collectors.toList());
+        }
+
+        return JobParameterDTO.builder()
+                .name(param.getName())
+                .label(param.getLabel())
+                .type(param.getType() != null ? param.getType().name() : null)
+                .required(param.getRequired())
+                .placeholder(param.getPlaceholder())
+                .options(optionDTOs)
+                .defaultValue(param.getDefaultValue())
+                .maxLength(param.getMaxLength())
+                .minLength(param.getMinLength())
+                .maxSelect(param.getMaxSelect())
+                .minSelect(param.getMinSelect())
+                .hint(param.getHint())
+                .build();
+    }
+
+    /**
      * 将 DTO 列表转换为 JobParameter 列表
      */
     private List<StepParameter> convertToJobParameters(List<JobParameterDTO> dtos) {
@@ -364,12 +393,40 @@ public class MaintenanceController {
             return null;
         }
         return dtos.stream()
-                .map(dto -> StepParameter.builder()
-                        .name(dto.getName())
-                        .type(ParameterType.valueOf(dto.getType()))
-                        .required(dto.getRequired())
-                        .build())
+                .map(this::convertDTOToStepParameter)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 将DTO转换为StepParameter
+     */
+    private StepParameter convertDTOToStepParameter(JobParameterDTO dto) {
+        List<com.aquainsight.domain.maintenance.types.ParameterOption> options = null;
+        if (dto.getOptions() != null) {
+            options = dto.getOptions().stream()
+                    .map(optionDTO -> com.aquainsight.domain.maintenance.types.ParameterOption.builder()
+                            .value(optionDTO.getValue())
+                            .label(optionDTO.getLabel())
+                            .defaultSelected(optionDTO.getDefaultSelected())
+                            .disabled(optionDTO.getDisabled())
+                            .build())
+                    .collect(Collectors.toList());
+        }
+
+        return StepParameter.builder()
+                .name(dto.getName())
+                .label(dto.getLabel())
+                .type(ParameterType.valueOf(dto.getType()))
+                .required(dto.getRequired())
+                .placeholder(dto.getPlaceholder())
+                .options(options)
+                .defaultValue(dto.getDefaultValue())
+                .maxLength(dto.getMaxLength())
+                .minLength(dto.getMinLength())
+                .maxSelect(dto.getMaxSelect())
+                .minSelect(dto.getMinSelect())
+                .hint(dto.getHint())
+                .build();
     }
 
     /**
@@ -848,6 +905,147 @@ public class MaintenanceController {
             return Response.error(e.getMessage());
         } catch (Exception e) {
             return Response.error("创建任务失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取任务详情（包含步骤信息和任务模版配置）
+     */
+    @GetMapping("/task/{id}")
+    public Response<TaskDetailVO> getTaskDetail(@PathVariable Integer id) {
+        try {
+            com.aquainsight.domain.maintenance.entity.Task task = maintenanceApplicationService.getTaskDetail(id);
+            TaskDetailVO vo = convertTaskToDetailVO(task);
+            return Response.success(vo);
+        } catch (IllegalArgumentException e) {
+            return Response.error(e.getMessage());
+        } catch (Exception e) {
+            return Response.error("获取任务详情失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 将任务实体转换为详情VO
+     */
+    private TaskDetailVO convertTaskToDetailVO(com.aquainsight.domain.maintenance.entity.Task task) {
+        TaskDetailVO vo = TaskDetailVO.builder()
+                .id(task.getId())
+                .taskSchedulerId(task.getTaskSchedulerId())
+                .triggerTime(task.getTriggerTime())
+                .startTime(task.getStartTime())
+                .endTime(task.getEndTime())
+                .status(task.getStatus() != null ? task.getStatus().name() : null)
+                .expiredTime(task.getExpiredTime())
+                .taskTemplateId(task.getTaskTemplateId())
+                .departmentId(task.getDepartmentId())
+                .creator(task.getCreator())
+                .operator(task.getOperator())
+                .createTime(task.getCreateTime())
+                .updateTime(task.getUpdateTime())
+                .build();
+
+        // 站点信息
+        if (task.getSite() != null) {
+            vo.setSiteId(task.getSite().getId());
+            vo.setSiteName(task.getSite().getSiteName());
+            vo.setSiteCode(task.getSite().getSiteCode());
+
+            if (task.getSite().getEnterprise() != null) {
+                vo.setEnterpriseId(task.getSite().getEnterprise().getId());
+                vo.setEnterpriseName(task.getSite().getEnterprise().getEnterpriseName());
+            }
+        }
+
+        // 部门信息
+        if (task.getDepartment() != null) {
+            vo.setDepartmentName(task.getDepartment().getName());
+        }
+
+        // 任务模版信息
+        if (task.getTaskTemplate() != null) {
+            vo.setTaskTemplateName(task.getTaskTemplate().getName());
+
+            // 任务模版项目（包含步骤模版配置）
+            if (task.getTaskTemplate().getItems() != null) {
+                List<TaskTemplateItemVO> itemVOs = task.getTaskTemplate().getItems().stream()
+                        .map(this::convertTaskTemplateItemToVO)
+                        .collect(Collectors.toList());
+                vo.setTaskTemplateItems(itemVOs);
+            }
+        }
+
+        // 步骤执行列表
+        if (task.getSteps() != null) {
+            List<StepVO> stepVOs = task.getSteps().stream()
+                    .map(this::convertStepToVO)
+                    .collect(Collectors.toList());
+            vo.setSteps(stepVOs);
+        }
+
+        return vo;
+    }
+
+    /**
+     * 将步骤实体转换为VO
+     */
+    private StepVO convertStepToVO(com.aquainsight.domain.maintenance.entity.Step step) {
+        StepVO vo = StepVO.builder()
+                .id(step.getId())
+                .taskId(step.getTaskId())
+                .stepTemplateId(step.getStepTemplateId())
+                .stepName(step.getStepName())
+                .createTime(step.getCreateTime())
+                .updateTime(step.getUpdateTime())
+                .build();
+
+        // 参数值列表
+        if (step.getParameters() != null) {
+            List<ParameterValueVO> paramValueVOs = step.getParameters().stream()
+                    .map(pv -> ParameterValueVO.builder()
+                            .name(pv.getName())
+                            .value(pv.getValue())
+                            .fillTime(pv.getFillTime())
+                            .build())
+                    .collect(Collectors.toList());
+            vo.setParameterValues(paramValueVOs);
+        }
+
+        return vo;
+    }
+
+    /**
+     * 处理任务（填写步骤参数）
+     */
+    @PutMapping("/task/{id}/process")
+    public Response<Void> processTask(@PathVariable Integer id, @Valid @RequestBody ProcessTaskRequest request) {
+        try {
+            // 获取当前用户
+            User currentUser = ThreadLocalUtil.getUser();
+
+            // 转换步骤数据
+            List<Map<String, Object>> stepDataList = request.getStepDataList().stream()
+                    .map(sd -> {
+                        Map<String, Object> stepData = new java.util.HashMap<>();
+                        stepData.put("stepTemplateId", sd.getStepTemplateId());
+                        stepData.put("stepName", sd.getStepName());
+                        stepData.put("parameters", sd.getParameters());
+                        return stepData;
+                    })
+                    .collect(Collectors.toList());
+
+            // 调用应用服务处理任务
+            maintenanceApplicationService.processTask(id, stepDataList, currentUser.getName());
+
+            // 如果需要完成任务
+            if (Boolean.TRUE.equals(request.getComplete())) {
+                maintenanceApplicationService.completeTask(id);
+            }
+
+            return Response.success(null);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return Response.error(e.getMessage());
+        } catch (Exception e) {
+            return Response.error("处理任务失败: " + e.getMessage());
         }
     }
 }

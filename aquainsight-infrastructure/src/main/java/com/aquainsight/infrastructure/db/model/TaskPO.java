@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 站点任务持久化对象
@@ -99,6 +100,12 @@ public class TaskPO {
      * 任务处理人
      */
     private String operator;
+
+    /**
+     * 步骤执行列表 (关联对象,用于查询时填充)
+     */
+    @TableField(exist = false)
+    private List<StepPO> steps;
 
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;

@@ -35,7 +35,8 @@ public class TaskRepositoryImpl implements TaskRepository {
 
     @Override
     public Task findById(Integer id) {
-        TaskPO taskPO = taskDao.selectById(id);
+        // 使用selectByIdWithDetails方法，包含步骤、站点、任务模版等关联信息
+        TaskPO taskPO = taskDao.selectByIdWithDetails(id);
         if (taskPO == null) {
             return null;
         }

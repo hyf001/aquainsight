@@ -60,6 +60,10 @@ sa-token:
   # 是否输出操作日志
   is-log: false
 
+file: 
+  upload: 
+    path: /Users/huyufei/Downloads
+
 # 日志配置
 logging:
   level:

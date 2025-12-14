@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * 任务转换器
  */
-@Mapper(uses = {SiteConverter.class, TaskTemplateConverter.class, DepartmentConverter.class})
+@Mapper(uses = {SiteConverter.class, TaskTemplateConverter.class, DepartmentConverter.class, StepConverter.class})
 public interface TaskConverter {
 
     TaskConverter INSTANCE = Mappers.getMapper(TaskConverter.class);

@@ -5,7 +5,7 @@ package com.aquainsight.domain.maintenance.types;
  */
 public enum ParameterType {
     /**
-     * 文本
+     * 文本输入框
      */
     TEXT,
 
@@ -15,12 +15,17 @@ public enum ParameterType {
     IMAGE,
 
     /**
-     * 文本列表
+     * 下拉框(单选)
      */
-    TEXT_LIST,
+    SELECT,
 
     /**
-     * 图片列表
+     * 复选框(多选)
      */
-    IMAGE_LIST
+    CHECKBOX,
+
+    /**
+     * 单选框
+     */
+    RADIO
 }

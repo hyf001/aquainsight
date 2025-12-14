@@ -1,9 +1,25 @@
 import request from './request'
 
+export type ParameterOption = {
+  value: string
+  label: string
+  defaultSelected?: boolean
+  disabled?: boolean
+}
+
 export type JobParameter = {
   name: string
-  type: 'TEXT' | 'IMAGE' | 'TEXT_LIST' | 'IMAGE_LIST'
+  label?: string
+  type: 'TEXT' | 'IMAGE' | 'SELECT' | 'CHECKBOX' | 'RADIO'
   required: boolean
+  placeholder?: string
+  options?: ParameterOption[]
+  defaultValue?: string
+  maxLength?: number
+  minLength?: number
+  maxSelect?: number
+  minSelect?: number
+  hint?: string
 }
 
 export type StepTemplate = {
@@ -316,4 +332,68 @@ export type CreateManualJobInstanceRequest = {
 // 手动创建任务
 export const createManualJobInstance = (data: CreateManualJobInstanceRequest) => {
   return request.post<Task>('/maintenance/task', data)
+}
+
+// ========== 任务详情和处理 ==========
+
+export type ParameterValue = {
+  name: string
+  value: any
+  fillTime: string
+}
+
+export type Step = {
+  id: number
+  taskId: number
+  stepTemplateId: number
+  stepName: string
+  parameterValues: ParameterValue[] | null
+  createTime: string
+  updateTime: string
+}
+
+export type TaskDetail = {
+  id: number
+  taskSchedulerId: number | null
+  siteId: number
+  siteName: string
+  siteCode: string
+  enterpriseId: number
+  enterpriseName: string
+  triggerTime: string
+  startTime: string | null
+  endTime: string | null
+  status: string
+  expiredTime: string
+  taskTemplateId: number
+  taskTemplateName: string
+  departmentId: number
+  departmentName: string
+  creator: string
+  operator: string | null
+  taskTemplateItems: TaskTemplateItem[]
+  steps: Step[] | null
+  createTime: string
+  updateTime: string
+}
+
+// 获取任务详情（包含步骤信息和任务模版配置）
+export const getTaskDetail = (id: number) => {
+  return request.get<TaskDetail>(`/maintenance/task/${id}`)
+}
+
+export type StepData = {
+  stepTemplateId: number
+  stepName: string
+  parameters: Record<string, any>
+}
+
+export type ProcessTaskRequest = {
+  stepDataList: StepData[]
+  complete?: boolean
+}
+
+// 处理任务（填写步骤参数）
+export const processTask = (id: number, data: ProcessTaskRequest) => {
+  return request.put(`/maintenance/task/${id}/process`, data)
 }

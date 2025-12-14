@@ -116,10 +116,65 @@ const del = <T = any>(url: string, data?: any, options?: Partial<IRequestOptions
   })
 }
 
+/**
+ * 上传文件
+ */
+const uploadFile = (filePath: string, name: string = 'file', formData?: any): Promise<IApiResponse<any>> => {
+  return new Promise((resolve, reject) => {
+    const token = wx.getStorageSync('token')
+
+    wx.uploadFile({
+      url: `${getApp<IAppOption>().globalData.apiBaseUrl}/common/upload/image`,
+      filePath,
+      name,
+      formData,
+      header: {
+        'X-TOKEN': token || ''
+      },
+      success: (res) => {
+        if (res.statusCode === 200) {
+          try {
+            const data = JSON.parse(res.data) as IApiResponse<any>
+            if (data.code === '0000') {
+              resolve(data)
+            } else {
+              wx.showToast({
+                title: data.message || '上传失败',
+                icon: 'none'
+              })
+              reject(data)
+            }
+          } catch (e) {
+            wx.showToast({
+              title: '上传失败',
+              icon: 'none'
+            })
+            reject(e)
+          }
+        } else {
+          wx.showToast({
+            title: `上传失败(${res.statusCode})`,
+            icon: 'none'
+          })
+          reject(res)
+        }
+      },
+      fail: (err) => {
+        wx.showToast({
+          title: '上传失败',
+          icon: 'none'
+        })
+        reject(err)
+      }
+    })
+  })
+}
+
 export {
   request,
   get,
   post,
   put,
-  del
+  del,
+  uploadFile
 }

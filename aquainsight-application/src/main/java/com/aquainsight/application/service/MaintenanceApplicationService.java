@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -39,6 +40,7 @@ public class MaintenanceApplicationService {
     private final TaskSchedulerRepository taskSchedulerRepository;
     private final SiteRepository siteRepository;
     private final DepartmentDomainService departmentDomainService;
+    private final com.aquainsight.domain.maintenance.service.StepDomainService stepDomainService;
 
     /**
      * 创建步骤模版
@@ -440,5 +442,66 @@ public class MaintenanceApplicationService {
                 .build();
 
         return taskDomainService.saveInstance(instance);
+    }
+
+    /**
+     * 获取任务详情（包含步骤信息和任务模版配置）
+     * 通过MyBatis Plus的一对多关联查询已自动加载关联数据
+     */
+    public Task getTaskDetail(Integer taskId) {
+        return taskDomainService.getInstanceById(taskId);
+    }
+
+    /**
+     * 处理任务（填写步骤参数）
+     * @param taskId 任务ID
+     * @param stepDataList 步骤数据列表 [{stepTemplateId, stepName, parameters: {paramName: paramValue}}]
+     * @param operator 操作人
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void processTask(Integer taskId, List<Map<String, Object>> stepDataList, String operator) {
+        // 查询任务
+        Task task = taskDomainService.getInstanceById(taskId);
+
+        // 检查任务状态
+        if (task.getStatus() == com.aquainsight.domain.maintenance.types.TaskStatus.COMPLETED
+            || task.getStatus() == com.aquainsight.domain.maintenance.types.TaskStatus.CANCELLED) {
+            throw new IllegalStateException("任务已完成或已取消，无法处理");
+        }
+
+        // 如果任务是待处理状态，标记为进行中
+        if (task.getStatus() == com.aquainsight.domain.maintenance.types.TaskStatus.PENDING
+            || task.getStatus() == com.aquainsight.domain.maintenance.types.TaskStatus.EXPIRING) {
+            task.start(operator);
+            taskDomainService.saveInstance(task);
+        }
+
+        // 填写步骤参数
+        for (Map<String, Object> stepData : stepDataList) {
+            Integer stepTemplateId = (Integer) stepData.get("stepTemplateId");
+            String stepName = (String) stepData.get("stepName");
+            @SuppressWarnings("unchecked")
+            Map<String, Object> parameters = (Map<String, Object>) stepData.get("parameters");
+
+            if (stepTemplateId != null && parameters != null && !parameters.isEmpty()) {
+                stepDomainService.fillStepParameters(taskId, stepTemplateId, stepName, parameters);
+            }
+        }
+    }
+
+    /**
+     * 完成任务
+     * @param taskId 任务ID
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void completeTask(Integer taskId) {
+        Task task = taskDomainService.getInstanceById(taskId);
+
+        if (!task.canComplete()) {
+            throw new IllegalStateException("任务未完成所有必填项，无法标记为完成");
+        }
+
+        task.complete();
+        taskDomainService.saveInstance(task);
     }
 }
