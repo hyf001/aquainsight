@@ -1,26 +1,32 @@
 import React, { useState, useEffect } from 'react'
 import {
+  MapPinIcon,
+  MagnifyingGlassIcon,
+  PlusIcon,
+  TrashIcon,
+  PencilIcon,
+  BuildingOfficeIcon,
+  TagIcon,
+} from '@heroicons/react/24/outline'
+import { useForm } from 'react-hook-form'
+import {
   Card,
-  Table,
+  CardBody,
   Button,
-  Space,
+  Input,
+  Table,
+  type TableColumn,
   Modal,
   Form,
-  Input,
+  FormField,
   Select,
-  message,
+  type SelectOption,
+  Tag,
   Popconfirm,
-  Row,
-  Col,
+  Tooltip,
+  Pagination,
   Checkbox,
-} from 'antd'
-import {
-  PlusOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  SearchOutlined,
-} from '@ant-design/icons'
-import type { ColumnsType } from 'antd/es/table'
+} from '@/components/ui'
 import {
   getSiteList,
   createSite,
@@ -29,8 +35,9 @@ import {
   type Site,
 } from '@/services/monitoring'
 import { getAllEnterprises, type Enterprise } from '@/services/enterprise'
+import { toast } from '@/utils/toast'
 
-const SITE_TYPES = [
+const SITE_TYPES: SelectOption[] = [
   { label: '污水', value: 'wastewater' },
   { label: '雨水', value: 'rainwater' },
 ]
@@ -41,13 +48,14 @@ const Sites: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false)
   const [editingSite, setEditingSite] = useState<Site | null>(null)
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 10 })
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 })
   const [filters, setFilters] = useState({
     siteType: undefined as string | undefined,
     enterpriseId: undefined as number | undefined,
   })
   const [enterprises, setEnterprises] = useState<Enterprise[]>([])
-  const [form] = Form.useForm()
+
+  const form = useForm()
 
   // Load sites
   const loadSites = async (pageNum: number = 1, pageSize: number = 10) => {
@@ -55,10 +63,10 @@ const Sites: React.FC = () => {
     try {
       const data = await getSiteList(pageNum, pageSize, filters.siteType, filters.enterpriseId)
       setSites(data.list)
-      setPagination({ current: data.pageNum, pageSize: data.pageSize })
+      setPagination({ current: data.pageNum, pageSize: data.pageSize, total: data.total })
     } catch (error) {
       console.error('加载站点列表失败:', error)
-      message.error('加载站点列表失败')
+      toast.error('加载站点列表失败')
     } finally {
       setLoading(false)
     }
@@ -71,6 +79,7 @@ const Sites: React.FC = () => {
       setEnterprises(data)
     } catch (error) {
       console.error('加载企业列表失败:', error)
+      toast.error('加载企业列表失败')
     }
   }
 
@@ -79,11 +88,16 @@ const Sites: React.FC = () => {
     loadEnterprises()
   }, [])
 
+  // Handle pagination
+  const handlePageChange = (page: number, pageSize: number) => {
+    loadSites(page, pageSize)
+  }
+
   // Open create/edit modal
   const openModal = (site?: Site) => {
     setEditingSite(site || null)
     if (site) {
-      form.setFieldsValue({
+      form.reset({
         siteCode: site.siteCode,
         siteName: site.siteName,
         siteType: site.siteType || undefined,
@@ -95,31 +109,35 @@ const Sites: React.FC = () => {
         isAutoUpload: site.isAutoUpload === 1,
       })
     } else {
-      form.resetFields()
+      form.reset({
+        isAutoUpload: false,
+      })
     }
     setModalVisible(true)
   }
 
   // Save site
-  const handleSaveSite = async () => {
+  const handleSaveSite = async (values: any) => {
     try {
-      const values = await form.validateFields()
       const data = {
         ...values,
         isAutoUpload: values.isAutoUpload ? 1 : 0,
+        longitude: values.longitude ? Number(values.longitude) : undefined,
+        latitude: values.latitude ? Number(values.latitude) : undefined,
       }
 
       if (editingSite) {
         await updateSite(editingSite.id, data)
-        message.success('更新成功')
+        toast.success('更新成功')
       } else {
         await createSite(data)
-        message.success('创建成功')
+        toast.success('创建成功')
       }
       setModalVisible(false)
       loadSites(pagination.current, pagination.pageSize)
     } catch (error) {
       console.error('保存站点失败:', error)
+      toast.error('保存站点失败')
     }
   }
 
@@ -127,28 +145,30 @@ const Sites: React.FC = () => {
   const handleDeleteSite = async (id: number) => {
     try {
       await deleteSite(id)
-      message.success('删除成功')
+      toast.success('删除成功')
       loadSites(pagination.current, pagination.pageSize)
     } catch (error) {
       console.error('删除站点失败:', error)
+      toast.error('删除站点失败')
     }
   }
 
   // Delete multiple sites
   const handleBatchDelete = async () => {
     if (selectedRowKeys.length === 0) {
-      message.warning('请选择要删除的站点')
+      toast.warning('请选择要删除的站点')
       return
     }
     try {
       for (const id of selectedRowKeys) {
         await deleteSite(id as number)
       }
-      message.success('批量删除成功')
+      toast.success(`成功删除 ${selectedRowKeys.length} 条记录`)
       setSelectedRowKeys([])
       loadSites(pagination.current, pagination.pageSize)
     } catch (error) {
       console.error('批量删除失败:', error)
+      toast.error('批量删除失败')
     }
   }
 
@@ -157,235 +177,354 @@ const Sites: React.FC = () => {
     loadSites(1, 10)
   }
 
+  // Enterprise options
+  const enterpriseOptions: SelectOption[] = enterprises.map((e) => ({
+    label: e.enterpriseName,
+    value: e.id,
+  }))
+
   // Table columns
-  const columns: ColumnsType<Site> = [
+  const columns: TableColumn<Site>[] = [
     {
       title: '序号',
       key: 'index',
-      width: 60,
-      render: (_, __, index) => index + 1,
+      width: '60px',
+      render: (_, __, index) => (
+        <span className="text-sm text-gray-600">
+          {(pagination.current - 1) * pagination.pageSize + index + 1}
+        </span>
+      ),
     },
     {
       title: '操作',
       key: 'action',
-      width: 120,
+      width: '120px',
       render: (_, record) => (
-        <Space>
-          <a onClick={() => openModal(record)}>
-            <EditOutlined /> 编辑
-          </a>
+        <div className="flex items-center gap-1">
+          <Tooltip title="编辑">
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<PencilIcon className="w-4 h-4" />}
+              onClick={() => openModal(record)}
+            />
+          </Tooltip>
           <Popconfirm
             title="确认删除"
             description="确定要删除该站点吗？"
             onConfirm={() => handleDeleteSite(record.id)}
-            okText="确定"
-            cancelText="取消"
+            okType="danger"
           >
-            <a style={{ color: '#ff4d4f' }}>
-              <DeleteOutlined /> 删除
-            </a>
+            <Tooltip title="删除">
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={<TrashIcon className="w-4 h-4 text-red-500" />}
+              />
+            </Tooltip>
           </Popconfirm>
-        </Space>
+        </div>
       ),
     },
     {
       title: '站点编码',
       dataIndex: 'siteCode',
       key: 'siteCode',
-      width: 120,
+      width: '120px',
+      render: (code) => <span className="font-medium text-gray-900">{code as string}</span>,
     },
     {
       title: '站点名称',
       dataIndex: 'siteName',
       key: 'siteName',
+      render: (name) => <span className="text-gray-900">{name as string}</span>,
     },
     {
       title: '站点类型',
       dataIndex: 'siteType',
       key: 'siteType',
-      render: (text) => {
-        if (text === 'wastewater') return '污水'
-        if (text === 'rainwater') return '雨水'
-        return text || '-'
+      width: '100px',
+      render: (type) => {
+        if (type === 'wastewater')
+          return <Tag color="primary">污水</Tag>
+        if (type === 'rainwater')
+          return <Tag color="info">雨水</Tag>
+        return <span className="text-gray-400">-</span>
       },
     },
     {
       title: '站点标签',
       dataIndex: 'siteTag',
       key: 'siteTag',
-      render: (text) => text || '-',
+      width: '120px',
+      render: (tag) =>
+        tag ? (
+          <Tag color="default">{tag as string}</Tag>
+        ) : (
+          <span className="text-gray-400">-</span>
+        ),
     },
     {
       title: '所属企业',
       dataIndex: 'enterpriseName',
       key: 'enterpriseName',
-      render: (text) => text || '-',
+      render: (name) => (
+        <span className="text-sm text-gray-600">{(name as string) || '-'}</span>
+      ),
     },
     {
       title: '经度',
       dataIndex: 'longitude',
       key: 'longitude',
-      render: (text) => text || '-',
+      width: '100px',
+      render: (value) => (
+        <span className="text-sm text-gray-600">{value ? Number(value).toFixed(6) : '-'}</span>
+      ),
     },
     {
       title: '纬度',
       dataIndex: 'latitude',
       key: 'latitude',
-      render: (text) => text || '-',
+      width: '100px',
+      render: (value) => (
+        <span className="text-sm text-gray-600">{value ? Number(value).toFixed(6) : '-'}</span>
+      ),
     },
     {
       title: '地址',
       dataIndex: 'address',
       key: 'address',
-      render: (text) => text || '-',
+      render: (addr) => (
+        <span className="text-sm text-gray-600">{(addr as string) || '-'}</span>
+      ),
     },
   ]
 
-  const rowSelection = {
-    selectedRowKeys,
-    onChange: (keys: React.Key[]) => {
-      setSelectedRowKeys(keys)
-    },
-  }
-
   return (
-    <div>
-      <Card size="small" bodyStyle={{ padding: 16 }}>
-        {/* 搜索栏 */}
-        <Row gutter={16} style={{ marginBottom: 16 }}>
-          <Col span={6}>
-            <Select
-              placeholder="选择站点类型"
-              allowClear
-              value={filters.siteType}
-              onChange={(value) => setFilters({ ...filters, siteType: value })}
-              options={SITE_TYPES}
-            />
-          </Col>
-          <Col span={6}>
-            <Select
-              placeholder="选择企业"
-              allowClear
-              showSearch
-              value={filters.enterpriseId}
-              onChange={(value) => setFilters({ ...filters, enterpriseId: value })}
-              filterOption={(input, option) =>
-                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-              }
-              options={enterprises.map((e) => ({
-                label: e.enterpriseName,
-                value: e.id,
-              }))}
-            />
-          </Col>
-          <Col span={12}>
-            <Button type="primary" icon={<SearchOutlined />} onClick={handleFilter}>
-              查询
-            </Button>
-          </Col>
-        </Row>
+    <div className="p-6 space-y-6">
+      <Card className="shadow-md hover:shadow-lg transition-shadow">
+        <CardBody>
+          {/* 搜索栏 */}
+          <div className="mb-6 grid grid-cols-12 gap-4">
+            <div className="col-span-3">
+              <Select
+                value={filters.siteType}
+                onChange={(value) => setFilters({ ...filters, siteType: value })}
+                options={SITE_TYPES}
+                placeholder="选择站点类型"
+              />
+            </div>
+            <div className="col-span-4">
+              <Select
+                value={filters.enterpriseId}
+                onChange={(value) => setFilters({ ...filters, enterpriseId: value as number })}
+                options={enterpriseOptions}
+                placeholder="选择企业"
+              />
+            </div>
+            <div className="col-span-5">
+              <Button
+                variant="primary"
+                icon={<MagnifyingGlassIcon className="w-4 h-4" />}
+                onClick={handleFilter}
+              >
+                查询
+              </Button>
+            </div>
+          </div>
 
-        {/* 操作按钮 */}
-        <div style={{ marginBottom: 16 }}>
-          <Space>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}>
-              新增
+          {/* 操作按钮 */}
+          <div className="mb-6 flex items-center gap-3">
+            <Button
+              variant="primary"
+              icon={<PlusIcon className="w-4 h-4" />}
+              onClick={() => openModal()}
+            >
+              新增站点
             </Button>
             <Popconfirm
               title="确认删除"
-              description="确定要删除选中的站点吗？"
+              description={`确定要删除选中的 ${selectedRowKeys.length} 条记录吗？`}
               onConfirm={handleBatchDelete}
-              okText="确定"
-              cancelText="取消"
+              okType="danger"
             >
-              <Button danger icon={<DeleteOutlined />}>
-                删除
+              <Button
+                variant="danger"
+                icon={<TrashIcon className="w-4 h-4" />}
+                disabled={selectedRowKeys.length === 0}
+              >
+                批量删除 {selectedRowKeys.length > 0 && `(${selectedRowKeys.length})`}
               </Button>
             </Popconfirm>
-          </Space>
-        </div>
+          </div>
 
-        {/* 站点表格 */}
-        <Table
-          columns={columns}
-          dataSource={sites}
-          rowKey="id"
-          loading={loading}
-          rowSelection={rowSelection}
-          size="small"
-          pagination={{
-            current: pagination.current,
-            pageSize: pagination.pageSize,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total) => `共 ${total} 条`,
-            onChange: (page, pageSize) => {
-              loadSites(page, pageSize)
-              setPagination({ current: page, pageSize })
-            },
-          }}
-        />
+          {/* 站点表格 */}
+          <Table
+            columns={columns}
+            dataSource={sites}
+            rowKey="id"
+            loading={loading}
+            rowSelection={{
+              selectedRowKeys,
+              onChange: (keys) => setSelectedRowKeys(keys),
+            }}
+            size="middle"
+          />
+
+          {/* 分页 */}
+          <div className="mt-4 flex justify-end">
+            <Pagination
+              current={pagination.current}
+              pageSize={pagination.pageSize}
+              total={pagination.total}
+              onChange={handlePageChange}
+              showSizeChanger
+              showTotal
+            />
+          </div>
+        </CardBody>
       </Card>
 
       {/* 新增/编辑弹窗 */}
       <Modal
-        title={editingSite ? '编辑站点' : '新增站点'}
         open={modalVisible}
-        onOk={handleSaveSite}
-        onCancel={() => setModalVisible(false)}
-        width={600}
+        onClose={() => {
+          setModalVisible(false)
+          setEditingSite(null)
+        }}
+        title={
+          <div className="flex items-center gap-2">
+            <MapPinIcon className="w-5 h-5 text-ocean-teal" />
+            {editingSite ? '编辑站点' : '新增站点'}
+          </div>
+        }
+        width={640}
       >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            name="siteCode"
-            label="站点编码"
-            rules={[{ required: true, message: '请输入站点编码' }]}
-          >
-            <Input placeholder="请输入站点编码" />
-          </Form.Item>
-          <Form.Item
-            name="siteName"
-            label="站点名称"
-            rules={[{ required: true, message: '请输入站点名称' }]}
-          >
-            <Input placeholder="请输入站点名称" />
-          </Form.Item>
-          <Form.Item name="siteType" label="站点类型">
-            <Select
-              placeholder="请选择站点类型"
-              allowClear
-              options={SITE_TYPES}
-            />
-          </Form.Item>
-          <Form.Item name="siteTag" label="站点标签">
-            <Input placeholder="请输入站点标签" />
-          </Form.Item>
-          <Form.Item name="longitude" label="经度">
-            <Input placeholder="请输入经度" />
-          </Form.Item>
-          <Form.Item name="latitude" label="纬度">
-            <Input placeholder="请输入纬度" />
-          </Form.Item>
-          <Form.Item name="address" label="地址">
-            <Input placeholder="请输入地址" />
-          </Form.Item>
-          <Form.Item name="enterpriseId" label="所属企业">
-            <Select
-              placeholder="请选择企业"
-              allowClear
-              showSearch
-              filterOption={(input, option) =>
-                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-              }
-              options={enterprises.map((e) => ({
-                label: e.enterpriseName,
-                value: e.id,
-              }))}
-            />
-          </Form.Item>
-          <Form.Item name="isAutoUpload" valuePropName="checked" initialValue={false}>
-            <Checkbox>启用自动上传</Checkbox>
-          </Form.Item>
+        <Form form={form} onSubmit={handleSaveSite}>
+          <div className="space-y-4">
+            {/* 第一行：站点编码和站点名称 */}
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                name="siteCode"
+                label="站点编码"
+                required
+                rules={{ required: '请输入站点编码' }}
+              >
+                {({ field }) => (
+                  <Input
+                    {...field}
+                    placeholder="请输入站点编码"
+                    prefix={<TagIcon className="w-4 h-4 text-gray-400" />}
+                  />
+                )}
+              </FormField>
+
+              <FormField
+                name="siteName"
+                label="站点名称"
+                required
+                rules={{ required: '请输入站点名称' }}
+              >
+                {({ field }) => (
+                  <Input
+                    {...field}
+                    placeholder="请输入站点名称"
+                    prefix={<MapPinIcon className="w-4 h-4 text-gray-400" />}
+                  />
+                )}
+              </FormField>
+            </div>
+
+            {/* 第二行：站点类型和站点标签 */}
+            <div className="grid grid-cols-2 gap-4">
+              <FormField name="siteType" label="站点类型">
+                {({ field }) => (
+                  <Select {...field} options={SITE_TYPES} placeholder="请选择站点类型" />
+                )}
+              </FormField>
+
+              <FormField name="siteTag" label="站点标签">
+                {({ field }) => (
+                  <Input {...field} placeholder="请输入站点标签" />
+                )}
+              </FormField>
+            </div>
+
+            {/* 第三行：经度和纬度 */}
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                name="longitude"
+                label="经度"
+                rules={{
+                  pattern: {
+                    value: /^-?((0|[1-9]\d?|1[0-7]\d)(\.\d+)?|180(\.0+)?)$/,
+                    message: '请输入有效的经度 (-180 到 180)',
+                  },
+                }}
+              >
+                {({ field }) => (
+                  <Input {...field} placeholder="请输入经度" type="number" step="0.000001" />
+                )}
+              </FormField>
+
+              <FormField
+                name="latitude"
+                label="纬度"
+                rules={{
+                  pattern: {
+                    value: /^-?((0|[1-8]?\d)(\.\d+)?|90(\.0+)?)$/,
+                    message: '请输入有效的纬度 (-90 到 90)',
+                  },
+                }}
+              >
+                {({ field }) => (
+                  <Input {...field} placeholder="请输入纬度" type="number" step="0.000001" />
+                )}
+              </FormField>
+            </div>
+
+            {/* 第四行：地址 */}
+            <FormField name="address" label="地址">
+              {({ field }) => (
+                <Input {...field} placeholder="请输入地址" />
+              )}
+            </FormField>
+
+            {/* 第五行：所属企业 */}
+            <FormField name="enterpriseId" label="所属企业">
+              {({ field }) => (
+                <Select
+                  {...field}
+                  options={enterpriseOptions}
+                  placeholder="请选择企业"
+                />
+              )}
+            </FormField>
+
+            {/* 第六行：自动上传开关 */}
+            <FormField name="isAutoUpload">
+              {({ field }) => (
+                <Checkbox checked={field.value} onChange={(e) => field.onChange(e.target.checked)}>
+                  启用自动上传
+                </Checkbox>
+              )}
+            </FormField>
+          </div>
+
+          <div className="mt-6 flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setModalVisible(false)
+                setEditingSite(null)
+              }}
+            >
+              取消
+            </Button>
+            <Button type="submit" variant="primary">
+              确定
+            </Button>
+          </div>
         </Form>
       </Modal>
     </div>

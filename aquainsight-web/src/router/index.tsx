@@ -1,6 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { Suspense, lazy } from 'react'
-import { Spin } from 'antd'
+import { Spin } from '@/components/ui'
 
 const Layout = lazy(() => import('@/components/Layout'))
 const Dashboard = lazy(() => import('@/pages/Dashboard'))
@@ -27,8 +27,8 @@ const AlertNotifications = lazy(() => import('@/pages/AlertNotifications'))
 const Login = lazy(() => import('@/pages/Login'))
 
 const PageLoading = () => (
-  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-    <Spin size="large" />
+  <div className="flex justify-center items-center h-screen">
+    <Spin size="lg" />
   </div>
 )
 

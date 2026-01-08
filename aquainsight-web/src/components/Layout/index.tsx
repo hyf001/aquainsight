@@ -1,31 +1,26 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { Layout as AntLayout, Menu, ConfigProvider, Avatar, Dropdown, Badge } from 'antd'
-import type { MenuProps } from 'antd'
 import {
-  BankOutlined,
-  TeamOutlined,
-  EnvironmentOutlined,
-  ToolOutlined,
-  ExperimentOutlined,
-  DesktopOutlined,
-  BellOutlined,
-  MailOutlined,
-  SettingOutlined,
-  LogoutOutlined,
-  UserOutlined,
-} from '@ant-design/icons'
+  BuildingOfficeIcon,
+  UserGroupIcon,
+  MapPinIcon,
+  WrenchScrewdriverIcon,
+  BeakerIcon,
+  ComputerDesktopIcon,
+  BellIcon,
+  EnvelopeIcon,
+  Cog6ToothIcon,
+  ArrowRightOnRectangleIcon,
+  UserIcon,
+  Bars3Icon,
+} from '@heroicons/react/24/outline'
 import { useUserStore } from '@/stores/useUserStore'
-import { useThemeStore } from '@/stores/useThemeStore'
 import { useTabsStore } from '@/stores/useTabsStore'
 import NotificationDropdown from '@/components/NotificationDropdown'
-import ThemeSwitcher from '@/components/ThemeSwitcher'
 import TabsBar from '@/components/TabsBar'
 import { routeConfig } from '@/config/routes'
+import { Menu, Avatar, Dropdown, DropdownItem, DropdownDivider } from '@/components/ui'
 import logoImg from '@/assets/logo.svg'
-import './styles.less'
-
-const { Header, Sider, Content } = AntLayout
 
 // 顶部导航菜单配置
 const topMenuItems = [
@@ -36,56 +31,56 @@ const topMenuItems = [
 ]
 
 // 左侧菜单配置 - 根据顶部菜单动态显示
-const sideMenuConfig: Record<string, MenuProps['items']> = {
+const sideMenuConfig: Record<string, any[]> = {
   dashboard: [
-    { key: '/dashboard', icon: <DesktopOutlined />, label: '工作台' },
+    { key: '/dashboard', icon: <ComputerDesktopIcon className="w-5 h-5" />, label: '工作台' },
   ],
   task: [
-    { key: '/task', icon: <ToolOutlined />, label: '任务调度' },
-    { key: '/task-execution', icon: <DesktopOutlined />, label: '任务' },
+    { key: '/task', icon: <WrenchScrewdriverIcon className="w-5 h-5" />, label: '任务调度' },
+    { key: '/task-execution', icon: <ComputerDesktopIcon className="w-5 h-5" />, label: '任务' },
     {
       key: 'task-settings',
-      icon: <SettingOutlined />,
-      label: '设置',
+      icon: <Cog6ToothIcon className="w-5 h-5" />,
+      title: '设置',
       children: [
-        { key: '/step-templates', icon: <ToolOutlined />, label: '步骤模版' },
-        { key: '/taskTemplates', icon: <ToolOutlined />, label: '任务模版' },
-        { key: '/site-configuration', icon: <SettingOutlined />, label: '任务调度' },
+        { key: '/step-templates', icon: <WrenchScrewdriverIcon className="w-5 h-5" />, label: '步骤模版' },
+        { key: '/taskTemplates', icon: <WrenchScrewdriverIcon className="w-5 h-5" />, label: '任务模版' },
+        { key: '/site-configuration', icon: <Cog6ToothIcon className="w-5 h-5" />, label: '任务调度' },
       ],
     },
   ],
   site: [
-    { key: '/enterprise', icon: <BankOutlined />, label: '运维企业' },
-    { key: '/sites', icon: <EnvironmentOutlined />, label: '运维站点' },
-    { key: '/device-models', icon: <ToolOutlined />, label: '设备管理' },
+    { key: '/enterprise', icon: <BuildingOfficeIcon className="w-5 h-5" />, label: '运维企业' },
+    { key: '/sites', icon: <MapPinIcon className="w-5 h-5" />, label: '运维站点' },
+    { key: '/device-models', icon: <WrenchScrewdriverIcon className="w-5 h-5" />, label: '设备管理' },
     {
       key: 'site-equipment',
-      icon: <DesktopOutlined />,
-      label: '站点设备',
+      icon: <ComputerDesktopIcon className="w-5 h-5" />,
+      title: '站点设备',
       children: [
-        { key: '/site-devices', icon: <DesktopOutlined />, label: '设备信息' },
-        { key: '/detection-factors', icon: <ExperimentOutlined />, label: '检测因子' },
+        { key: '/site-devices', icon: <ComputerDesktopIcon className="w-5 h-5" />, label: '设备信息' },
+        { key: '/detection-factors', icon: <BeakerIcon className="w-5 h-5" />, label: '检测因子' },
       ],
     },
   ],
   comprehensive: [
     {
       key: 'organization-management',
-      icon: <BankOutlined />,
-      label: '机构管理',
+      icon: <BuildingOfficeIcon className="w-5 h-5" />,
+      title: '机构管理',
       children: [
-        { key: '/organization', icon: <BankOutlined />, label: '部门管理' },
-        { key: '/personnel', icon: <TeamOutlined />, label: '人员管理' },
+        { key: '/organization', icon: <BuildingOfficeIcon className="w-5 h-5" />, label: '部门管理' },
+        { key: '/personnel', icon: <UserGroupIcon className="w-5 h-5" />, label: '人员管理' },
       ],
     },
     {
       key: 'alert-management',
-      icon: <BellOutlined />,
-      label: '告警',
+      icon: <BellIcon className="w-5 h-5" />,
+      title: '告警',
       children: [
-        { key: '/alert-rules', icon: <SettingOutlined />, label: '告警规则' },
-        { key: '/alert-records', icon: <BellOutlined />, label: '告警实例' },
-        { key: '/alert-notifications', icon: <MailOutlined />, label: '消息通知' },
+        { key: '/alert-rules', icon: <Cog6ToothIcon className="w-5 h-5" />, label: '告警规则' },
+        { key: '/alert-records', icon: <BellIcon className="w-5 h-5" />, label: '告警实例' },
+        { key: '/alert-notifications', icon: <EnvelopeIcon className="w-5 h-5" />, label: '消息通知' },
       ],
     },
   ],
@@ -95,9 +90,9 @@ const LayoutComponent: React.FC = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { logout } = useUserStore()
-  const { currentTheme } = useThemeStore()
   const { addTab } = useTabsStore()
   const [activeTopMenu, setActiveTopMenu] = useState('dashboard')
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
 
   // 当前左侧菜单项
   const currentSideMenu = useMemo(() => {
@@ -123,11 +118,11 @@ const LayoutComponent: React.FC = () => {
     return openKeys
   }, [currentSideMenu, location.pathname])
 
-  const handleTopMenuClick = ({ key }: { key: string }) => {
+  const handleTopMenuClick = (key: string) => {
     setActiveTopMenu(key)
   }
 
-  const handleSideMenuClick = ({ key }: { key: string }) => {
+  const handleSideMenuClick = (key: string) => {
     if (key.startsWith('/')) {
       navigate(key)
       // 添加标签页
@@ -165,117 +160,125 @@ const LayoutComponent: React.FC = () => {
     navigate('/login')
   }
 
-  const userDropdownItems: MenuProps['items'] = [
-    {
-      key: 'profile',
-      icon: <UserOutlined />,
-      label: '个人中心',
-    },
-    {
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: '设置',
-    },
-    {
-      type: 'divider',
-    },
-    {
-      key: 'logout',
-      icon: <LogoutOutlined />,
-      label: '退出登录',
-      onClick: handleLogout,
-    },
-  ]
+  // 渲染菜单项
+  const renderMenuItems = (items: any[]) => {
+    return items.map((item) => {
+      if (item.children) {
+        return (
+          <Menu.SubMenu key={item.key} icon={item.icon} title={item.title}>
+            {renderMenuItems(item.children)}
+          </Menu.SubMenu>
+        )
+      }
+      return (
+        <Menu.Item key={item.key} icon={item.icon}>
+          {item.label}
+        </Menu.Item>
+      )
+    })
+  }
 
   return (
-    <ConfigProvider
-      theme={{
-        token: {
-          colorPrimary: currentTheme.primaryColor,
-        },
-      }}
-    >
-      <AntLayout className="layout-container" style={{ '--header-bg': currentTheme.headerBg } as React.CSSProperties}>
-        {/* 顶部导航栏 */}
-        <Header className="layout-header-top" style={{ background: currentTheme.headerBg }}>
-          <div className="header-logo" onClick={handleLogoClick}>
-            <img src={logoImg} alt="aquainsight 环境运维系统" className="logo-img" />
-          </div>
-          <div className="header-menu">
-            <Menu
-              mode="horizontal"
-              selectedKeys={[activeTopMenu]}
-              items={topMenuItems}
-              onClick={handleTopMenuClick}
-              className="top-menu"
-              style={{ background: currentTheme.headerBg }}
-            />
-          </div>
-          <div className="header-right">
-            <Badge count={0} className="header-icon">
-              <MailOutlined />
-            </Badge>
-            <NotificationDropdown />
-            <ThemeSwitcher />
-            <Dropdown menu={{ items: userDropdownItems }} placement="bottomRight">
-              <div className="user-info">
-                <span className="user-company">演示环境</span>
-                <Avatar size="small" icon={<UserOutlined />} />
-              </div>
-            </Dropdown>
-            <LogoutOutlined className="header-icon logout-icon" onClick={handleLogout} />
-          </div>
-        </Header>
+    <div className="flex flex-col h-screen bg-background">
+      {/* 顶部导航栏 */}
+      <header className="flex items-center h-12 px-4 bg-ocean-navy text-ocean-cream shadow-lg flex-shrink-0">
+        {/* Logo */}
+        <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={handleLogoClick}>
+          <img src={logoImg} alt="aquainsight" className="h-8 w-8" />
+          <span className="text-lg font-semibold hidden md:inline">AquaInsight</span>
+        </div>
 
-        <AntLayout>
-          {/* 左侧菜单 */}
-          <Sider width={160} className="layout-sider" style={{ background: currentTheme.siderBg }}>
-            <Menu
-              mode="inline"
-              selectedKeys={selectedKeys}
-              defaultOpenKeys={defaultOpenKeys}
-              items={currentSideMenu}
-              onClick={handleSideMenuClick}
-              style={{
-                height: '100%',
-                borderRight: 0,
-                background: currentTheme.menuBg,
-                color: currentTheme.menuTextColor
-              }}
-              theme="dark"
-            />
-          </Sider>
-
-          {/* 内容区域 */}
-          <AntLayout style={{ padding: 0 }}>
-            {/* 标签页 */}
-            <TabsBar />
-
-            {/* 主内容 */}
-            <Content
-              style={{
-                padding: 12,
-                margin: 0,
-                minHeight: 'calc(100vh - 48px - 40px)',
-                background: currentTheme.contentBg,
-                overflow: 'auto',
-              }}
+        {/* 顶部菜单 */}
+        <nav className="flex items-center gap-1 ml-8">
+          {topMenuItems.map((item) => (
+            <button
+              key={item.key}
+              onClick={() => handleTopMenuClick(item.key)}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                activeTopMenu === item.key
+                  ? 'bg-ocean-teal text-white'
+                  : 'text-ocean-cream hover:bg-ocean-teal hover:bg-opacity-20'
+              }`}
             >
-              <div
-                style={{
-                  padding: 16,
-                  background: '#fff',
-                  borderRadius: 2,
-                  minHeight: '100%',
-                }}
-              >
-                <Outlet />
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        {/* 右侧操作区 */}
+        <div className="flex items-center gap-4 ml-auto">
+          {/* 邮件图标 */}
+          <button className="relative p-2 hover:bg-ocean-teal hover:bg-opacity-20 rounded-lg transition-colors">
+            <EnvelopeIcon className="w-5 h-5" />
+          </button>
+
+          {/* 通知下拉 */}
+          <NotificationDropdown />
+
+          {/* 用户下拉菜单 */}
+          <Dropdown
+            trigger={
+              <div className="flex items-center gap-2 cursor-pointer hover:bg-ocean-teal hover:bg-opacity-20 px-3 py-1.5 rounded-lg transition-colors">
+                <span className="text-sm hidden md:inline">演示环境</span>
+                <Avatar size="sm">
+                  <UserIcon className="w-4 h-4" />
+                </Avatar>
               </div>
-            </Content>
-          </AntLayout>
-        </AntLayout>
-      </AntLayout>
-    </ConfigProvider>
+            }
+          >
+            <DropdownItem icon={<UserIcon className="w-4 h-4" />}>个人中心</DropdownItem>
+            <DropdownItem icon={<Cog6ToothIcon className="w-4 h-4" />}>设置</DropdownItem>
+            <DropdownDivider />
+            <DropdownItem icon={<ArrowRightOnRectangleIcon className="w-4 h-4" />} onClick={handleLogout} danger>
+              退出登录
+            </DropdownItem>
+          </Dropdown>
+
+          {/* 退出按钮 */}
+          <button
+            onClick={handleLogout}
+            className="p-2 hover:bg-red-500 hover:bg-opacity-20 rounded-lg transition-colors"
+            title="退出登录"
+          >
+            <ArrowRightOnRectangleIcon className="w-5 h-5" />
+          </button>
+        </div>
+      </header>
+
+      {/* 主内容区 */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* 左侧边栏 */}
+        <aside
+          className={`bg-white border-r border-gray-200 flex-shrink-0 transition-all duration-300 overflow-y-auto scrollbar-thin ${
+            sidebarCollapsed ? 'w-0' : 'w-40'
+          }`}
+        >
+          {!sidebarCollapsed && (
+            <Menu
+              selectedKeys={selectedKeys}
+              openKeys={defaultOpenKeys}
+              onSelect={handleSideMenuClick}
+              className="py-2"
+            >
+              {renderMenuItems(currentSideMenu)}
+            </Menu>
+          )}
+        </aside>
+
+        {/* 右侧内容区 */}
+        <main className="flex-1 flex flex-col overflow-hidden">
+          {/* 标签栏 */}
+          <TabsBar />
+
+          {/* 页面内容 */}
+          <div className="flex-1 p-3 overflow-auto bg-background">
+            <div className="bg-white rounded-lg p-4 min-h-full shadow-sm">
+              <Outlet />
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
   )
 }
 

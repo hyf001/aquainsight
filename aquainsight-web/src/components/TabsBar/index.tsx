@@ -1,9 +1,8 @@
 import React from 'react'
-import { Tabs } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import { useTabsStore } from '@/stores/useTabsStore'
-import { CloseOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons'
-import './styles.less'
+import { XMarkIcon, ArrowPathIcon, Cog6ToothIcon } from '@heroicons/react/24/outline'
+import { Tabs } from '@/components/ui'
 
 const TabsBar: React.FC = () => {
   const navigate = useNavigate()
@@ -17,8 +16,7 @@ const TabsBar: React.FC = () => {
     }
   }
 
-  const handleTabRemove = (key: string, e: React.MouseEvent) => {
-    e.stopPropagation()
+  const handleTabRemove = (key: string) => {
     const targetTab = tabs.find(t => t.key === key)
     if (!targetTab) return
 
@@ -40,33 +38,51 @@ const TabsBar: React.FC = () => {
 
   if (tabs.length === 0) return null
 
+  const tabItems = tabs.map(tab => ({
+    key: tab.key,
+    label: (
+      <div className="flex items-center gap-2">
+        <span>{tab.label}</span>
+        {tab.closable && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              handleTabRemove(tab.key)
+            }}
+            className="hover:bg-gray-200 rounded p-0.5 transition-colors"
+          >
+            <XMarkIcon className="w-3 h-3" />
+          </button>
+        )}
+      </div>
+    ),
+  }))
+
   return (
-    <div className="tabs-bar">
-      <div className="tabs-bar-content">
+    <div className="flex items-center bg-white border-b border-gray-200 px-2">
+      <div className="flex-1 overflow-hidden">
         <Tabs
           type="card"
+          size="sm"
           activeKey={activeKey}
+          items={tabItems}
           onChange={handleTabChange}
-          hideAdd
-          items={tabs.map(tab => ({
-            key: tab.key,
-            label: (
-              <div className="tab-label">
-                <span className="tab-title">{tab.label}</span>
-                {tab.closable && (
-                  <CloseOutlined
-                    className="tab-close-icon"
-                    onClick={(e) => handleTabRemove(tab.key, e)}
-                  />
-                )}
-              </div>
-            ),
-          }))}
         />
-        <div className="tabs-bar-actions">
-          <ReloadOutlined className="action-icon" onClick={handleRefresh} title="刷新" />
-          <SettingOutlined className="action-icon" title="设置" />
-        </div>
+      </div>
+      <div className="flex items-center gap-2 px-2 border-l border-gray-200">
+        <button
+          onClick={handleRefresh}
+          className="p-1.5 hover:bg-gray-100 rounded transition-colors"
+          title="刷新"
+        >
+          <ArrowPathIcon className="w-4 h-4 text-gray-600" />
+        </button>
+        <button
+          className="p-1.5 hover:bg-gray-100 rounded transition-colors"
+          title="设置"
+        >
+          <Cog6ToothIcon className="w-4 h-4 text-gray-600" />
+        </button>
       </div>
     </div>
   )

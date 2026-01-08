@@ -1,0 +1,87 @@
+/* Tailwind CSS 基础样式 */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Ocean Depths 主题自定义样式 */
+@layer base {
+  :root {
+    --color-ocean-navy: 26 35 50;
+    --color-ocean-teal: 45 139 139;
+    --color-ocean-seafoam: 168 218 220;
+    --color-ocean-cream: 241 250 238;
+  }
+
+  * {
+    @apply border-gray-200;
+  }
+
+  body {
+    @apply bg-background text-gray-900 antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold text-primary;
+  }
+}
+
+@layer components {
+  /* 自定义滚动条样式 */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-gray-100 rounded;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded hover:bg-gray-400;
+  }
+
+  /* 卡片阴影 */
+  .card-shadow {
+    @apply shadow-ocean;
+  }
+
+  /* 渐变背景 */
+  .bg-ocean-gradient {
+    background: linear-gradient(135deg, #1a2332 0%, #2d8b8b 100%);
+  }
+
+  /* 文本渐变 */
+  .text-ocean-gradient {
+    @apply bg-gradient-to-r from-ocean-teal to-ocean-seafoam bg-clip-text text-transparent;
+  }
+}
+
+@layer utilities {
+  /* 文字省略 */
+  .truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .truncate-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* 过渡效果 */
+  .transition-base {
+    @apply transition-all duration-200 ease-in-out;
+  }
+
+  /* 禁用选择 */
+  .no-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+}
