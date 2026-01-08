@@ -1,31 +1,15 @@
 import React, { useState, useEffect } from 'react'
+import { useForm } from 'react-hook-form'
 import {
-  Card,
-  Table,
-  Button,
-  Space,
-  Modal,
-  Form,
-  Input,
-  Select,
-  InputNumber,
-  message,
-  Popconfirm,
-  Row,
-  Col,
-  Tag,
-  Checkbox,
-  Radio,
-} from 'antd'
-import {
-  PlusOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  SearchOutlined,
-  MinusCircleOutlined,
-  EyeOutlined,
-} from '@ant-design/icons'
-import type { ColumnsType } from 'antd/es/table'
+  PlusIcon,
+  TrashIcon,
+  PencilIcon,
+  MagnifyingGlassIcon,
+  EyeIcon,
+  MinusCircleIcon,
+} from '@heroicons/react/24/outline'
+import { Button, Table, Modal, Form, FormField, Input, Select, Tag, Popconfirm, Card, CardHeader, CardBody, Checkbox } from '@/components/ui'
+import type { TableColumn } from '@/components/ui'
 import {
   getStepTemplateList,
   createStepTemplate,
@@ -36,6 +20,7 @@ import {
   type JobParameter,
 } from '@/services/maintenance'
 import StepParameterFormItem from '@/components/StepParameterForm'
+import { toast } from '@/utils/toast'
 
 const PARAMETER_TYPE_OPTIONS = [
   { label: '文本', value: 'TEXT' },
@@ -54,8 +39,12 @@ const StepTemplates: React.FC = () => {
   const [previewStepTemplate, setPreviewStepTemplate] = useState<StepTemplate | null>(null)
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
   const [searchName, setSearchName] = useState('')
-  const [form] = Form.useForm()
-  const [searchForm] = Form.useForm()
+
+  // Form state for parameters (manually managed due to complex nested structure)
+  const [parameters, setParameters] = useState<JobParameter[]>([])
+
+  const form = useForm()
+  const searchForm = useForm()
 
   // 加载步骤模版列表
   const loadStepTemplates = async (name?: string) => {
@@ -65,7 +54,7 @@ const StepTemplates: React.FC = () => {
       setStepTemplates(data)
     } catch (error) {
       console.error('加载步骤模版列表失败:', error)
-      message.error('加载步骤模版列表失败')
+      toast.error('加载步骤模版列表失败')
     } finally {
       setLoading(false)
     }
@@ -79,43 +68,48 @@ const StepTemplates: React.FC = () => {
   const openModal = (stepTemplate?: StepTemplate) => {
     setEditingStepTemplate(stepTemplate || null)
     if (stepTemplate) {
-      form.setFieldsValue({
+      form.reset({
         name: stepTemplate.name,
         code: stepTemplate.code,
-        parameters: stepTemplate.parameters || [],
         overdueDays: stepTemplate.overdueDays,
-        description: stepTemplate.description || undefined,
+        description: stepTemplate.description || '',
       })
+      setParameters(stepTemplate.parameters || [])
     } else {
-      form.resetFields()
-      // 设置默认值：一个空参数
-      form.setFieldsValue({
-        parameters: [{ name: '', type: 'TEXT', required: false }],
+      form.reset({
+        name: '',
+        code: '',
+        overdueDays: 0,
+        description: '',
       })
+      // 设置默认值：一个空参数
+      setParameters([{ name: '', type: 'TEXT', required: false } as JobParameter])
     }
     setModalVisible(true)
   }
 
   // 保存步骤模版
-  const handleSaveStepTemplate = async () => {
+  const handleSaveStepTemplate = async (values: any) => {
     try {
-      const values = await form.validateFields()
-      const requestData = { ...values }
+      const requestData = {
+        ...values,
+        parameters: parameters
+      }
 
       if (editingStepTemplate) {
         await updateStepTemplate(editingStepTemplate.id, requestData)
-        message.success('步骤模版更新成功')
+        toast.success('步骤模版更新成功')
       } else {
         await createStepTemplate(requestData)
-        message.success('步骤模版创建成功')
+        toast.success('步骤模版创建成功')
       }
 
       setModalVisible(false)
-      form.resetFields()
+      form.reset()
       loadStepTemplates(searchName)
     } catch (error: any) {
       console.error('保存步骤模版失败:', error)
-      message.error(error.message || '保存步骤模版失败')
+      toast.error(error.message || '保存步骤模版失败')
     }
   }
 
@@ -123,35 +117,34 @@ const StepTemplates: React.FC = () => {
   const handleDeleteStepTemplate = async (id: number) => {
     try {
       await deleteStepTemplate(id)
-      message.success('步骤模版删除成功')
+      toast.success('步骤模版删除成功')
       loadStepTemplates(searchName)
     } catch (error: any) {
       console.error('删除步骤模版失败:', error)
-      message.error(error.message || '删除步骤模版失败')
+      toast.error(error.message || '删除步骤模版失败')
     }
   }
 
   // 批量删除
   const handleBatchDelete = async () => {
     if (selectedRowKeys.length === 0) {
-      message.warning('请选择要删除的步骤模版')
+      toast.warning('请选择要删除的步骤模版')
       return
     }
 
     try {
       await batchDeleteJobCategories(selectedRowKeys as number[])
-      message.success('批量删除成功')
+      toast.success('批量删除成功')
       setSelectedRowKeys([])
       loadStepTemplates(searchName)
     } catch (error: any) {
       console.error('批量删除失败:', error)
-      message.error(error.message || '批量删除失败')
+      toast.error(error.message || '批量删除失败')
     }
   }
 
   // 搜索
-  const handleSearch = () => {
-    const values = searchForm.getFieldsValue()
+  const handleSearch = (values: any) => {
     setSearchName(values.name || '')
     loadStepTemplates(values.name)
   }
@@ -162,7 +155,6 @@ const StepTemplates: React.FC = () => {
     setPreviewModalVisible(true)
   }
 
-
   // 渲染参数类型标签
   const renderParameterType = (type: string) => {
     const typeMap: Record<string, { text: string; color: string }> = {
@@ -172,40 +164,86 @@ const StepTemplates: React.FC = () => {
       CHECKBOX: { text: '复选框', color: 'purple' },
       RADIO: { text: '单选框', color: 'orange' },
     }
-    const config = typeMap[type] || { text: type, color: 'default' }
+    const config = typeMap[type] || { text: type, color: 'gray' }
     return <Tag color={config.color}>{config.text}</Tag>
   }
 
+  // Add parameter
+  const addParameter = () => {
+    setParameters([...parameters, { name: '', type: 'TEXT', required: false } as JobParameter])
+  }
+
+  // Remove parameter
+  const removeParameter = (index: number) => {
+    setParameters(parameters.filter((_, i) => i !== index))
+  }
+
+  // Update parameter
+  const updateParameter = (index: number, field: string, value: any) => {
+    const newParams = [...parameters]
+    newParams[index] = { ...newParams[index], [field]: value }
+    setParameters(newParams)
+  }
+
+  // Add option to parameter
+  const addOption = (paramIndex: number) => {
+    const newParams = [...parameters]
+    if (!newParams[paramIndex].options) {
+      newParams[paramIndex].options = []
+    }
+    newParams[paramIndex].options!.push({ label: '', value: '', defaultSelected: false, disabled: false })
+    setParameters(newParams)
+  }
+
+  // Remove option from parameter
+  const removeOption = (paramIndex: number, optionIndex: number) => {
+    const newParams = [...parameters]
+    newParams[paramIndex].options = newParams[paramIndex].options!.filter((_, i) => i !== optionIndex)
+    setParameters(newParams)
+  }
+
+  // Update option
+  const updateOption = (paramIndex: number, optionIndex: number, field: string, value: any) => {
+    const newParams = [...parameters]
+    newParams[paramIndex].options![optionIndex] = {
+      ...newParams[paramIndex].options![optionIndex],
+      [field]: value
+    }
+    setParameters(newParams)
+  }
+
   // 表格列定义
-  const columns: ColumnsType<StepTemplate> = [
+  const columns: TableColumn<StepTemplate>[] = [
     {
       title: '序号',
       key: 'index',
-      width: 80,
-      align: 'center',
+      width: '80px',
       render: (_text, _record, index) => index + 1,
     },
     {
       title: '操作',
       key: 'action',
-      width: 120,
-      align: 'center',
+      width: '120px',
       render: (_text, record) => (
-        <Space size="small">
+        <div className="flex items-center gap-1">
           <Button
-            type="link"
-            size="small"
-            icon={<EyeOutlined />}
+            variant="ghost"
+            size="sm"
             onClick={() => openPreviewModal(record)}
+            className="p-1 h-auto"
             title="查看表单"
-          />
+          >
+            <EyeIcon className="w-4 h-4" />
+          </Button>
           <Button
-            type="link"
-            size="small"
-            icon={<EditOutlined />}
+            variant="ghost"
+            size="sm"
             onClick={() => openModal(record)}
+            className="p-1 h-auto"
             title="编辑"
-          />
+          >
+            <PencilIcon className="w-4 h-4" />
+          </Button>
           <Popconfirm
             title="确定要删除这个步骤模版吗?"
             onConfirm={() => handleDeleteStepTemplate(record.id)}
@@ -213,45 +251,46 @@ const StepTemplates: React.FC = () => {
             cancelText="取消"
           >
             <Button
-              type="link"
-              size="small"
-              danger
-              icon={<DeleteOutlined />}
+              variant="ghost"
+              size="sm"
+              className="p-1 h-auto text-red-500 hover:text-red-700"
               title="删除"
-            />
+            >
+              <TrashIcon className="w-4 h-4" />
+            </Button>
           </Popconfirm>
-        </Space>
+        </div>
       ),
     },
     {
       title: '名称',
       dataIndex: 'name',
       key: 'name',
-      width: 150,
+      width: '150px',
     },
     {
       title: '编号',
       dataIndex: 'code',
       key: 'code',
-      width: 180,
+      width: '180px',
     },
     {
       title: '参数配置',
       dataIndex: 'parameters',
       key: 'parameters',
-      width: 300,
+      width: '300px',
       render: (parameters: JobParameter[] | null) => {
         if (!parameters || parameters.length === 0) {
-          return <span style={{ color: '#999' }}>无</span>
+          return <span className="text-gray-400">无</span>
         }
         return (
-          <Space size={4} wrap>
+          <div className="flex flex-wrap gap-1">
             {parameters.map((param, index) => (
-              <Tag key={index} color={param.required ? 'red' : 'default'}>
+              <Tag key={index} color={param.required ? 'red' : 'gray'}>
                 {param.name} {renderParameterType(param.type)} {param.required && '(必填)'}
               </Tag>
             ))}
-          </Space>
+          </div>
         )
       },
     },
@@ -259,54 +298,42 @@ const StepTemplates: React.FC = () => {
       title: '逾期天数(天)',
       dataIndex: 'overdueDays',
       key: 'overdueDays',
-      width: 120,
-      align: 'center',
+      width: '120px',
     },
     {
       title: '说明',
       dataIndex: 'description',
       key: 'description',
-      ellipsis: true,
       render: (text) => text || '/',
     },
   ]
 
   return (
-    <Card title="任务名称">
-      {/* 搜索表单 */}
-      <Form
-        form={searchForm}
-        layout="inline"
-        style={{ marginBottom: 16 }}
-      >
-        <Row gutter={16} style={{ width: '100%' }}>
-          <Col>
-            <Form.Item label="任务名称:" name="name">
-              <Input placeholder="请输入任务名称" allowClear style={{ width: 200 }} />
-            </Form.Item>
-          </Col>
-          <Col>
-            <Space>
-              <Button
-                type="primary"
-                icon={<SearchOutlined />}
-                onClick={handleSearch}
-              >
-                查询
-              </Button>
-            </Space>
-          </Col>
-        </Row>
-      </Form>
+    <Card>
+      <CardHeader title="任务名称" />
+      <CardBody>
+        {/* 搜索表单 */}
+        <Form form={searchForm} onSubmit={handleSearch}>
+          <div className="flex items-center gap-4 mb-4">
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-ocean-midnight">任务名称:</label>
+              <Input
+                {...searchForm.register('name')}
+                placeholder="请输入任务名称"
+                className="w-48"
+              />
+            </div>
+            <Button type="submit">
+              <MagnifyingGlassIcon className="w-4 h-4 mr-2" />
+              查询
+            </Button>
+          </div>
+        </Form>
 
-      {/* 操作按钮 */}
-      <div style={{ marginBottom: 16 }}>
-        <Space>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => openModal()}
-          >
+        {/* 操作按钮 */}
+        <div className="flex items-center gap-2 mb-4">
+          <Button onClick={() => openModal()}>
+            <PlusIcon className="w-4 h-4 mr-2" />
             新增
           </Button>
           <Popconfirm
@@ -317,346 +344,308 @@ const StepTemplates: React.FC = () => {
             disabled={selectedRowKeys.length === 0}
           >
             <Button
-              danger
-              icon={<DeleteOutlined />}
+              variant="outline"
               disabled={selectedRowKeys.length === 0}
             >
+              <TrashIcon className="w-4 h-4 mr-2" />
               删除
             </Button>
           </Popconfirm>
-        </Space>
-      </div>
+        </div>
 
-      {/* 步骤模版表格 */}
-      <Table
-        rowSelection={{
-          selectedRowKeys,
-          onChange: setSelectedRowKeys,
-        }}
-        columns={columns}
-        dataSource={stepTemplates}
-        rowKey="id"
-        loading={loading}
-        pagination={false}
-        scroll={{ x: 1200 }}
-      />
+        {/* 步骤模版表格 */}
+        <Table
+          rowSelection={{
+            selectedRowKeys,
+            onChange: setSelectedRowKeys,
+          }}
+          columns={columns}
+          dataSource={stepTemplates}
+          rowKey="id"
+          loading={loading}
+          pagination={false}
+        />
+      </CardBody>
 
       {/* 创建/编辑对话框 */}
       <Modal
         title={editingStepTemplate ? '编辑步骤模版' : '新增步骤模版'}
         open={modalVisible}
-        onOk={handleSaveStepTemplate}
         onCancel={() => {
           setModalVisible(false)
-          form.resetFields()
+          form.reset()
         }}
-        width={1200}
-        okText="保存"
-        cancelText="关闭"
-        bodyStyle={{ maxHeight: '70vh', overflowY: 'auto' }}
+        width="1200px"
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setModalVisible(false)}>
+              关闭
+            </Button>
+            <Button onClick={() => form.handleSubmit(handleSaveStepTemplate)()}>
+              保存
+            </Button>
+          </div>
+        }
       >
-        <Form
-          form={form}
-          layout="horizontal"
-          labelCol={{ span: 4 }}
-          wrapperCol={{ span: 20 }}
-          autoComplete="off"
-        >
-          <Form.Item
-            label="步骤名称"
-            name="name"
-            rules={[{ required: true, message: '请输入步骤名称' }]}
-          >
-            <Input placeholder="例行维护" />
-          </Form.Item>
+        <div className="max-h-[70vh] overflow-y-auto">
+          <Form form={form} onSubmit={handleSaveStepTemplate}>
+            <FormField
+              label="步骤名称"
+              name="name"
+              required
+              error={form.formState.errors.name?.message}
+            >
+              <Input
+                {...form.register('name', { required: '请输入步骤名称' })}
+                placeholder="例行维护"
+              />
+            </FormField>
 
-          <Form.Item
-            label="步骤编码"
-            name="code"
-            rules={[{ required: true, message: '请输入步骤编码' }]}
-          >
-            <Input placeholder="routine_maintenance" disabled={!!editingStepTemplate} />
-          </Form.Item>
+            <FormField
+              label="步骤编码"
+              name="code"
+              required
+              error={form.formState.errors.code?.message}
+            >
+              <Input
+                {...form.register('code', { required: '请输入步骤编码' })}
+                placeholder="routine_maintenance"
+                disabled={!!editingStepTemplate}
+              />
+            </FormField>
 
-          <Form.Item label="参数列表" style={{ marginBottom: 16 }}>
-            <Form.List name="parameters">
-              {(fields, { add, remove }) => (
-                <>
-                  {fields.map(({ key, name, ...restField }) => {
-                    const paramType = form.getFieldValue(['parameters', name, 'type'])
-                    const needsOptions = ['SELECT', 'CHECKBOX', 'RADIO'].includes(paramType)
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-ocean-midnight mb-2">
+                参数列表
+              </label>
+              {parameters.map((param, paramIndex) => {
+                const needsOptions = ['SELECT', 'CHECKBOX', 'RADIO'].includes(param.type)
 
-                    return (
-                      <Card
-                        key={key}
-                        size="small"
-                        style={{ marginBottom: 12, backgroundColor: '#fafafa' }}
-                        extra={
-                          <MinusCircleOutlined
-                            onClick={() => remove(name)}
-                            style={{ color: 'red', cursor: 'pointer', fontSize: 16 }}
-                          />
-                        }
+                return (
+                  <div
+                    key={paramIndex}
+                    className="mb-3 p-4 bg-gray-50 border border-gray-200 rounded-lg"
+                  >
+                    <div className="flex justify-end mb-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeParameter(paramIndex)}
+                        className="text-red-500 hover:text-red-700"
                       >
-                        {/* 基础信息 */}
-                        <Row gutter={16}>
-                          <Col span={7}>
-                            <Form.Item
-                              {...restField}
-                              name={[name, 'name']}
-                              label="参数名称"
-                              rules={[{ required: true, message: '必填' }]}
-                              labelCol={{ span: 24 }}
-                              wrapperCol={{ span: 24 }}
+                        <MinusCircleIcon className="w-5 h-5" />
+                      </Button>
+                    </div>
+
+                    {/* 基础信息 */}
+                    <div className="grid grid-cols-4 gap-3 mb-3">
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">参数名称</label>
+                        <Input
+                          value={param.name}
+                          onChange={(e) => updateParameter(paramIndex, 'name', e.target.value)}
+                          placeholder="例: checkResult"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">显示标签</label>
+                        <Input
+                          value={param.label}
+                          onChange={(e) => updateParameter(paramIndex, 'label', e.target.value)}
+                          placeholder="例: 是否检查"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-1">参数类型</label>
+                        <Select
+                          value={param.type}
+                          onChange={(value) => {
+                            updateParameter(paramIndex, 'type', value)
+                            // 切换类型时清空选项配置
+                            updateParameter(paramIndex, 'options', undefined)
+                          }}
+                          placeholder="选择类型"
+                          options={PARAMETER_TYPE_OPTIONS}
+                        />
+                      </div>
+                      <div className="flex items-end">
+                        <Checkbox
+                          checked={param.required}
+                          onChange={(checked) => updateParameter(paramIndex, 'required', checked)}
+                        >
+                          必填
+                        </Checkbox>
+                      </div>
+                    </div>
+
+                    {/* TEXT类型的额外配置 */}
+                    {param.type === 'TEXT' && (
+                      <div className="grid grid-cols-4 gap-3 mb-3">
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">占位符</label>
+                          <Input
+                            value={param.placeholder}
+                            onChange={(e) => updateParameter(paramIndex, 'placeholder', e.target.value)}
+                            placeholder="请输入占位符"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">默认值</label>
+                          <Input
+                            value={param.defaultValue}
+                            onChange={(e) => updateParameter(paramIndex, 'defaultValue', e.target.value)}
+                            placeholder="默认值"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">最小长度</label>
+                          <Input
+                            type="number"
+                            value={param.minLength}
+                            onChange={(e) => updateParameter(paramIndex, 'minLength', Number(e.target.value))}
+                            placeholder="0"
+                            min={0}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">最大长度</label>
+                          <Input
+                            type="number"
+                            value={param.maxLength}
+                            onChange={(e) => updateParameter(paramIndex, 'maxLength', Number(e.target.value))}
+                            placeholder="100"
+                            min={0}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* CHECKBOX类型的额外配置 */}
+                    {param.type === 'CHECKBOX' && (
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">最小选择数</label>
+                          <Input
+                            type="number"
+                            value={param.minSelect}
+                            onChange={(e) => updateParameter(paramIndex, 'minSelect', Number(e.target.value))}
+                            placeholder="0"
+                            min={0}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 mb-1">最大选择数</label>
+                          <Input
+                            type="number"
+                            value={param.maxSelect}
+                            onChange={(e) => updateParameter(paramIndex, 'maxSelect', Number(e.target.value))}
+                            placeholder="不限"
+                            min={0}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 提示信息 */}
+                    <div className="mb-3">
+                      <label className="block text-xs text-gray-600 mb-1">提示信息</label>
+                      <Input
+                        value={param.hint}
+                        onChange={(e) => updateParameter(paramIndex, 'hint', e.target.value)}
+                        placeholder="给用户的提示说明"
+                      />
+                    </div>
+
+                    {/* SELECT/CHECKBOX/RADIO的选项配置 */}
+                    {needsOptions && (
+                      <div>
+                        <label className="block text-xs text-gray-600 mb-2">选项配置</label>
+                        {param.options?.map((option, optionIndex) => (
+                          <div key={optionIndex} className="flex items-center gap-2 mb-2">
+                            <Input
+                              value={option.label}
+                              onChange={(e) => updateOption(paramIndex, optionIndex, 'label', e.target.value)}
+                              placeholder="显示文本"
+                              className="w-32"
+                            />
+                            <Input
+                              value={option.value}
+                              onChange={(e) => updateOption(paramIndex, optionIndex, 'value', e.target.value)}
+                              placeholder="选项值"
+                              className="w-32"
+                            />
+                            <Checkbox
+                              checked={option.defaultSelected}
+                              onChange={(checked) => updateOption(paramIndex, optionIndex, 'defaultSelected', checked)}
                             >
-                              <Input placeholder="例: checkResult" />
-                            </Form.Item>
-                          </Col>
-                          <Col span={7}>
-                            <Form.Item
-                              {...restField}
-                              name={[name, 'label']}
-                              label="显示标签"
-                              rules={[{ required: true, message: '必填' }]}
-                              labelCol={{ span: 24 }}
-                              wrapperCol={{ span: 24 }}
+                              默认选中
+                            </Checkbox>
+                            <Checkbox
+                              checked={option.disabled}
+                              onChange={(checked) => updateOption(paramIndex, optionIndex, 'disabled', checked)}
                             >
-                              <Input placeholder="例: 是否检查" />
-                            </Form.Item>
-                          </Col>
-                          <Col span={7}>
-                            <Form.Item
-                              {...restField}
-                              name={[name, 'type']}
-                              label="参数类型"
-                              rules={[{ required: true, message: '必填' }]}
-                              labelCol={{ span: 24 }}
-                              wrapperCol={{ span: 24 }}
+                              禁用
+                            </Checkbox>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeOption(paramIndex, optionIndex)}
+                              className="text-red-500"
                             >
-                              <Select
-                                placeholder="选择类型"
-                                options={PARAMETER_TYPE_OPTIONS}
-                                onChange={() => {
-                                  // 切换类型时清空选项配置
-                                  form.setFieldValue(['parameters', name, 'options'], undefined)
-                                }}
-                              />
-                            </Form.Item>
-                          </Col>
-                          <Col span={3}>
-                            <Form.Item
-                              {...restField}
-                              name={[name, 'required']}
-                              valuePropName="checked"
-                              initialValue={false}
-                              label=" "
-                              labelCol={{ span: 24 }}
-                              wrapperCol={{ span: 24 }}
-                            >
-                              <Checkbox>必填</Checkbox>
-                            </Form.Item>
-                          </Col>
-                        </Row>
+                              <MinusCircleIcon className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => addOption(paramIndex)}
+                          className="w-full"
+                        >
+                          <PlusIcon className="w-4 h-4 mr-2" />
+                          添加选项
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
 
-                        {/* TEXT类型的额外配置 */}
-                        {paramType === 'TEXT' && (
-                          <Row gutter={16}>
-                            <Col span={9}>
-                              <Form.Item
-                                {...restField}
-                                name={[name, 'placeholder']}
-                                label="占位符"
-                                labelCol={{ span: 24 }}
-                                wrapperCol={{ span: 24 }}
-                              >
-                                <Input placeholder="请输入占位符" />
-                              </Form.Item>
-                            </Col>
-                            <Col span={9}>
-                              <Form.Item
-                                {...restField}
-                                name={[name, 'defaultValue']}
-                                label="默认值"
-                                labelCol={{ span: 24 }}
-                                wrapperCol={{ span: 24 }}
-                              >
-                                <Input placeholder="默认值" />
-                              </Form.Item>
-                            </Col>
-                            <Col span={3}>
-                              <Form.Item
-                                {...restField}
-                                name={[name, 'minLength']}
-                                label="最小长度"
-                                labelCol={{ span: 24 }}
-                                wrapperCol={{ span: 24 }}
-                              >
-                                <InputNumber placeholder="0" min={0} style={{ width: '100%' }} />
-                              </Form.Item>
-                            </Col>
-                            <Col span={3}>
-                              <Form.Item
-                                {...restField}
-                                name={[name, 'maxLength']}
-                                label="最大长度"
-                                labelCol={{ span: 24 }}
-                                wrapperCol={{ span: 24 }}
-                              >
-                                <InputNumber placeholder="100" min={0} style={{ width: '100%' }} />
-                              </Form.Item>
-                            </Col>
-                          </Row>
-                        )}
+              <Button
+                variant="outline"
+                onClick={addParameter}
+                className="w-full"
+              >
+                <PlusIcon className="w-4 h-4 mr-2" />
+                添加参数
+              </Button>
+            </div>
 
-                        {/* CHECKBOX类型的额外配置 */}
-                        {paramType === 'CHECKBOX' && (
-                          <Row gutter={16}>
-                            <Col span={12}>
-                              <Form.Item
-                                {...restField}
-                                name={[name, 'minSelect']}
-                                label="最小选择数"
-                                labelCol={{ span: 24 }}
-                                wrapperCol={{ span: 24 }}
-                              >
-                                <InputNumber placeholder="0" min={0} style={{ width: '100%' }} />
-                              </Form.Item>
-                            </Col>
-                            <Col span={12}>
-                              <Form.Item
-                                {...restField}
-                                name={[name, 'maxSelect']}
-                                label="最大选择数"
-                                labelCol={{ span: 24 }}
-                                wrapperCol={{ span: 24 }}
-                              >
-                                <InputNumber placeholder="不限" min={0} style={{ width: '100%' }} />
-                              </Form.Item>
-                            </Col>
-                          </Row>
-                        )}
+            <FormField
+              label="逾期天数(天)"
+              name="overdueDays"
+              required
+              error={form.formState.errors.overdueDays?.message}
+            >
+              <Input
+                {...form.register('overdueDays', { required: '请输入逾期天数' })}
+                type="number"
+                placeholder="0"
+                min={0}
+              />
+            </FormField>
 
-                        {/* 提示信息 */}
-                        <Row gutter={16}>
-                          <Col span={24}>
-                            <Form.Item
-                              {...restField}
-                              name={[name, 'hint']}
-                              label="提示信息"
-                              labelCol={{ span: 24 }}
-                              wrapperCol={{ span: 24 }}
-                            >
-                              <Input.TextArea placeholder="给用户的提示说明" rows={2} />
-                            </Form.Item>
-                          </Col>
-                        </Row>
-
-                        {/* SELECT/CHECKBOX/RADIO的选项配置 */}
-                        {needsOptions && (
-                          <Form.Item label="选项配置" style={{ marginBottom: 0 }}>
-                            <Form.List name={[name, 'options']}>
-                              {(optionFields, { add: addOption, remove: removeOption }) => (
-                                <>
-                                  {optionFields.map(({ key: optionKey, name: optionName, ...optionRestField }) => (
-                                    <Space key={optionKey} style={{ display: 'flex', marginBottom: 8 }} align="baseline">
-                                      <Form.Item
-                                        {...optionRestField}
-                                        name={[optionName, 'label']}
-                                        rules={[{ required: true, message: '必填' }]}
-                                        style={{ marginBottom: 0, width: 140 }}
-                                      >
-                                        <Input placeholder="显示文本" />
-                                      </Form.Item>
-                                      <Form.Item
-                                        {...optionRestField}
-                                        name={[optionName, 'value']}
-                                        rules={[{ required: true, message: '必填' }]}
-                                        style={{ marginBottom: 0, width: 140 }}
-                                      >
-                                        <Input placeholder="选项值" />
-                                      </Form.Item>
-                                      <Form.Item
-                                        {...optionRestField}
-                                        name={[optionName, 'defaultSelected']}
-                                        valuePropName="checked"
-                                        initialValue={false}
-                                        style={{ marginBottom: 0 }}
-                                      >
-                                        <Checkbox>默认选中</Checkbox>
-                                      </Form.Item>
-                                      <Form.Item
-                                        {...optionRestField}
-                                        name={[optionName, 'disabled']}
-                                        valuePropName="checked"
-                                        initialValue={false}
-                                        style={{ marginBottom: 0 }}
-                                      >
-                                        <Checkbox>禁用</Checkbox>
-                                      </Form.Item>
-                                      <MinusCircleOutlined
-                                        onClick={() => removeOption(optionName)}
-                                        style={{ color: 'red' }}
-                                      />
-                                    </Space>
-                                  ))}
-                                  <Form.Item style={{ marginBottom: 0 }}>
-                                    <Button
-                                      type="dashed"
-                                      onClick={() => addOption()}
-                                      block
-                                      icon={<PlusOutlined />}
-                                      size="small"
-                                    >
-                                      添加选项
-                                    </Button>
-                                  </Form.Item>
-                                </>
-                              )}
-                            </Form.List>
-                          </Form.Item>
-                        )}
-                      </Card>
-                    )
-                  })}
-                  <Form.Item style={{ marginBottom: 0 }}>
-                    <Button
-                      type="dashed"
-                      onClick={() => add({ type: 'TEXT', required: false })}
-                      block
-                      icon={<PlusOutlined />}
-                    >
-                      添加参数
-                    </Button>
-                  </Form.Item>
-                </>
-              )}
-            </Form.List>
-          </Form.Item>
-
-          <Form.Item
-            label="逾期天数(天)"
-            name="overdueDays"
-            rules={[{ required: true, message: '请输入逾期天数' }]}
-          >
-            <InputNumber
-              placeholder="0"
-              min={0}
-              style={{ width: '100%' }}
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="项说明"
-            name="description"
-          >
-            <Input.TextArea
-              placeholder="请输入说明"
-              rows={4}
-              maxLength={500}
-              showCount
-            />
-          </Form.Item>
-        </Form>
+            <FormField
+              label="项说明"
+              name="description"
+            >
+              <Input
+                {...form.register('description')}
+                placeholder="请输入说明"
+              />
+            </FormField>
+          </Form>
+        </div>
       </Modal>
 
       {/* 表单预览对话框 */}
@@ -664,15 +653,17 @@ const StepTemplates: React.FC = () => {
         title={`表单预览 - ${previewStepTemplate?.name || ''}`}
         open={previewModalVisible}
         onCancel={() => setPreviewModalVisible(false)}
-        footer={[
-          <Button key="close" onClick={() => setPreviewModalVisible(false)}>
-            关闭
-          </Button>
-        ]}
-        width={600}
+        width="600px"
+        footer={
+          <div className="flex justify-end">
+            <Button onClick={() => setPreviewModalVisible(false)}>
+              关闭
+            </Button>
+          </div>
+        }
       >
         {previewStepTemplate && (
-          <div style={{ padding: '16px 0' }}>
+          <div className="py-4">
             {previewStepTemplate.parameters && previewStepTemplate.parameters.length > 0 ? (
               previewStepTemplate.parameters.map((param, index) => (
                 <StepParameterFormItem
@@ -683,7 +674,7 @@ const StepTemplates: React.FC = () => {
                 />
               ))
             ) : (
-              <div style={{ textAlign: 'center', color: '#999', padding: '40px 0' }}>
+              <div className="text-center text-gray-400 py-10">
                 该步骤模版暂无参数配置
               </div>
             )}

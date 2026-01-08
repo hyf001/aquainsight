@@ -13,7 +13,7 @@ export interface MenuProps {
 }
 
 export interface MenuItemProps {
-  key: string
+  itemKey: string
   icon?: React.ReactNode
   onClick?: () => void
   disabled?: boolean
@@ -21,7 +21,7 @@ export interface MenuItemProps {
 }
 
 export interface SubMenuProps {
-  key: string
+  itemKey: string
   icon?: React.ReactNode
   title: React.ReactNode
   children: React.ReactNode
@@ -71,14 +71,14 @@ export const Menu: React.FC<MenuProps> & {
   )
 }
 
-const MenuItem: React.FC<MenuItemProps> = ({ key, icon, onClick, disabled, children }) => {
+const MenuItem: React.FC<MenuItemProps> = ({ itemKey, icon, onClick, disabled, children }) => {
   const { selectedKeys, onSelect } = React.useContext(MenuContext)
-  const isSelected = selectedKeys.includes(key)
+  const isSelected = selectedKeys.includes(itemKey)
 
   const handleClick = () => {
     if (disabled) return
     onClick?.()
-    onSelect(key)
+    onSelect(itemKey)
   }
 
   return (
@@ -97,12 +97,12 @@ const MenuItem: React.FC<MenuItemProps> = ({ key, icon, onClick, disabled, child
   )
 }
 
-const SubMenu: React.FC<SubMenuProps> = ({ key, icon, title, children }) => {
+const SubMenu: React.FC<SubMenuProps> = ({ itemKey, icon, title, children }) => {
   const { openKeys, onOpenChange } = React.useContext(MenuContext)
-  const isOpen = openKeys.includes(key)
+  const isOpen = openKeys.includes(itemKey)
 
   const handleToggle = () => {
-    onOpenChange(key)
+    onOpenChange(itemKey)
   }
 
   return (

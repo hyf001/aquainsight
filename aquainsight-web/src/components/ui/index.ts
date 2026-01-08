@@ -73,3 +73,12 @@ export type { PaginationProps } from './Pagination'
 
 export { default as Tree } from './Tree'
 export type { TreeProps, TreeNode } from './Tree'
+
+export { default as DatePicker, RangePicker } from './DatePicker'
+export type { DatePickerProps, RangePickerProps } from './DatePicker'
+
+export { default as Steps } from './Steps'
+export type { StepsProps, Step } from './Steps'
+
+export { default as Drawer } from './Drawer'
+export type { DrawerProps } from './Drawer'

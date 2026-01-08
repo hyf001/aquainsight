@@ -1,28 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import {
-  Card,
-  Table,
-  Button,
-  Space,
-  Modal,
-  Form,
-  Input,
-  Select,
-  message,
-  Tabs,
-  Radio,
-  Checkbox,
-  Row,
-  Col,
-  Tag,
-} from 'antd'
-import {
-  SearchOutlined,
-  SettingOutlined,
-  ExportOutlined,
-  FileTextOutlined,
-} from '@ant-design/icons'
-import type { ColumnsType } from 'antd/es/table'
+  MagnifyingGlassIcon,
+  Cog6ToothIcon,
+  ArrowUpTrayIcon,
+  DocumentTextIcon,
+} from '@heroicons/react/24/outline'
+import { Button, Table, Modal, Input, Select, Tabs, Radio, RadioGroup, Checkbox, Tag, Card } from '@/components/ui'
+import type { TableColumn, TabItem } from '@/components/ui'
 import type { Site } from '@/services/monitoring'
 import { getAllDepartments, type Department } from '@/services/organization'
 import {
@@ -34,8 +18,7 @@ import {
   type TaskScheduler,
   type ConfigureTaskSchedulerRequest,
 } from '@/services/maintenance'
-
-const { TabPane } = Tabs
+import { toast } from '@/utils/toast'
 
 // 星期选项
 const WEEKDAYS = [
@@ -142,7 +125,7 @@ const SiteConfiguration: React.FC = () => {
       setSites(sitesWithConfig)
     } catch (error) {
       console.error('加载站点列表失败:', error)
-      message.error('加载站点列表失败')
+      toast.error('加载站点列表失败')
     } finally {
       setLoading(false)
     }
@@ -177,7 +160,7 @@ const SiteConfiguration: React.FC = () => {
   // 打开配置弹窗
   const openConfigModal = (type: '运维小组' | '运维任务模版' | '运维计划') => {
     if (selectedSiteIds.length === 0) {
-      message.warning('请先选择站点')
+      toast.warning('请先选择站点')
       return
     }
 
@@ -206,24 +189,24 @@ const SiteConfiguration: React.FC = () => {
     try {
       // 根据当前步骤验证
       if (configStep === 'department' && !selectedDepartmentId) {
-        message.warning('请选择运维小组')
+        toast.warning('请选择运维小组')
         return
       }
       if (configStep === 'taskTemplate' && !selectedTaskTemplateId) {
-        message.warning('请选择运维任务模版')
+        toast.warning('请选择运维任务模版')
         return
       }
       if (configStep === 'period') {
         if (periodType === 'INTERVAL' && !intervalN) {
-          message.warning('请输入间隔天数')
+          toast.warning('请输入间隔天数')
           return
         }
         if (periodType === 'WEEK' && selectedWeekdays.length === 0) {
-          message.warning('请选择运维星期')
+          toast.warning('请选择运维星期')
           return
         }
         if (periodType === 'MONTH' && selectedDays.length === 0) {
-          message.warning('请选择运维日期')
+          toast.warning('请选择运维日期')
           return
         }
       }
@@ -300,11 +283,11 @@ const SiteConfiguration: React.FC = () => {
 
       // 显示配置结果
       if (failCount === 0) {
-        message.success(`配置成功！共配置 ${successCount} 个站点`)
+        toast.success(`配置成功！共配置 ${successCount} 个站点`)
       } else if (successCount === 0) {
-        message.error(`配置失败！共 ${failCount} 个站点配置失败`)
+        toast.error(`配置失败！共 ${failCount} 个站点配置失败`)
       } else {
-        message.warning(
+        toast.warning(
           `部分配置成功！成功 ${successCount} 个，失败 ${failCount} 个`
         )
       }
@@ -314,7 +297,7 @@ const SiteConfiguration: React.FC = () => {
       setSelectedSiteIds([])
     } catch (error: any) {
       console.error('配置失败:', error)
-      message.error(error.response?.data?.message || '配置失败')
+      toast.error(error.response?.data?.message || '配置失败')
     }
   }
 
@@ -322,42 +305,45 @@ const SiteConfiguration: React.FC = () => {
   const renderPeriodContent = () => {
     if (periodType === 'INTERVAL') {
       return (
-        <div style={{ padding: '20px 0' }}>
-          <Form.Item label="间隔天数">
+        <div className="py-5">
+          <div className="mb-2">
+            <label className="block text-sm text-ocean-midnight mb-2">间隔天数</label>
             <Input
               type="number"
               value={intervalN}
               onChange={(e) => setIntervalN(Number(e.target.value))}
               placeholder="请输入间隔天数"
-              style={{ width: 200 }}
+              className="w-48"
             />
-          </Form.Item>
+          </div>
         </div>
       )
     } else if (periodType === 'WEEK') {
+      const weekdayColumns: TableColumn<any>[] = [
+        {
+          title: '单选',
+          width: '80px',
+          render: (_, record: any) => (
+            <Checkbox
+              checked={selectedWeekdays.includes(record.value)}
+              onChange={(checked) => {
+                if (checked) {
+                  setSelectedWeekdays([...selectedWeekdays, record.value])
+                } else {
+                  setSelectedWeekdays(selectedWeekdays.filter((v) => v !== record.value))
+                }
+              }}
+            />
+          ),
+        },
+        { title: '序号', width: '80px', render: (_, __, index) => index + 1 },
+        { title: '运维星期', dataIndex: 'label' },
+      ]
+
       return (
-        <div style={{ padding: '20px 0' }}>
+        <div className="py-5">
           <Table
-            columns={[
-              {
-                title: '单选',
-                width: 80,
-                render: (_, record: any) => (
-                  <Checkbox
-                    checked={selectedWeekdays.includes(record.value)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedWeekdays([...selectedWeekdays, record.value])
-                      } else {
-                        setSelectedWeekdays(selectedWeekdays.filter((v) => v !== record.value))
-                      }
-                    }}
-                  />
-                ),
-              },
-              { title: '序号', width: 80, render: (_, __, index) => index + 1 },
-              { title: '运维星期', dataIndex: 'label' },
-            ]}
+            columns={weekdayColumns}
             dataSource={WEEKDAYS}
             rowKey="value"
             pagination={false}
@@ -371,19 +357,24 @@ const SiteConfiguration: React.FC = () => {
         label: `${i + 1}日`,
       }))
       return (
-        <div style={{ padding: '20px 0' }}>
-          <Checkbox.Group
-            value={selectedDays}
-            onChange={(values) => setSelectedDays(values as number[])}
-          >
-            <Row gutter={[16, 16]}>
-              {days.map((day) => (
-                <Col span={4} key={day.value}>
-                  <Checkbox value={day.value}>{day.label}</Checkbox>
-                </Col>
-              ))}
-            </Row>
-          </Checkbox.Group>
+        <div className="py-5">
+          <div className="grid grid-cols-8 gap-3">
+            {days.map((day) => (
+              <Checkbox
+                key={day.value}
+                checked={selectedDays.includes(day.value)}
+                onChange={(checked) => {
+                  if (checked) {
+                    setSelectedDays([...selectedDays, day.value])
+                  } else {
+                    setSelectedDays(selectedDays.filter((v) => v !== day.value))
+                  }
+                }}
+              >
+                {day.label}
+              </Checkbox>
+            ))}
+          </div>
         </div>
       )
     }
@@ -397,34 +388,34 @@ const SiteConfiguration: React.FC = () => {
   }
 
   // 表格列定义
-  const columns: ColumnsType<SiteWithConfig> = [
-    { title: '序号', width: 80, render: (_, __, index) => index + 1 },
-    { title: '站点名称', dataIndex: 'siteName', width: 150 },
-    { title: '所属客户', dataIndex: 'enterpriseName', width: 150, render: (text) => text || '-' },
+  const columns: TableColumn<SiteWithConfig>[] = [
+    { title: '序号', width: '80px', render: (_, __, index) => index + 1 },
+    { title: '站点名称', dataIndex: 'siteName', width: '150px' },
+    { title: '所属客户', dataIndex: 'enterpriseName', width: '150px', render: (text) => text || '-' },
     {
       title: '站点类型',
       dataIndex: 'siteType',
-      width: 100,
+      width: '100px',
       render: (text) => {
         if (text === 'wastewater') return '污水'
         if (text === 'rainwater') return '雨水'
         return text || '-'
       },
     },
-    { title: '站点标签', dataIndex: 'siteTag', width: 120, render: (text) => text || '-' },
+    { title: '站点标签', dataIndex: 'siteTag', width: '120px', render: (text) => text || '-' },
     {
       title: '运维小组',
-      width: 120,
+      width: '120px',
       render: (_, record) => record.taskScheduler?.departmentName || '-',
     },
     {
       title: '运维任务模版',
-      width: 120,
+      width: '120px',
       render: (_, record) => record.taskScheduler?.taskTemplateName || '-',
     },
     {
       title: '运维周期',
-      width: 150,
+      width: '150px',
       render: (_, record) => {
         if (!record.taskScheduler || !record.taskScheduler.periodConfig) return '-'
         const config = record.taskScheduler.periodConfig
@@ -454,111 +445,105 @@ const SiteConfiguration: React.FC = () => {
     },
     {
       title: '状态',
-      width: 100,
+      width: '100px',
       render: (_, record) => {
         const state = record.taskScheduler?.taskSchedulerState
         if (!state) {
-          return <Tag color="default">未配置</Tag>
+          return <Tag color="gray">未配置</Tag>
         }
         // 根据 taskSchedulerState 显示不同的状态
-        return <Tag color="success">{state}</Tag>
+        return <Tag color="green">{state}</Tag>
       },
     },
     {
       title: '是否强制生成周期任务',
-      width: 150,
+      width: '150px',
       render: () => '否',
     },
   ]
 
-  const rowSelection = {
-    selectedRowKeys: selectedSiteIds,
-    onChange: (keys: React.Key[]) => {
-      setSelectedSiteIds(keys as number[])
-    },
-  }
+  const tabs: TabItem[] = [
+    { key: 'overview', label: '运维概况' },
+    { key: 'config', label: '站点配置' },
+    { key: 'plan', label: '运维计划' },
+    { key: 'performance', label: '绩效分析' },
+    { key: 'cost', label: '成本分析' },
+    { key: 'task', label: '运维任务' },
+  ]
 
   return (
     <div>
       <Card>
-        <Tabs defaultActiveKey="config">
-          <TabPane tab="运维概况" key="overview" />
-          <TabPane tab="站点配置" key="config">
+        <Tabs items={tabs} defaultActiveKey="config">
+          {/* 站点配置 Tab */}
+          <div key="config">
             {/* 搜索栏 */}
-            <Row gutter={16} style={{ marginBottom: 16 }}>
-              <Col span={6}>
-                <Input
-                  placeholder="请输入站点名称"
-                  value={filters.siteName}
-                  onChange={(e) => setFilters({ ...filters, siteName: e.target.value })}
-                />
-              </Col>
-              <Col span={6}>
-                <Select
-                  placeholder="请选择站点类型"
-                  allowClear
-                  value={filters.siteType}
-                  onChange={(value) => setFilters({ ...filters, siteType: value })}
-                  options={[
-                    { label: '污水', value: 'wastewater' },
-                    { label: '雨水', value: 'rainwater' },
-                  ]}
-                  style={{ width: '100%' }}
-                />
-              </Col>
-              <Col span={6}>
-                <Select
-                  placeholder="请选择运维小组"
-                  allowClear
-                  value={filters.departmentId}
-                  onChange={(value) => setFilters({ ...filters, departmentId: value })}
-                  options={departments.map((d) => ({ label: d.name, value: d.id }))}
-                  style={{ width: '100%' }}
-                />
-              </Col>
-              <Col span={6}>
-                <Button type="primary" icon={<SearchOutlined />} onClick={loadSites}>
-                  查询
-                </Button>
-              </Col>
-            </Row>
+            <div className="grid grid-cols-4 gap-4 mb-4">
+              <Input
+                placeholder="请输入站点名称"
+                value={filters.siteName}
+                onChange={(e) => setFilters({ ...filters, siteName: e.target.value })}
+              />
+              <Select
+                placeholder="请选择站点类型"
+                allowClear
+                value={filters.siteType}
+                onChange={(value) => setFilters({ ...filters, siteType: value as string })}
+                options={[
+                  { label: '污水', value: 'wastewater' },
+                  { label: '雨水', value: 'rainwater' },
+                ]}
+              />
+              <Select
+                placeholder="请选择运维小组"
+                allowClear
+                value={filters.departmentId}
+                onChange={(value) => setFilters({ ...filters, departmentId: value as number })}
+                options={departments.map((d) => ({ label: d.name, value: d.id }))}
+              />
+              <Button onClick={loadSites}>
+                <MagnifyingGlassIcon className="w-4 h-4 mr-2" />
+                查询
+              </Button>
+            </div>
 
             {/* 操作按钮 */}
-            <div style={{ marginBottom: 16 }}>
-              <Space>
-                <Button
-                  type="primary"
-                  icon={<SettingOutlined />}
-                  onClick={() => openConfigModal('运维小组')}
-                >
-                  配置运维小组
-                </Button>
-                <Button
-                  type="primary"
-                  icon={<SettingOutlined />}
-                  onClick={() => openConfigModal('运维任务模版')}
-                >
-                  配置运维任务模版
-                </Button>
-                <Button
-                  type="primary"
-                  icon={<SettingOutlined />}
-                  onClick={() => openConfigModal('运维计划')}
-                >
-                  配置运维计划
-                </Button>
-                <Button icon={<ExportOutlined />}>批量暂停运维</Button>
-                <Button icon={<ExportOutlined />}>批量恢复运维</Button>
-                <Button icon={<FileTextOutlined />}>批量设置非强制生成任务</Button>
-                <Button icon={<FileTextOutlined />}>批量设置强制生成任务</Button>
-                <Button
-                  type="link"
-                  icon={<ExportOutlined />}
-                  onClick={() => message.info('导出站点信息功能开发中')}
-                >
-                  导出站点信息
-                </Button>
-              </Space>
+            <div className="flex items-center gap-2 mb-4 flex-wrap">
+              <Button onClick={() => openConfigModal('运维小组')}>
+                <Cog6ToothIcon className="w-4 h-4 mr-2" />
+                配置运维小组
+              </Button>
+              <Button onClick={() => openConfigModal('运维任务模版')}>
+                <Cog6ToothIcon className="w-4 h-4 mr-2" />
+                配置运维任务模版
+              </Button>
+              <Button onClick={() => openConfigModal('运维计划')}>
+                <Cog6ToothIcon className="w-4 h-4 mr-2" />
+                配置运维计划
+              </Button>
+              <Button variant="outline">
+                <ArrowUpTrayIcon className="w-4 h-4 mr-2" />
+                批量暂停运维
+              </Button>
+              <Button variant="outline">
+                <ArrowUpTrayIcon className="w-4 h-4 mr-2" />
+                批量恢复运维
+              </Button>
+              <Button variant="outline">
+                <DocumentTextIcon className="w-4 h-4 mr-2" />
+                批量设置非强制生成任务
+              </Button>
+              <Button variant="outline">
+                <DocumentTextIcon className="w-4 h-4 mr-2" />
+                批量设置强制生成任务
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => toast.info('导出站点信息功能开发中')}
+              >
+                <ArrowUpTrayIcon className="w-4 h-4 mr-2" />
+                导出站点信息
+              </Button>
             </div>
 
             {/* 站点表格 */}
@@ -567,20 +552,18 @@ const SiteConfiguration: React.FC = () => {
               dataSource={sites}
               rowKey="id"
               loading={loading}
-              rowSelection={rowSelection}
+              rowSelection={{
+                selectedRowKeys: selectedSiteIds,
+                onChange: (keys) => setSelectedSiteIds(keys as number[]),
+              }}
               size="small"
-              scroll={{ x: 1800 }}
               pagination={{
                 showSizeChanger: true,
                 showQuickJumper: true,
                 showTotal: (total) => `共 ${total} 条`,
               }}
             />
-          </TabPane>
-          <TabPane tab="运维计划" key="plan" />
-          <TabPane tab="绩效分析" key="performance" />
-          <TabPane tab="成本分析" key="cost" />
-          <TabPane tab="运维任务" key="task" />
+          </div>
         </Tabs>
       </Card>
 
@@ -589,33 +572,37 @@ const SiteConfiguration: React.FC = () => {
         title={getConfigModalTitle()}
         open={configModalVisible}
         onCancel={() => setConfigModalVisible(false)}
-        onOk={handleConfigSubmit}
-        width={800}
-        okText="配置"
-        cancelText="关闭"
+        width="800px"
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setConfigModalVisible(false)}>
+              关闭
+            </Button>
+            <Button onClick={handleConfigSubmit}>
+              配置
+            </Button>
+          </div>
+        }
       >
-        <div style={{ marginBottom: 16 }}>
+        <div className="mb-4">
           <span>配置站点数量: {selectedSiteIds.length}个</span>
         </div>
 
         {/* 配置运维小组 */}
         {configStep === 'department' && (
           <div>
-            <Row gutter={16} style={{ marginBottom: 16 }}>
-              <Col span={12}>
-                <Input placeholder="请输入运维小组" />
-              </Col>
-              <Col span={12}>
-                <Button type="primary" icon={<SearchOutlined />}>
-                  查询
-                </Button>
-              </Col>
-            </Row>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <Input placeholder="请输入运维小组" />
+              <Button>
+                <MagnifyingGlassIcon className="w-4 h-4 mr-2" />
+                查询
+              </Button>
+            </div>
             <Table
               columns={[
                 {
                   title: '单选',
-                  width: 80,
+                  width: '80px',
                   render: (_, record: Department) => (
                     <Radio
                       checked={selectedDepartmentId === record.id}
@@ -623,7 +610,7 @@ const SiteConfiguration: React.FC = () => {
                     />
                   ),
                 },
-                { title: '序号', width: 80, render: (_, __, index) => index + 1 },
+                { title: '序号', width: '80px', render: (_, __, index) => index + 1 },
                 { title: '运维小组', dataIndex: 'name' },
                 { title: '隶属部门', render: () => '运维部' },
               ]}
@@ -641,29 +628,24 @@ const SiteConfiguration: React.FC = () => {
         {/* 配置运维任务模版 */}
         {configStep === 'taskTemplate' && (
           <div>
-            <Row gutter={16} style={{ marginBottom: 16 }}>
-              <Col span={12}>
-                <Input
-                  placeholder="请输入任务模版名称"
-                  value={searchTaskTemplateName}
-                  onChange={(e) => setSearchTaskTemplateName(e.target.value)}
-                />
-              </Col>
-              <Col span={12}>
-                <Button
-                  type="primary"
-                  icon={<SearchOutlined />}
-                  onClick={() => loadTaskTemplates(searchTaskTemplateName)}
-                >
-                  查询
-                </Button>
-              </Col>
-            </Row>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <Input
+                placeholder="请输入任务模版名称"
+                value={searchTaskTemplateName}
+                onChange={(e) => setSearchTaskTemplateName(e.target.value)}
+              />
+              <Button
+                onClick={() => loadTaskTemplates(searchTaskTemplateName)}
+              >
+                <MagnifyingGlassIcon className="w-4 h-4 mr-2" />
+                查询
+              </Button>
+            </div>
             <Table
               columns={[
                 {
                   title: '单选',
-                  width: 80,
+                  width: '80px',
                   render: (_, record: TaskTemplate) => (
                     <Radio
                       checked={selectedTaskTemplateId === record.id}
@@ -671,10 +653,10 @@ const SiteConfiguration: React.FC = () => {
                     />
                   ),
                 },
-                { title: '序号', width: 80, render: (_, __, index) => index + 1 },
+                { title: '序号', width: '80px', render: (_, __, index) => index + 1 },
                 { title: '任务模版名称', dataIndex: 'name' },
                 { title: '任务项数', render: () => '-' },
-                { title: '状态', render: () => <Tag color="success">启用</Tag> },
+                { title: '状态', render: () => <Tag color="green">启用</Tag> },
               ]}
               dataSource={taskTemplates}
               rowKey="id"
@@ -690,16 +672,18 @@ const SiteConfiguration: React.FC = () => {
         {/* 配置运维计划 */}
         {configStep === 'period' && (
           <div>
-            <Tabs activeKey={periodType} onChange={(key) => setPeriodType(key as any)}>
-              <TabPane tab="周计划" key="WEEK">
+            <Tabs
+              items={[
+                { key: 'WEEK', label: '周计划' },
+                { key: 'MONTH', label: '月计划' },
+                { key: 'INTERVAL', label: '间隔周期计划' },
+              ]}
+              activeKey={periodType}
+              onChange={(key) => setPeriodType(key as any)}
+            >
+              <div key={periodType}>
                 {renderPeriodContent()}
-              </TabPane>
-              <TabPane tab="月计划" key="MONTH">
-                {renderPeriodContent()}
-              </TabPane>
-              <TabPane tab="间隔周期计划" key="INTERVAL">
-                {renderPeriodContent()}
-              </TabPane>
+              </div>
             </Tabs>
           </div>
         )}

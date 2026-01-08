@@ -123,7 +123,8 @@ const LayoutComponent: React.FC = () => {
   }
 
   const handleSideMenuClick = (key: string) => {
-    if (key.startsWith('/')) {
+    // 只处理路由路径 (以 / 开头的key)
+    if (key && key.startsWith('/')) {
       navigate(key)
       // 添加标签页
       const route = routeConfig[key]
@@ -165,13 +166,13 @@ const LayoutComponent: React.FC = () => {
     return items.map((item) => {
       if (item.children) {
         return (
-          <Menu.SubMenu key={item.key} icon={item.icon} title={item.title}>
+          <Menu.SubMenu key={item.key} itemKey={item.key} icon={item.icon} title={item.title}>
             {renderMenuItems(item.children)}
           </Menu.SubMenu>
         )
       }
       return (
-        <Menu.Item key={item.key} icon={item.icon}>
+        <Menu.Item key={item.key} itemKey={item.key} icon={item.icon}>
           {item.label}
         </Menu.Item>
       )

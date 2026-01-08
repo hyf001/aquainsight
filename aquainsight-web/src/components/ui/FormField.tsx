@@ -1,5 +1,9 @@
 import React from 'react'
-import { Controller, FieldValues, Path, ControllerProps, FieldError } from 'react-hook-form'
+import { Controller } from 'react-hook-form'
+import type { FieldValues } from 'react-hook-form'
+import type { Path } from 'react-hook-form'
+import type { ControllerProps } from 'react-hook-form'
+import type { FieldError } from 'react-hook-form'
 import { useFormContext } from './Form'
 import { cn } from '@/utils/cn'
 

@@ -1,26 +1,29 @@
 import React, { useState, useEffect } from 'react'
 import {
+  BeakerIcon,
+  MagnifyingGlassIcon,
+  PlusIcon,
+  TrashIcon,
+  PencilIcon,
+  ChartBarIcon,
+  CubeIcon,
+} from '@heroicons/react/24/outline'
+import { useForm } from 'react-hook-form'
+import {
   Card,
-  Table,
+  CardBody,
   Button,
-  Space,
+  Input,
+  Table,
+  type TableColumn,
   Modal,
   Form,
-  Input,
+  FormField,
   Select,
-  message,
+  type SelectOption,
   Popconfirm,
-  Row,
-  Col,
-  List,
-} from 'antd'
-import {
-  PlusOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  SearchOutlined,
-} from '@ant-design/icons'
-import type { ColumnsType } from 'antd/es/table'
+  Pagination,
+} from '@/components/ui'
 import {
   getFactorList,
   createFactor,
@@ -28,6 +31,8 @@ import {
   deleteFactor,
   type Factor,
 } from '@/services/monitoring'
+import { toast } from '@/utils/toast'
+import { cn } from '@/utils/cn'
 
 const CATEGORIES = [
   { key: 'water_quality', name: '水环境质量' },
@@ -40,10 +45,11 @@ const DetectionFactors: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false)
   const [editingFactor, setEditingFactor] = useState<Factor | null>(null)
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 10 })
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 })
   const [selectedCategory, setSelectedCategory] = useState<string>(CATEGORIES[0].key)
   const [searchText, setSearchText] = useState('')
-  const [form] = Form.useForm()
+
+  const form = useForm()
 
   // Load factors
   const loadFactors = async (pageNum: number = 1, pageSize: number = 10) => {
@@ -51,10 +57,10 @@ const DetectionFactors: React.FC = () => {
     try {
       const data = await getFactorList(pageNum, pageSize, selectedCategory)
       setFactors(data.list)
-      setPagination({ current: data.pageNum, pageSize: data.pageSize })
+      setPagination({ current: data.pageNum, pageSize: data.pageSize, total: data.total })
     } catch (error) {
       console.error('加载监测因子失败:', error)
-      message.error('加载监测因子失败')
+      toast.error('加载监测因子失败')
     } finally {
       setLoading(false)
     }
@@ -62,21 +68,20 @@ const DetectionFactors: React.FC = () => {
 
   useEffect(() => {
     loadFactors(1, 10)
-  }, [])
+  }, [selectedCategory])
 
   // Change category
   const handleCategoryChange = (categoryKey: string) => {
     setSelectedCategory(categoryKey)
     setSelectedRowKeys([])
     setSearchText('')
-    loadFactors(1, 10)
   }
 
   // Open create/edit modal
   const openModal = (factor?: Factor) => {
     setEditingFactor(factor || null)
     if (factor) {
-      form.setFieldsValue({
+      form.reset({
         factorCode: factor.factorCode,
         nationalCode: factor.nationalCode || undefined,
         factorName: factor.factorName,
@@ -88,27 +93,26 @@ const DetectionFactors: React.FC = () => {
         precisionDigits: factor.precisionDigits || 2,
       })
     } else {
-      form.resetFields()
-      form.setFieldsValue({ category: selectedCategory, precisionDigits: 2 })
+      form.reset({ category: selectedCategory, precisionDigits: 2 })
     }
     setModalVisible(true)
   }
 
   // Save factor
-  const handleSaveFactor = async () => {
+  const handleSaveFactor = async (values: any) => {
     try {
-      const values = await form.validateFields()
       if (editingFactor) {
         await updateFactor(editingFactor.id, values)
-        message.success('更新成功')
+        toast.success('更新成功')
       } else {
         await createFactor(values)
-        message.success('创建成功')
+        toast.success('创建成功')
       }
       setModalVisible(false)
       loadFactors(pagination.current, pagination.pageSize)
     } catch (error) {
       console.error('保存监测因子失败:', error)
+      toast.error('保存失败')
     }
   }
 
@@ -116,28 +120,30 @@ const DetectionFactors: React.FC = () => {
   const handleDeleteFactor = async (id: number) => {
     try {
       await deleteFactor(id)
-      message.success('删除成功')
+      toast.success('删除成功')
       loadFactors(pagination.current, pagination.pageSize)
     } catch (error) {
       console.error('删除监测因子失败:', error)
+      toast.error('删除失败')
     }
   }
 
   // Delete multiple factors
   const handleBatchDelete = async () => {
     if (selectedRowKeys.length === 0) {
-      message.warning('请选择要删除的因子')
+      toast.warning('请选择要删除的因子')
       return
     }
     try {
       for (const id of selectedRowKeys) {
         await deleteFactor(id as number)
       }
-      message.success('批量删除成功')
+      toast.success('批量删除成功')
       setSelectedRowKeys([])
       loadFactors(pagination.current, pagination.pageSize)
     } catch (error) {
       console.error('批量删除失败:', error)
+      toast.error('批量删除失败')
     }
   }
 
@@ -149,222 +155,316 @@ const DetectionFactors: React.FC = () => {
   // Filter factors by search text
   const filteredFactors = searchText.trim()
     ? factors.filter(
-        f =>
-          f.factorCode?.includes(searchText) ||
-          f.factorName?.includes(searchText)
+        (f) =>
+          f.factorCode?.includes(searchText) || f.factorName?.includes(searchText)
       )
     : factors
 
+  // Category options for select
+  const categoryOptions: SelectOption[] = CATEGORIES.map((c) => ({
+    label: c.name,
+    value: c.key,
+  }))
+
   // Table columns
-  const columns: ColumnsType<Factor> = [
+  const columns: TableColumn<Factor>[] = [
     {
       title: '序号',
       key: 'index',
-      width: 60,
-      render: (_, __, index) => index + 1,
+      width: '60px',
+      render: (_, __, index) => (
+        <span className="text-sm text-gray-600">
+          {(pagination.current - 1) * pagination.pageSize + index + 1}
+        </span>
+      ),
     },
     {
       title: '操作',
       key: 'action',
-      width: 120,
+      width: '150px',
       render: (_, record) => (
-        <Space>
-          <a onClick={() => openModal(record)}>
-            <EditOutlined /> 编辑
-          </a>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<PencilIcon className="w-4 h-4" />}
+            onClick={() => openModal(record)}
+          >
+            编辑
+          </Button>
           <Popconfirm
             title="确认删除"
             description="确定要删除该因子吗？"
             onConfirm={() => handleDeleteFactor(record.id)}
-            okText="确定"
-            cancelText="取消"
+            okType="danger"
           >
-            <a style={{ color: '#ff4d4f' }}>
-              <DeleteOutlined /> 删除
-            </a>
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<TrashIcon className="w-4 h-4 text-red-500" />}
+            >
+              删除
+            </Button>
           </Popconfirm>
-        </Space>
+        </div>
       ),
     },
     {
       title: '因子代码',
       dataIndex: 'factorCode',
       key: 'factorCode',
-      width: 120,
+      width: '120px',
+      render: (code) => <span className="font-mono text-sm text-gray-600">{code as string}</span>,
     },
     {
       title: '国标代码',
       dataIndex: 'nationalCode',
       key: 'nationalCode',
-      render: (text) => text || '-',
+      render: (text) => (
+        <span className="text-sm text-gray-600">{text ? (text as string) : '-'}</span>
+      ),
     },
     {
       title: '因子名称',
       dataIndex: 'factorName',
       key: 'factorName',
+      render: (name) => <span className="font-medium text-gray-900">{name as string}</span>,
     },
     {
       title: '简称',
       dataIndex: 'shortName',
       key: 'shortName',
-      render: (text) => text || '-',
+      render: (text) => (
+        <span className="text-sm text-gray-600">{text ? (text as string) : '-'}</span>
+      ),
     },
   ]
 
-  const rowSelection = {
-    selectedRowKeys,
-    onChange: (keys: React.Key[]) => {
-      setSelectedRowKeys(keys)
-    },
-  }
-
   return (
-    <div>
-      <Row gutter={16}>
+    <div className="p-6 space-y-6">
+      <div className="grid grid-cols-12 gap-6">
         {/* 左侧因子类别 */}
-        <Col span={4}>
-          <Card
-            title="因子类别"
-            size="small"
-            bodyStyle={{ padding: '8px 16px' }}
-          >
-            <List
-              dataSource={CATEGORIES}
-              renderItem={(category) => (
-                <List.Item
-                  key={category.key}
-                  style={{
-                    padding: '8px 0',
-                    cursor: 'pointer',
-                    paddingLeft: 12,
-                    borderLeft:
-                      selectedCategory === category.key ? '3px solid #1890ff' : '3px solid transparent',
-                    backgroundColor:
-                      selectedCategory === category.key ? '#f0f5ff' : 'transparent',
-                  }}
-                  onClick={() => handleCategoryChange(category.key)}
-                >
-                  {category.name}
-                </List.Item>
-              )}
-            />
+        <div className="col-span-3">
+          <Card className="shadow-md hover:shadow-lg transition-shadow">
+            <CardBody>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <ChartBarIcon className="w-5 h-5 text-ocean-teal" />
+                因子类别
+              </h3>
+              <div className="space-y-2">
+                {CATEGORIES.map((category) => (
+                  <div
+                    key={category.key}
+                    className={cn(
+                      'px-4 py-3 rounded-lg cursor-pointer transition-all duration-200',
+                      selectedCategory === category.key
+                        ? 'bg-ocean-teal text-white shadow-md'
+                        : 'bg-gray-50 hover:bg-ocean-seafoam/20 text-gray-700 hover:text-ocean-teal'
+                    )}
+                    onClick={() => handleCategoryChange(category.key)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <BeakerIcon className="w-5 h-5" />
+                      <span className="font-medium">{category.name}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardBody>
           </Card>
-        </Col>
+        </div>
 
         {/* 右侧因子列表 */}
-        <Col span={20}>
-          <Card size="small" bodyStyle={{ padding: 16 }}>
-            {/* 搜索栏 */}
-            <div style={{ marginBottom: 16 }}>
-              <Space>
-                <span>因子代码/名称：</span>
+        <div className="col-span-9">
+          <Card className="shadow-md hover:shadow-lg transition-shadow">
+            <CardBody>
+              {/* 搜索栏 */}
+              <div className="mb-6 flex items-center gap-4">
+                <span className="text-sm text-gray-600 whitespace-nowrap">
+                  因子代码/名称：
+                </span>
                 <Input
                   placeholder="请输入因子代码或名称"
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
-                  style={{ width: 200 }}
-                  onPressEnter={handleSearch}
+                  className="w-64"
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  prefix={<MagnifyingGlassIcon className="w-4 h-4 text-gray-400" />}
                 />
-                <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
+                <Button
+                  variant="primary"
+                  icon={<MagnifyingGlassIcon className="w-4 h-4" />}
+                  onClick={handleSearch}
+                >
                   查询
                 </Button>
-              </Space>
-            </div>
+              </div>
 
-            {/* 操作按钮 */}
-            <div style={{ marginBottom: 16 }}>
-              <Space>
-                <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}>
+              {/* 操作按钮 */}
+              <div className="mb-6 flex items-center gap-3">
+                <Button
+                  variant="primary"
+                  icon={<PlusIcon className="w-4 h-4" />}
+                  onClick={() => openModal()}
+                >
                   新增
                 </Button>
                 <Popconfirm
                   title="确认删除"
-                  description="确定要删除选中的因子吗？"
+                  description={`确定要删除选中的 ${selectedRowKeys.length} 个因子吗？`}
                   onConfirm={handleBatchDelete}
-                  okText="确定"
-                  cancelText="取消"
+                  okType="danger"
                 >
-                  <Button danger icon={<DeleteOutlined />}>
-                    删除
+                  <Button
+                    variant="danger"
+                    icon={<TrashIcon className="w-4 h-4" />}
+                    disabled={selectedRowKeys.length === 0}
+                  >
+                    删除 {selectedRowKeys.length > 0 && `(${selectedRowKeys.length})`}
                   </Button>
                 </Popconfirm>
-              </Space>
-            </div>
+              </div>
 
-            {/* 因子表格 */}
-            <Table
-              columns={columns}
-              dataSource={filteredFactors}
-              rowKey="id"
-              loading={loading}
-              rowSelection={rowSelection}
-              size="small"
-              pagination={{
-                current: pagination.current,
-                pageSize: pagination.pageSize,
-                showSizeChanger: true,
-                showQuickJumper: true,
-                showTotal: (total) => `共 ${total} 条`,
-                onChange: (page, pageSize) => {
-                  loadFactors(page, pageSize)
-                  setPagination({ current: page, pageSize })
-                },
-              }}
-            />
+              {/* 因子表格 */}
+              <Table
+                columns={columns}
+                dataSource={filteredFactors}
+                rowKey="id"
+                loading={loading}
+                rowSelection={{
+                  selectedRowKeys,
+                  onChange: setSelectedRowKeys,
+                }}
+                size="small"
+              />
+
+              {/* 分页 */}
+              {filteredFactors.length > 0 && (
+                <div className="mt-4 flex justify-end">
+                  <Pagination
+                    current={pagination.current}
+                    pageSize={pagination.pageSize}
+                    total={pagination.total}
+                    onChange={(page, pageSize) => {
+                      loadFactors(page, pageSize)
+                    }}
+                    showSizeChanger
+                    showTotal
+                  />
+                </div>
+              )}
+            </CardBody>
           </Card>
-        </Col>
-      </Row>
+        </div>
+      </div>
 
       {/* 新增/编辑弹窗 */}
       <Modal
-        title={editingFactor ? '编辑因子' : '新增因子'}
         open={modalVisible}
-        onOk={handleSaveFactor}
-        onCancel={() => setModalVisible(false)}
+        onClose={() => {
+          setModalVisible(false)
+          form.reset()
+        }}
+        title={editingFactor ? '编辑因子' : '新增因子'}
         width={600}
       >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            name="factorCode"
-            label="因子代码"
-            rules={[{ required: true, message: '请输入因子代码' }]}
-          >
-            <Input placeholder="请输入因子代码" />
-          </Form.Item>
-          <Form.Item name="nationalCode" label="国标代码">
-            <Input placeholder="请输入国标代码" />
-          </Form.Item>
-          <Form.Item
-            name="factorName"
-            label="因子名称"
-            rules={[{ required: true, message: '请输入因子名称' }]}
-          >
-            <Input placeholder="请输入因子名称" />
-          </Form.Item>
-          <Form.Item name="shortName" label="简称">
-            <Input placeholder="请输入简称" />
-          </Form.Item>
-          <Form.Item name="category" label="类别">
-            <Select
-              placeholder="请选择类别"
-              options={CATEGORIES.map(c => ({
-                label: c.name,
-                value: c.key,
-              }))}
-            />
-          </Form.Item>
-          <Form.Item name="unit" label="单位">
-            <Input placeholder="请输入单位" />
-          </Form.Item>
-          <Form.Item name="upperLimit" label="上限">
-            <Input placeholder="请输入上限值" />
-          </Form.Item>
-          <Form.Item name="lowerLimit" label="下限">
-            <Input placeholder="请输入下限值" />
-          </Form.Item>
-          <Form.Item name="precisionDigits" label="精度" initialValue={2}>
-            <Input type="number" placeholder="请输入精度数字" />
-          </Form.Item>
+        <Form form={form} onSubmit={handleSaveFactor}>
+          <div className="space-y-4">
+            <FormField
+              name="factorCode"
+              label="因子代码"
+              required
+              rules={{ required: '请输入因子代码' }}
+            >
+              {({ field }) => (
+                <Input {...field} placeholder="请输入因子代码" className="font-mono" />
+              )}
+            </FormField>
+
+            <FormField name="nationalCode" label="国标代码">
+              {({ field }) => (
+                <Input {...field} placeholder="请输入国标代码" className="font-mono" />
+              )}
+            </FormField>
+
+            <FormField
+              name="factorName"
+              label="因子名称"
+              required
+              rules={{ required: '请输入因子名称' }}
+            >
+              {({ field }) => (
+                <Input
+                  {...field}
+                  placeholder="请输入因子名称"
+                  prefix={<BeakerIcon className="w-4 h-4 text-gray-400" />}
+                />
+              )}
+            </FormField>
+
+            <FormField name="shortName" label="简称">
+              {({ field }) => <Input {...field} placeholder="请输入简称" />}
+            </FormField>
+
+            <FormField name="category" label="类别">
+              {({ field }) => (
+                <Select
+                  {...field}
+                  placeholder="请选择类别"
+                  options={categoryOptions}
+                  prefix={<ChartBarIcon className="w-4 h-4 text-gray-400" />}
+                />
+              )}
+            </FormField>
+
+            <FormField name="unit" label="单位">
+              {({ field }) => (
+                <Input
+                  {...field}
+                  placeholder="请输入单位"
+                  prefix={<CubeIcon className="w-4 h-4 text-gray-400" />}
+                />
+              )}
+            </FormField>
+
+            <FormField name="upperLimit" label="上限">
+              {({ field }) => (
+                <Input {...field} type="number" placeholder="请输入上限值" />
+              )}
+            </FormField>
+
+            <FormField name="lowerLimit" label="下限">
+              {({ field }) => (
+                <Input {...field} type="number" placeholder="请输入下限值" />
+              )}
+            </FormField>
+
+            <FormField name="precisionDigits" label="精度">
+              {({ field }) => (
+                <Input
+                  {...field}
+                  type="number"
+                  placeholder="请输入精度数字"
+                  onChange={(e) => field.onChange(Number(e.target.value) || 2)}
+                />
+              )}
+            </FormField>
+          </div>
+
+          <div className="mt-6 flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setModalVisible(false)
+                form.reset()
+              }}
+            >
+              取消
+            </Button>
+            <Button type="submit" variant="primary">
+              确定
+            </Button>
+          </div>
         </Form>
       </Modal>
     </div>

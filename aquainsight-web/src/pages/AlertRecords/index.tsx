@@ -1,53 +1,84 @@
 import React, { useState, useEffect } from 'react'
 import {
+  MagnifyingGlassIcon,
+  EyeIcon,
+  CheckIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline'
+import { useForm } from 'react-hook-form'
+import {
   Card,
+  CardHeader,
+  CardBody,
   Table,
+  type TableColumn,
   Button,
-  Space,
   Modal,
   Form,
+  FormField,
   Input,
+  TextArea,
   Select,
-  message,
+  type SelectOption,
   Tag,
-  DatePicker,
-  Row,
-  Col,
-  Descriptions,
-} from 'antd'
-import {
-  SearchOutlined,
-  EyeOutlined,
-  CheckOutlined,
-  CloseOutlined,
-} from '@ant-design/icons'
-import type { ColumnsType } from 'antd/es/table'
+  RangePicker,
+  Pagination,
+} from '@/components/ui'
+import { toast } from '@/utils/toast'
+import { format } from 'date-fns'
 import { getAlertRecords, claimAlert, ignoreAlert, type AlertRecord } from '@/services/alert'
 import { createManualJobInstance, getTaskTemplateList, type TaskTemplate } from '@/services/maintenance'
-import dayjs from 'dayjs'
 
-const { RangePicker } = DatePicker
-
-const ALERT_STATUS = [
-  { label: '待处理', value: 'PENDING', color: 'red' },
-  { label: '处理中', value: 'IN_PROGRESS', color: 'orange' },
-  { label: '已解决', value: 'RESOLVED', color: 'green' },
-  { label: '已忽略', value: 'IGNORED', color: 'gray' },
-  { label: '已恢复', value: 'RECOVERED', color: 'blue' },
+const ALERT_STATUS: SelectOption[] = [
+  { label: '待处理', value: 'PENDING' },
+  { label: '处理中', value: 'IN_PROGRESS' },
+  { label: '已解决', value: 'RESOLVED' },
+  { label: '已忽略', value: 'IGNORED' },
+  { label: '已恢复', value: 'RECOVERED' },
 ]
 
-const ALERT_LEVELS = [
-  { label: '紧急', value: 'URGENT', color: 'red' },
-  { label: '重要', value: 'IMPORTANT', color: 'orange' },
-  { label: '一般', value: 'NORMAL', color: 'blue' },
-  { label: '提示', value: 'INFO', color: 'green' },
+const ALERT_LEVELS: SelectOption[] = [
+  { label: '紧急', value: 'URGENT' },
+  { label: '重要', value: 'IMPORTANT' },
+  { label: '一般', value: 'NORMAL' },
+  { label: '提示', value: 'INFO' },
 ]
 
-const NOTIFY_STATUS = [
-  { label: '待通知', value: 'PENDING', color: 'default' },
-  { label: '通知成功', value: 'SUCCESS', color: 'success' },
-  { label: '通知失败', value: 'FAILED', color: 'error' },
+const NOTIFY_STATUS: SelectOption[] = [
+  { label: '待通知', value: 'PENDING' },
+  { label: '通知成功', value: 'SUCCESS' },
+  { label: '通知失败', value: 'FAILED' },
 ]
+
+const getAlertStatusColor = (status: string) => {
+  const map: Record<string, 'primary' | 'success' | 'warning' | 'error'> = {
+    PENDING: 'error',
+    IN_PROGRESS: 'warning',
+    RESOLVED: 'success',
+    IGNORED: 'primary',
+    RECOVERED: 'primary',
+  }
+  return map[status] || 'primary'
+}
+
+const getAlertLevelColor = (level: string) => {
+  const map: Record<string, 'primary' | 'success' | 'warning' | 'error'> = {
+    URGENT: 'error',
+    IMPORTANT: 'warning',
+    NORMAL: 'primary',
+    INFO: 'success',
+  }
+  return map[level] || 'primary'
+}
+
+const getNotifyStatusColor = (status: string) => {
+  const map: Record<string, 'primary' | 'success' | 'warning' | 'error'> = {
+    PENDING: 'primary',
+    SUCCESS: 'success',
+    FAILED: 'error',
+  }
+  return map[status] || 'primary'
+}
 
 const AlertRecords: React.FC = () => {
   const [records, setRecords] = useState<AlertRecord[]>([])
@@ -64,9 +95,10 @@ const AlertRecords: React.FC = () => {
     startTime: undefined as string | undefined,
     endTime: undefined as string | undefined,
   })
-  const [form] = Form.useForm()
-  const [taskForm] = Form.useForm()
-  const [searchForm] = Form.useForm()
+
+  const searchForm = useForm()
+  const ignoreForm = useForm()
+  const taskForm = useForm()
 
   // Load alert records
   const loadRecords = async (pageNum: number = 1, pageSize: number = 10) => {
@@ -77,7 +109,7 @@ const AlertRecords: React.FC = () => {
       setPagination({ current: pageResult.pageNum, pageSize: pageResult.pageSize, total: pageResult.total })
     } catch (error) {
       console.error('加载告警记录失败:', error)
-      message.error('加载告警记录失败')
+      toast.error('加载告警记录失败')
     } finally {
       setLoading(false)
     }
@@ -89,19 +121,23 @@ const AlertRecords: React.FC = () => {
 
   // Handle search
   const handleSearch = () => {
-    const values = searchForm.getFieldsValue()
+    const values = searchForm.getValues()
     const timeRange = values.timeRange
     setFilters({
       status: values.status,
       alertLevel: values.alertLevel,
-      startTime: timeRange ? dayjs(timeRange[0]).format('YYYY-MM-DD HH:mm:ss') : undefined,
-      endTime: timeRange ? dayjs(timeRange[1]).format('YYYY-MM-DD HH:mm:ss') : undefined,
+      startTime: timeRange?.[0] ? format(timeRange[0], 'yyyy-MM-dd HH:mm:ss') : undefined,
+      endTime: timeRange?.[1] ? format(timeRange[1], 'yyyy-MM-dd HH:mm:ss') : undefined,
     })
   }
 
   // Reset search
   const handleReset = () => {
-    searchForm.resetFields()
+    searchForm.reset({
+      status: undefined,
+      alertLevel: undefined,
+      timeRange: undefined,
+    })
     setFilters({
       status: undefined,
       alertLevel: undefined,
@@ -116,310 +152,443 @@ const AlertRecords: React.FC = () => {
     setDetailVisible(true)
   }
 
-  // 认领告警
+  // Claim alert
   const handleClaim = async (record: AlertRecord) => {
-    // 如果是站点告警，弹窗创建任务
+    // If it's a site alert, show task creation modal
     if (record.targetType === 'site') {
       setCurrentRecord(record)
       setCreateTaskVisible(true)
-      taskForm.resetFields()
-      // 加载任务模版列表
+      taskForm.reset({
+        taskTemplateId: undefined,
+        departmentId: undefined,
+      })
+      // Load task templates
       loadTaskTemplates()
     } else {
-      // 任务告警直接认领
+      // Task alert can be claimed directly
       try {
         await claimAlert(record.id)
-        message.success('已认领告警')
+        toast.success('已认领告警')
         loadRecords(pagination.current, pagination.pageSize)
       } catch (error) {
         console.error('认领告警失败:', error)
-        message.error('操作失败')
+        toast.error('操作失败')
       }
     }
   }
 
-  // 加载任务模版列表
+  // Load task templates
   const loadTaskTemplates = async () => {
     try {
       const taskTemplateList = await getTaskTemplateList()
       setTaskTemplates(taskTemplateList)
     } catch (error) {
       console.error('加载任务模版列表失败:', error)
-      message.error('加载任务模版列表失败')
+      toast.error('加载任务模版列表失败')
     }
   }
 
-  // 创建任务
-  const handleCreateTask = async () => {
+  // Create task
+  const handleCreateTask = async (values: any) => {
     try {
-      const values = await taskForm.validateFields()
-      // 创建手动任务
+      // Create manual task instance
       await createManualJobInstance({
         siteId: currentRecord!.targetId,
         taskTemplateId: values.taskTemplateId,
         departmentId: values.departmentId,
       })
-      // 认领告警
+      // Claim alert
       await claimAlert(currentRecord!.id)
-      message.success('任务创建成功，告警已认领')
+      toast.success('任务创建成功，告警已认领')
       setCreateTaskVisible(false)
       loadRecords(pagination.current, pagination.pageSize)
     } catch (error) {
       console.error('创建任务失败:', error)
-      message.error('操作失败')
+      toast.error('操作失败')
     }
   }
 
-  // 打开忽略弹窗
+  // Open ignore modal
   const openIgnoreModal = (record: AlertRecord) => {
     setCurrentRecord(record)
     setHandleVisible(true)
-    form.resetFields()
+    ignoreForm.reset({ remark: '' })
   }
 
-  // 忽略告警
-  const handleIgnore = async () => {
+  // Ignore alert
+  const handleIgnore = async (values: any) => {
     try {
-      const values = await form.validateFields()
       await ignoreAlert(currentRecord!.id, values.remark)
-      message.success('已忽略')
+      toast.success('已忽略')
       setHandleVisible(false)
       loadRecords(pagination.current, pagination.pageSize)
     } catch (error) {
       console.error('忽略告警失败:', error)
-      message.error('操作失败')
+      toast.error('操作失败')
     }
   }
 
-  const columns: ColumnsType<AlertRecord> = [
+  // Task template options
+  const taskTemplateOptions: SelectOption[] = taskTemplates.map((t) => ({
+    label: t.name,
+    value: t.id,
+  }))
+
+  const columns: TableColumn<AlertRecord>[] = [
     {
       title: 'ID',
       dataIndex: 'id',
       key: 'id',
-      width: 80,
+      width: '80px',
+      render: (id) => <span className="font-mono text-sm">{id as number}</span>,
     },
     {
       title: '规则名称',
       dataIndex: 'ruleName',
       key: 'ruleName',
-      width: 150,
+      width: '150px',
+      render: (name) => <span className="text-sm text-gray-600">{name as string}</span>,
     },
     {
       title: '目标对象',
       dataIndex: 'targetName',
       key: 'targetName',
-      width: 150,
+      width: '150px',
+      render: (name) => <span className="text-sm text-gray-600">{name as string}</span>,
     },
     {
       title: '告警级别',
       dataIndex: 'alertLevel',
       key: 'alertLevel',
-      width: 100,
-      render: (level: string) => {
-        const levelObj = ALERT_LEVELS.find(l => l.value === level)
-        return <Tag color={levelObj?.color}>{levelObj?.label || level}</Tag>
+      width: '100px',
+      render: (level) => {
+        const levelObj = ALERT_LEVELS.find((l) => l.value === level)
+        return <Tag color={getAlertLevelColor(level as string)}>{levelObj?.label || (level as string)}</Tag>
       },
     },
     {
       title: '告警消息',
       dataIndex: 'alertMessage',
       key: 'alertMessage',
-      ellipsis: true,
+      render: (msg) => <span className="text-sm text-gray-600 line-clamp-2">{msg as string}</span>,
     },
     {
       title: '状态',
       dataIndex: 'status',
       key: 'status',
-      width: 100,
-      render: (status: string) => {
-        const statusObj = ALERT_STATUS.find(s => s.value === status)
-        return <Tag color={statusObj?.color}>{statusObj?.label || status}</Tag>
+      width: '100px',
+      render: (status) => {
+        const statusObj = ALERT_STATUS.find((s) => s.value === status)
+        return <Tag color={getAlertStatusColor(status as string)}>{statusObj?.label || (status as string)}</Tag>
       },
     },
     {
       title: '通知状态',
       dataIndex: 'notifyStatus',
       key: 'notifyStatus',
-      width: 100,
-      render: (status: string) => {
-        const statusObj = NOTIFY_STATUS.find(s => s.value === status)
-        return <Tag color={statusObj?.color}>{statusObj?.label || status}</Tag>
+      width: '100px',
+      render: (status) => {
+        const statusObj = NOTIFY_STATUS.find((s) => s.value === status)
+        return <Tag color={getNotifyStatusColor(status as string)}>{statusObj?.label || (status as string)}</Tag>
       },
     },
     {
       title: '处理人',
       dataIndex: 'handler',
       key: 'handler',
-      width: 100,
-      render: (handler: string) => handler || '-',
+      width: '100px',
+      render: (handler) => <span className="text-sm text-gray-600">{(handler as string) || '-'}</span>,
     },
     {
       title: '创建时间',
       dataIndex: 'createTime',
       key: 'createTime',
-      width: 180,
+      width: '180px',
+      render: (time) => <span className="text-sm text-gray-600">{time as string}</span>,
     },
     {
       title: '操作',
       key: 'action',
-      width: 150,
-      fixed: 'right',
-      render: (_: any, record: AlertRecord) => (
-        <Space>
-          <Button type="link" icon={<EyeOutlined />} onClick={() => viewDetail(record)} />
+      width: '150px',
+      render: (_, record) => (
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<EyeIcon className="w-4 h-4" />}
+            onClick={() => viewDetail(record)}
+          />
           {record.status === 'PENDING' && (
             <>
-              <Button type="link" icon={<CheckOutlined />} onClick={() => handleClaim(record)} />
-              <Button type="link" icon={<CloseOutlined />} onClick={() => openIgnoreModal(record)} />
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={<CheckIcon className="w-4 h-4" />}
+                onClick={() => handleClaim(record)}
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={<XMarkIcon className="w-4 h-4" />}
+                onClick={() => openIgnoreModal(record)}
+              />
             </>
           )}
-        </Space>
+        </div>
       ),
     },
   ]
 
   return (
-    <Card title="告警实例管理">
-      <Form form={searchForm} layout="inline" style={{ marginBottom: 16 }}>
-        <Row gutter={16} style={{ width: '100%' }} align="middle">
-          <Col span={5}>
-            <Form.Item name="status" label="状态" style={{ marginBottom: 0 }}>
-              <Select placeholder="请选择状态" allowClear options={ALERT_STATUS} style={{ width: '100%' }} />
-            </Form.Item>
-          </Col>
-          <Col span={6}>
-            <Form.Item name="alertLevel" label="告警级别" style={{ marginBottom: 0 }}>
-              <Select placeholder="请选择告警级别" allowClear options={ALERT_LEVELS} style={{ width: '100%' }} />
-            </Form.Item>
-          </Col>
-          <Col span={9}>
-            <Form.Item name="timeRange" label="时间范围" style={{ marginBottom: 0 }}>
-              <RangePicker showTime style={{ width: '100%' }} />
-            </Form.Item>
-          </Col>
-          <Col span={4}>
-            <Space>
-              <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
-                查询
-              </Button>
-              <Button onClick={handleReset}>重置</Button>
-            </Space>
-          </Col>
-        </Row>
-      </Form>
+    <div className="p-6 space-y-6">
+      <Card className="shadow-md hover:shadow-lg transition-shadow">
+        <CardHeader>
+          <h2 className="text-xl font-semibold text-gray-900">告警实例管理</h2>
+        </CardHeader>
+        <CardBody>
+          <Form form={searchForm} onSubmit={handleSearch}>
+            <div className="mb-6 grid grid-cols-4 gap-4">
+              <FormField name="status" label="状态">
+                {({ field }) => (
+                  <Select {...field} placeholder="请选择状态" options={ALERT_STATUS} allowClear />
+                )}
+              </FormField>
 
-      <Table
-        columns={columns}
-        dataSource={records}
-        rowKey="id"
-        loading={loading}
-        scroll={{ x: 1500 }}
-        pagination={{
-          ...pagination,
-          showSizeChanger: true,
-          showTotal: (total) => `共 ${total} 条`,
-          onChange: (page, pageSize) => loadRecords(page, pageSize),
-        }}
-      />
+              <FormField name="alertLevel" label="告警级别">
+                {({ field }) => (
+                  <Select {...field} placeholder="请选择告警级别" options={ALERT_LEVELS} allowClear />
+                )}
+              </FormField>
 
-      {/* 详情弹窗 */}
+              <FormField name="timeRange" label="时间范围">
+                {({ field }) => <RangePicker {...field} placeholder={['开始时间', '结束时间']} showTime />}
+              </FormField>
+
+              <div className="flex items-end gap-2">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  icon={<MagnifyingGlassIcon className="w-4 h-4" />}
+                >
+                  查询
+                </Button>
+                <Button variant="outline" onClick={handleReset}>
+                  重置
+                </Button>
+              </div>
+            </div>
+          </Form>
+
+          <Table
+            columns={columns}
+            dataSource={records}
+            rowKey="id"
+            loading={loading}
+            size="small"
+          />
+
+          <div className="mt-4 flex justify-end">
+            <Pagination
+              current={pagination.current}
+              pageSize={pagination.pageSize}
+              total={pagination.total}
+              onChange={(page, pageSize) => loadRecords(page, pageSize)}
+              showSizeChanger
+              showTotal
+            />
+          </div>
+        </CardBody>
+      </Card>
+
+      {/* Detail Modal */}
       <Modal
-        title="告警详情"
         open={detailVisible}
-        onCancel={() => setDetailVisible(false)}
-        footer={null}
+        onClose={() => setDetailVisible(false)}
+        title="告警详情"
         width={800}
       >
         {currentRecord && (
-          <Descriptions column={2} bordered>
-            <Descriptions.Item label="告警ID">{currentRecord.id}</Descriptions.Item>
-            <Descriptions.Item label="规则名称">{currentRecord.ruleName}</Descriptions.Item>
-            <Descriptions.Item label="规则类型">{currentRecord.ruleType}</Descriptions.Item>
-            <Descriptions.Item label="目标类型">{currentRecord.targetType}</Descriptions.Item>
-            <Descriptions.Item label="目标名称">{currentRecord.targetName}</Descriptions.Item>
-            <Descriptions.Item label="告警级别">
-              <Tag color={ALERT_LEVELS.find(l => l.value === currentRecord.alertLevel)?.color}>
-                {ALERT_LEVELS.find(l => l.value === currentRecord.alertLevel)?.label}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="告警消息" span={2}>{currentRecord.alertMessage}</Descriptions.Item>
-            <Descriptions.Item label="状态">
-              <Tag color={ALERT_STATUS.find(s => s.value === currentRecord.status)?.color}>
-                {ALERT_STATUS.find(s => s.value === currentRecord.status)?.label}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="通知状态">
-              <Tag color={NOTIFY_STATUS.find(s => s.value === currentRecord.notifyStatus)?.color}>
-                {NOTIFY_STATUS.find(s => s.value === currentRecord.notifyStatus)?.label}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="通知时间">{currentRecord.notifyTime || '-'}</Descriptions.Item>
-            <Descriptions.Item label="恢复时间">{currentRecord.recoverTime || '-'}</Descriptions.Item>
-            <Descriptions.Item label="持续时长">{currentRecord.duration ? `${currentRecord.duration}分钟` : '-'}</Descriptions.Item>
-            <Descriptions.Item label="处理人">{currentRecord.handler || '-'}</Descriptions.Item>
-            <Descriptions.Item label="备注" span={2}>{currentRecord.remark || '-'}</Descriptions.Item>
-            <Descriptions.Item label="创建时间">{currentRecord.createTime}</Descriptions.Item>
-            <Descriptions.Item label="更新时间">{currentRecord.updateTime}</Descriptions.Item>
-          </Descriptions>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <div className="text-sm text-gray-500">告警ID</div>
+                <div className="text-sm font-medium">{currentRecord.id}</div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-sm text-gray-500">规则名称</div>
+                <div className="text-sm font-medium">{currentRecord.ruleName}</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <div className="text-sm text-gray-500">规则类型</div>
+                <div className="text-sm font-medium">{currentRecord.ruleType}</div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-sm text-gray-500">目标类型</div>
+                <div className="text-sm font-medium">{currentRecord.targetType}</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <div className="text-sm text-gray-500">目标名称</div>
+                <div className="text-sm font-medium">{currentRecord.targetName}</div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-sm text-gray-500">告警级别</div>
+                <div>
+                  <Tag color={getAlertLevelColor(currentRecord.alertLevel)}>
+                    {ALERT_LEVELS.find((l) => l.value === currentRecord.alertLevel)?.label}
+                  </Tag>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <div className="text-sm text-gray-500">告警消息</div>
+              <div className="text-sm font-medium bg-gray-50 p-3 rounded-lg">{currentRecord.alertMessage}</div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <div className="text-sm text-gray-500">状态</div>
+                <div>
+                  <Tag color={getAlertStatusColor(currentRecord.status)}>
+                    {ALERT_STATUS.find((s) => s.value === currentRecord.status)?.label}
+                  </Tag>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-sm text-gray-500">通知状态</div>
+                <div>
+                  <Tag color={getNotifyStatusColor(currentRecord.notifyStatus)}>
+                    {NOTIFY_STATUS.find((s) => s.value === currentRecord.notifyStatus)?.label}
+                  </Tag>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <div className="text-sm text-gray-500">通知时间</div>
+                <div className="text-sm font-medium">{currentRecord.notifyTime || '-'}</div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-sm text-gray-500">恢复时间</div>
+                <div className="text-sm font-medium">{currentRecord.recoverTime || '-'}</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <div className="text-sm text-gray-500">持续时长</div>
+                <div className="text-sm font-medium">{currentRecord.duration ? `${currentRecord.duration}分钟` : '-'}</div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-sm text-gray-500">处理人</div>
+                <div className="text-sm font-medium">{currentRecord.handler || '-'}</div>
+              </div>
+            </div>
+
+            {currentRecord.remark && (
+              <div className="space-y-1">
+                <div className="text-sm text-gray-500">备注</div>
+                <div className="text-sm font-medium bg-gray-50 p-3 rounded-lg">{currentRecord.remark}</div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <div className="text-sm text-gray-500">创建时间</div>
+                <div className="text-sm font-medium">{currentRecord.createTime}</div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-sm text-gray-500">更新时间</div>
+                <div className="text-sm font-medium">{currentRecord.updateTime}</div>
+              </div>
+            </div>
+          </div>
         )}
+
+        <div className="mt-6 flex justify-end">
+          <Button variant="outline" onClick={() => setDetailVisible(false)}>
+            关闭
+          </Button>
+        </div>
       </Modal>
 
-      {/* 忽略弹窗 */}
+      {/* Ignore Modal */}
       <Modal
         title="忽略告警"
         open={handleVisible}
-        onOk={handleIgnore}
-        onCancel={() => setHandleVisible(false)}
-        okText="确定"
-        cancelText="取消"
+        onClose={() => setHandleVisible(false)}
+        width={500}
       >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            label="忽略原因"
+        <Form form={ignoreForm} onSubmit={handleIgnore}>
+          <FormField
             name="remark"
-            rules={[{ required: true, message: '请输入忽略原因' }]}
+            label="忽略原因"
+            rules={{ required: '请输入忽略原因' }}
           >
-            <Input.TextArea rows={4} placeholder="请输入忽略原因" />
-          </Form.Item>
+            {({ field }) => <TextArea {...field} rows={4} placeholder="请输入忽略原因" />}
+          </FormField>
+
+          <div className="mt-6 flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setHandleVisible(false)}>
+              取消
+            </Button>
+            <Button type="submit" variant="primary">
+              确定
+            </Button>
+          </div>
         </Form>
       </Modal>
 
-      {/* 创建任务弹窗 */}
+      {/* Create Task Modal */}
       <Modal
         title="创建任务"
         open={createTaskVisible}
-        onOk={handleCreateTask}
-        onCancel={() => setCreateTaskVisible(false)}
-        okText="创建并认领"
-        cancelText="取消"
+        onClose={() => setCreateTaskVisible(false)}
+        width={500}
       >
-        <Form form={taskForm} layout="vertical">
-          <Form.Item label="站点">
-            <Input value={currentRecord?.targetName} disabled />
-          </Form.Item>
-          <Form.Item
-            label="任务模版"
-            name="taskTemplateId"
-            rules={[{ required: true, message: '请选择任务模版' }]}
-          >
-            <Select placeholder="请选择任务模版">
-              {taskTemplates.map((taskTemplate) => (
-                <Select.Option key={taskTemplate.id} value={taskTemplate.id}>
-                  {taskTemplate.name}
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Form.Item
-            label="部门ID"
-            name="departmentId"
-            rules={[{ required: true, message: '请输入部门ID' }]}
-          >
-            <Input type="number" placeholder="请输入部门ID" />
-          </Form.Item>
+        <Form form={taskForm} onSubmit={handleCreateTask}>
+          <div className="space-y-4">
+            <FormField name="siteName" label="站点">
+              {() => <Input value={currentRecord?.targetName} disabled />}
+            </FormField>
+
+            <FormField
+              name="taskTemplateId"
+              label="任务模版"
+              rules={{ required: '请选择任务模版' }}
+            >
+              {({ field }) => (
+                <Select {...field} placeholder="请选择任务模版" options={taskTemplateOptions} />
+              )}
+            </FormField>
+
+            <FormField
+              name="departmentId"
+              label="部门ID"
+              rules={{ required: '请输入部门ID' }}
+            >
+              {({ field }) => <Input {...field} type="number" placeholder="请输入部门ID" />}
+            </FormField>
+          </div>
+
+          <div className="mt-6 flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setCreateTaskVisible(false)}>
+              取消
+            </Button>
+            <Button type="submit" variant="primary">
+              创建并认领
+            </Button>
+          </div>
         </Form>
       </Modal>
-    </Card>
+    </div>
   )
 }
 

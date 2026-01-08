@@ -1,26 +1,36 @@
 import React, { useState, useEffect } from 'react'
 import {
+  BuildingOfficeIcon,
+  MagnifyingGlassIcon,
+  PlusIcon,
+  TrashIcon,
+  PencilIcon,
+  LinkIcon,
+  TagIcon,
+  PhoneIcon,
+  UserIcon as UserIconOutline,
+  MapPinIcon,
+  DocumentTextIcon,
+} from '@heroicons/react/24/outline'
+import { useForm } from 'react-hook-form'
+import {
   Card,
-  Table,
+  CardBody,
   Button,
-  Space,
+  Input,
+  TextArea,
+  Table,
+  type TableColumn,
   Modal,
   Form,
-  Input,
+  FormField,
   Select,
-  message,
+  type SelectOption,
+  Tag,
   Popconfirm,
-  Row,
-  Col,
-} from 'antd'
-import {
-  PlusOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  SearchOutlined,
-  LinkOutlined,
-} from '@ant-design/icons'
-import type { ColumnsType } from 'antd/es/table'
+  Tooltip,
+  Pagination,
+} from '@/components/ui'
 import {
   getEnterpriseList,
   createEnterprise,
@@ -28,8 +38,9 @@ import {
   deleteEnterprise,
   type Enterprise,
 } from '@/services/enterprise'
+import { toast } from '@/utils/toast'
 
-const ENTERPRISE_TAGS = [
+const ENTERPRISE_TAGS: SelectOption[] = [
   { label: '非国控', value: '非国控' },
   { label: '国控', value: '国控' },
 ]
@@ -40,14 +51,14 @@ const Enterprises: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false)
   const [editingEnterprise, setEditingEnterprise] = useState<Enterprise | null>(null)
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
-  const [total, setTotal] = useState(0)
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 10 })
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 })
   const [filters, setFilters] = useState({
     enterpriseName: '',
     enterpriseTag: undefined as string | undefined,
   })
-  const [form] = Form.useForm()
-  const [searchForm] = Form.useForm()
+
+  const form = useForm()
+  const searchForm = useForm()
 
   // 加载企业列表
   const loadEnterprises = async (pageNum: number = 1, pageSize: number = 10) => {
@@ -60,11 +71,10 @@ const Enterprises: React.FC = () => {
         filters.enterpriseTag
       )
       setEnterprises(data.list)
-      setTotal(data.total)
-      setPagination({ current: data.pageNum, pageSize: data.pageSize })
+      setPagination({ current: data.pageNum, pageSize: data.pageSize, total: data.total })
     } catch (error) {
       console.error('加载企业列表失败:', error)
-      message.error('加载企业列表失败')
+      toast.error('加载企业列表失败')
     } finally {
       setLoading(false)
     }
@@ -78,7 +88,7 @@ const Enterprises: React.FC = () => {
   const openModal = (enterprise?: Enterprise) => {
     setEditingEnterprise(enterprise || null)
     if (enterprise) {
-      form.setFieldsValue({
+      form.reset({
         enterpriseName: enterprise.enterpriseName,
         enterpriseCode: enterprise.enterpriseCode,
         enterpriseTag: enterprise.enterpriseTag || undefined,
@@ -88,30 +98,27 @@ const Enterprises: React.FC = () => {
         description: enterprise.description || undefined,
       })
     } else {
-      form.resetFields()
+      form.reset()
     }
     setModalVisible(true)
   }
 
   // 保存企业
-  const handleSaveEnterprise = async () => {
+  const handleSaveEnterprise = async (values: any) => {
     try {
-      const values = await form.validateFields()
-
       if (editingEnterprise) {
         await updateEnterprise(editingEnterprise.id, values)
-        message.success('企业更新成功')
+        toast.success('企业更新成功')
       } else {
         await createEnterprise(values)
-        message.success('企业创建成功')
+        toast.success('企业创建成功')
       }
 
       setModalVisible(false)
-      form.resetFields()
       loadEnterprises(pagination.current, pagination.pageSize)
     } catch (error: any) {
       console.error('保存企业失败:', error)
-      message.error(error.message || '保存企业失败')
+      toast.error(error.message || '保存企业失败')
     }
   }
 
@@ -119,42 +126,45 @@ const Enterprises: React.FC = () => {
   const handleDeleteEnterprise = async (id: number) => {
     try {
       await deleteEnterprise(id)
-      message.success('企业删除成功')
+      toast.success('企业删除成功')
       loadEnterprises(pagination.current, pagination.pageSize)
     } catch (error: any) {
       console.error('删除企业失败:', error)
-      message.error(error.message || '删除企业失败')
+      toast.error(error.message || '删除企业失败')
     }
   }
 
   // 批量删除
   const handleBatchDelete = async () => {
     if (selectedRowKeys.length === 0) {
-      message.warning('请选择要删除的企业')
+      toast.warning('请选择要删除的企业')
       return
     }
 
     try {
       await Promise.all(selectedRowKeys.map((id) => deleteEnterprise(id as number)))
-      message.success('批量删除成功')
+      toast.success('批量删除成功')
       setSelectedRowKeys([])
       loadEnterprises(pagination.current, pagination.pageSize)
     } catch (error: any) {
       console.error('批量删除失败:', error)
-      message.error(error.message || '批量删除失败')
+      toast.error(error.message || '批量删除失败')
     }
   }
 
   // 搜索
   const handleSearch = () => {
-    const values = searchForm.getFieldsValue()
+    const values = searchForm.getValues()
     setFilters(values)
     loadEnterprises(1, pagination.pageSize)
   }
 
   // 重置搜索
   const handleReset = () => {
-    searchForm.resetFields()
+    searchForm.reset({
+      enterpriseName: '',
+      enterpriseTag: undefined,
+    })
     setFilters({
       enterpriseName: '',
       enterpriseTag: undefined,
@@ -165,258 +175,337 @@ const Enterprises: React.FC = () => {
   }
 
   // 表格列定义
-  const columns: ColumnsType<Enterprise> = [
+  const columns: TableColumn<Enterprise>[] = [
     {
       title: '序号',
       key: 'index',
-      width: 80,
-      align: 'center',
-      render: (_text, _record, index) => {
-        return (pagination.current - 1) * pagination.pageSize + index + 1
-      },
+      width: '60px',
+      render: (_, __, index) => (
+        <span className="text-sm text-gray-600">
+          {(pagination.current - 1) * pagination.pageSize + index + 1}
+        </span>
+      ),
     },
     {
       title: '企业名称',
       dataIndex: 'enterpriseName',
       key: 'enterpriseName',
-      width: 200,
+      width: '200px',
+      render: (name) => <span className="font-medium text-gray-900">{name as string}</span>,
     },
     {
       title: '统一社会信用编码',
       dataIndex: 'enterpriseCode',
       key: 'enterpriseCode',
-      width: 180,
+      width: '180px',
+      render: (code) => <span className="text-sm text-gray-600 font-mono">{code as string}</span>,
     },
     {
       title: '站点数量',
       dataIndex: 'siteCount',
       key: 'siteCount',
-      width: 100,
-      align: 'center',
+      width: '100px',
+      render: (count) => (
+        <span className="inline-flex items-center justify-center w-8 h-8 text-sm font-medium text-ocean-teal bg-ocean-seafoam/20 rounded-full">
+          {count as number}
+        </span>
+      ),
     },
     {
       title: '企业标签',
       dataIndex: 'enterpriseTag',
       key: 'enterpriseTag',
-      width: 100,
+      width: '100px',
+      render: (tag) =>
+        tag ? (
+          <Tag color={tag === '国控' ? 'error' : 'primary'}>
+            {tag as string}
+          </Tag>
+        ) : (
+          <span className="text-gray-400">-</span>
+        ),
     },
     {
       title: '联系人',
       dataIndex: 'contactPerson',
       key: 'contactPerson',
-      width: 120,
+      width: '120px',
+      render: (person) => <span className="text-sm text-gray-600">{person as string}</span>,
     },
     {
       title: '联系电话',
       dataIndex: 'contactPhone',
       key: 'contactPhone',
-      width: 140,
+      width: '140px',
+      render: (phone) => <span className="text-sm text-gray-600">{phone as string}</span>,
     },
     {
       title: '操作',
       key: 'action',
-      fixed: 'right',
-      width: 180,
-      render: (_text, record) => (
-        <Space size="small">
-          <Button
-            type="link"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => openModal(record)}
-          >
-            编辑
-          </Button>
-          <Button
-            type="link"
-            size="small"
-            icon={<LinkOutlined />}
-            onClick={() => {
-              // TODO: 跳转到相关站点页面
-              message.info('查看相关站点功能开发中')
-            }}
-          >
-            相关站点
-          </Button>
+      width: '200px',
+      render: (_, record) => (
+        <div className="flex items-center gap-1">
+          <Tooltip title="编辑">
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<PencilIcon className="w-4 h-4" />}
+              onClick={() => openModal(record)}
+            />
+          </Tooltip>
+          <Tooltip title="相关站点">
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<LinkIcon className="w-4 h-4" />}
+              onClick={() => {
+                // TODO: 跳转到相关���点页面
+                toast.info('查看相关站点功能开发中')
+              }}
+            />
+          </Tooltip>
           <Popconfirm
-            title="确定要删除这个企业吗?"
+            title="确认删除"
+            description="确定要删除这个企业吗？"
             onConfirm={() => handleDeleteEnterprise(record.id)}
-            okText="确定"
-            cancelText="取消"
+            okType="danger"
           >
-            <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-              删除
-            </Button>
+            <Tooltip title="删除">
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={<TrashIcon className="w-4 h-4 text-red-500" />}
+              />
+            </Tooltip>
           </Popconfirm>
-        </Space>
+        </div>
       ),
     },
   ]
 
   return (
-    <Card>
-      {/* 搜索表单 */}
-      <Form
-        form={searchForm}
-        layout="inline"
-        style={{ marginBottom: 16 }}
-        initialValues={filters}
-      >
-        <Row gutter={16} style={{ width: '100%' }}>
-          <Col>
-            <Form.Item label="企业名称" name="enterpriseName">
-              <Input placeholder="请输入企业名称" allowClear style={{ width: 200 }} />
-            </Form.Item>
-          </Col>
-          <Col>
-            <Form.Item label="企业标签" name="enterpriseTag">
-              <Select
-                placeholder="请选择企业标签"
-                allowClear
-                style={{ width: 150 }}
-                options={ENTERPRISE_TAGS}
-              />
-            </Form.Item>
-          </Col>
-          <Col>
-            <Space>
-              <Button
-                type="primary"
-                icon={<SearchOutlined />}
-                onClick={handleSearch}
-              >
-                查询
-              </Button>
-              <Button onClick={handleReset}>重置</Button>
-            </Space>
-          </Col>
-        </Row>
-      </Form>
+    <div className="p-6 space-y-6">
+      <Card className="shadow-md hover:shadow-lg transition-shadow">
+        <CardBody>
+          {/* 搜索表单 */}
+          <Form form={searchForm} onSubmit={handleSearch}>
+            <div className="mb-6 flex items-center gap-4 flex-wrap">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 whitespace-nowrap">企业名称：</span>
+                <FormField name="enterpriseName">
+                  {({ field }) => (
+                    <Input
+                      {...field}
+                      placeholder="请输入企业名称"
+                      className="w-48"
+                      prefix={<BuildingOfficeIcon className="w-4 h-4 text-gray-400" />}
+                    />
+                  )}
+                </FormField>
+              </div>
 
-      {/* 操作按钮 */}
-      <div style={{ marginBottom: 16 }}>
-        <Space>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => openModal()}
-          >
-            新增
-          </Button>
-          <Popconfirm
-            title="确定要删除选中的企业吗?"
-            onConfirm={handleBatchDelete}
-            okText="确定"
-            cancelText="取消"
-            disabled={selectedRowKeys.length === 0}
-          >
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600 whitespace-nowrap">企业标签：</span>
+                <FormField name="enterpriseTag">
+                  {({ field }) => (
+                    <Select
+                      {...field}
+                      placeholder="请选择企业标签"
+                      options={ENTERPRISE_TAGS}
+                      className="w-36"
+                    />
+                  )}
+                </FormField>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  icon={<MagnifyingGlassIcon className="w-4 h-4" />}
+                >
+                  查询
+                </Button>
+                <Button variant="outline" onClick={handleReset}>
+                  重置
+                </Button>
+              </div>
+            </div>
+          </Form>
+
+          {/* 操作按钮 */}
+          <div className="mb-6 flex items-center gap-3">
             <Button
-              danger
-              icon={<DeleteOutlined />}
-              disabled={selectedRowKeys.length === 0}
+              variant="primary"
+              icon={<PlusIcon className="w-4 h-4" />}
+              onClick={() => openModal()}
             >
-              删除
+              新增
             </Button>
-          </Popconfirm>
-        </Space>
-      </div>
+            <Popconfirm
+              title="确认删除"
+              description={`确定要删除选中的 ${selectedRowKeys.length} 个企业吗？`}
+              onConfirm={handleBatchDelete}
+              okType="danger"
+            >
+              <Button
+                variant="danger"
+                icon={<TrashIcon className="w-4 h-4" />}
+                disabled={selectedRowKeys.length === 0}
+              >
+                删除 {selectedRowKeys.length > 0 && `(${selectedRowKeys.length})`}
+              </Button>
+            </Popconfirm>
+          </div>
 
-      {/* 企业表格 */}
-      <Table
-        rowSelection={{
-          selectedRowKeys,
-          onChange: setSelectedRowKeys,
-        }}
-        columns={columns}
-        dataSource={enterprises}
-        rowKey="id"
-        loading={loading}
-        pagination={{
-          current: pagination.current,
-          pageSize: pagination.pageSize,
-          total: total,
-          showSizeChanger: true,
-          showQuickJumper: true,
-          showTotal: (total) => `共 ${total} 条记录`,
-          onChange: (page, pageSize) => {
-            loadEnterprises(page, pageSize)
-          },
-        }}
-        scroll={{ x: 1200 }}
-      />
+          {/* 企业表格 */}
+          <Table
+            rowSelection={{
+              selectedRowKeys,
+              onChange: setSelectedRowKeys,
+            }}
+            columns={columns}
+            dataSource={enterprises}
+            rowKey="id"
+            loading={loading}
+            size="middle"
+          />
+
+          {/* 分页 */}
+          <div className="mt-4 flex justify-end">
+            <Pagination
+              current={pagination.current}
+              pageSize={pagination.pageSize}
+              total={pagination.total}
+              onChange={(page, pageSize) => {
+                loadEnterprises(page, pageSize)
+              }}
+              showSizeChanger
+              showTotal
+            />
+          </div>
+        </CardBody>
+      </Card>
 
       {/* 创建/编辑对话框 */}
       <Modal
-        title={editingEnterprise ? '编辑企业' : '新增企业'}
         open={modalVisible}
-        onOk={handleSaveEnterprise}
-        onCancel={() => {
+        onClose={() => {
           setModalVisible(false)
-          form.resetFields()
+          form.reset()
         }}
+        title={editingEnterprise ? '编辑企业' : '新增企业'}
         width={600}
-        okText="确定"
-        cancelText="取消"
       >
-        <Form
-          form={form}
-          layout="vertical"
-          autoComplete="off"
-        >
-          <Form.Item
-            label="企业名称"
-            name="enterpriseName"
-            rules={[{ required: true, message: '请输入企业名称' }]}
-          >
-            <Input placeholder="请输入企业名称" />
-          </Form.Item>
+        <Form form={form} onSubmit={handleSaveEnterprise}>
+          <div className="space-y-4">
+            <FormField
+              name="enterpriseName"
+              label="企业名称"
+              required
+              rules={{ required: '请输入企业名称' }}
+            >
+              {({ field }) => (
+                <Input
+                  {...field}
+                  placeholder="请输入企业名称"
+                  prefix={<BuildingOfficeIcon className="w-4 h-4 text-gray-400" />}
+                />
+              )}
+            </FormField>
 
-          <Form.Item
-            label="统一社会信用编码"
-            name="enterpriseCode"
-            rules={[
-              { required: true, message: '请输入统一社会信用编码' },
-              { len: 18, message: '统一社会信用编码应为18位' },
-            ]}
-          >
-            <Input
-              placeholder="请输入18位统一社会信用编码"
-              maxLength={18}
-              disabled={!!editingEnterprise}
-            />
-          </Form.Item>
+            <FormField
+              name="enterpriseCode"
+              label="统一社会信用编码"
+              required
+              rules={{
+                required: '请输入统一社会信用编码',
+                minLength: { value: 18, message: '统一社会信用编码应为18位' },
+                maxLength: { value: 18, message: '统一社会信用编码应为18位' },
+              }}
+            >
+              {({ field }) => (
+                <Input
+                  {...field}
+                  placeholder="请输入18位统一社会信用编码"
+                  maxLength={18}
+                  disabled={!!editingEnterprise}
+                  className="font-mono"
+                />
+              )}
+            </FormField>
 
-          <Form.Item label="企业标签" name="enterpriseTag">
-            <Select
-              placeholder="请选择企业标签"
-              allowClear
-              options={ENTERPRISE_TAGS}
-            />
-          </Form.Item>
+            <FormField name="enterpriseTag" label="企业标签">
+              {({ field }) => (
+                <Select
+                  {...field}
+                  placeholder="请选择企业标签"
+                  options={ENTERPRISE_TAGS}
+                  prefix={<TagIcon className="w-4 h-4 text-gray-400" />}
+                />
+              )}
+            </FormField>
 
-          <Form.Item label="联系人" name="contactPerson">
-            <Input placeholder="请输入联系人" />
-          </Form.Item>
+            <FormField name="contactPerson" label="联系人">
+              {({ field }) => (
+                <Input
+                  {...field}
+                  placeholder="请输入联系人"
+                  prefix={<UserIconOutline className="w-4 h-4 text-gray-400" />}
+                />
+              )}
+            </FormField>
 
-          <Form.Item label="联系电话" name="contactPhone">
-            <Input placeholder="请输入联系电话" />
-          </Form.Item>
+            <FormField name="contactPhone" label="联系电话">
+              {({ field }) => (
+                <Input
+                  {...field}
+                  placeholder="请输入联系电话"
+                  prefix={<PhoneIcon className="w-4 h-4 text-gray-400" />}
+                />
+              )}
+            </FormField>
 
-          <Form.Item label="企业地址" name="address">
-            <Input placeholder="请输入企业地址" />
-          </Form.Item>
+            <FormField name="address" label="企业地址">
+              {({ field }) => (
+                <Input
+                  {...field}
+                  placeholder="请输入企业地址"
+                  prefix={<MapPinIcon className="w-4 h-4 text-gray-400" />}
+                />
+              )}
+            </FormField>
 
-          <Form.Item label="企业描述" name="description">
-            <Input.TextArea
-              placeholder="请输入企业描述"
-              rows={4}
-              maxLength={500}
-              showCount
-            />
-          </Form.Item>
+            <FormField name="description" label="企业描述">
+              {({ field }) => (
+                <TextArea
+                  {...field}
+                  placeholder="请输入企业描述"
+                  rows={4}
+                  maxLength={500}
+                  showCount
+                />
+              )}
+            </FormField>
+          </div>
+
+          <div className="mt-6 flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setModalVisible(false)
+                form.reset()
+              }}
+            >
+              取消
+            </Button>
+            <Button type="submit" variant="primary">
+              确定
+            </Button>
+          </div>
         </Form>
       </Modal>
-    </Card>
+    </div>
   )
 }
 

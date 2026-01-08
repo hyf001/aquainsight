@@ -1,29 +1,29 @@
 import React, { useState, useEffect } from 'react'
 import {
+  MagnifyingGlassIcon,
+  EyeIcon,
+  ArrowPathIcon,
+} from '@heroicons/react/24/outline'
+import { useForm } from 'react-hook-form'
+import {
   Card,
-  Table,
+  CardHeader,
+  CardBody,
   Button,
-  Space,
+  Table,
+  type TableColumn,
   Modal,
   Select,
-  message,
+  type SelectOption,
   Tag,
-  DatePicker,
-  Row,
-  Col,
+  RangePicker,
   Form,
-  Descriptions,
-} from 'antd'
-import {
-  SearchOutlined,
-  EyeOutlined,
-  ReloadOutlined,
-} from '@ant-design/icons'
-import type { ColumnsType } from 'antd/es/table'
+  FormField,
+  Pagination,
+} from '@/components/ui'
 import { getNotifyLogs } from '@/services/alert'
-import dayjs from 'dayjs'
-
-const { RangePicker } = DatePicker
+import { toast } from '@/utils/toast'
+import { format } from 'date-fns'
 
 interface NotifyLog {
   id: number
@@ -40,18 +40,37 @@ interface NotifyLog {
   createTime: string
 }
 
-const NOTIFY_TYPES = [
-  { label: '短信', value: 'SMS', color: 'blue' },
-  { label: '邮件', value: 'EMAIL', color: 'green' },
-  { label: '微信', value: 'WECHAT', color: 'cyan' },
-  { label: '钉钉', value: 'DINGTALK', color: 'orange' },
+const NOTIFY_TYPES: SelectOption[] = [
+  { label: '短信', value: 'SMS' },
+  { label: '邮件', value: 'EMAIL' },
+  { label: '微信', value: 'WECHAT' },
+  { label: '钉钉', value: 'DINGTALK' },
 ]
 
-const NOTIFY_STATUS = [
-  { label: '待发送', value: 'PENDING', color: 'default' },
-  { label: '发送成功', value: 'SUCCESS', color: 'success' },
-  { label: '发送失败', value: 'FAILED', color: 'error' },
+const NOTIFY_STATUS: SelectOption[] = [
+  { label: '待发送', value: 'PENDING' },
+  { label: '发送成功', value: 'SUCCESS' },
+  { label: '发送失败', value: 'FAILED' },
 ]
+
+const getNotifyTypeColor = (type: string) => {
+  const map: Record<string, 'primary' | 'success' | 'warning' | 'error'> = {
+    SMS: 'primary',
+    EMAIL: 'success',
+    WECHAT: 'success',
+    DINGTALK: 'warning',
+  }
+  return map[type] || 'primary'
+}
+
+const getNotifyStatusColor = (status: string) => {
+  const map: Record<string, 'primary' | 'success' | 'warning' | 'error'> = {
+    PENDING: 'warning',
+    SUCCESS: 'success',
+    FAILED: 'error',
+  }
+  return map[status] || 'primary'
+}
 
 const AlertNotifications: React.FC = () => {
   const [logs, setLogs] = useState<NotifyLog[]>([])
@@ -65,7 +84,8 @@ const AlertNotifications: React.FC = () => {
     startTime: undefined as string | undefined,
     endTime: undefined as string | undefined,
   })
-  const [searchForm] = Form.useForm()
+
+  const searchForm = useForm()
 
   // Load notify logs
   const loadLogs = async (pageNum: number = 1, pageSize: number = 10) => {
@@ -76,7 +96,7 @@ const AlertNotifications: React.FC = () => {
       setPagination({ current: data.pageNum, pageSize: data.pageSize, total: data.total })
     } catch (error) {
       console.error('加载通知日志失败:', error)
-      message.error('加载通知日志失败')
+      toast.error('加载通知日志失败')
     } finally {
       setLoading(false)
     }
@@ -88,19 +108,23 @@ const AlertNotifications: React.FC = () => {
 
   // Handle search
   const handleSearch = () => {
-    const values = searchForm.getFieldsValue()
+    const values = searchForm.getValues()
     const timeRange = values.timeRange
     setFilters({
       notifyStatus: values.notifyStatus,
       notifyType: values.notifyType,
-      startTime: timeRange ? dayjs(timeRange[0]).format('YYYY-MM-DD HH:mm:ss') : undefined,
-      endTime: timeRange ? dayjs(timeRange[1]).format('YYYY-MM-DD HH:mm:ss') : undefined,
+      startTime: timeRange?.[0] ? format(timeRange[0], 'yyyy-MM-dd HH:mm:ss') : undefined,
+      endTime: timeRange?.[1] ? format(timeRange[1], 'yyyy-MM-dd HH:mm:ss') : undefined,
     })
   }
 
   // Reset search
   const handleReset = () => {
-    searchForm.resetFields()
+    searchForm.reset({
+      notifyStatus: undefined,
+      notifyType: undefined,
+      timeRange: undefined,
+    })
     setFilters({
       notifyStatus: undefined,
       notifyType: undefined,
@@ -115,181 +139,281 @@ const AlertNotifications: React.FC = () => {
     setDetailVisible(true)
   }
 
-  const columns: ColumnsType<NotifyLog> = [
+  const columns: TableColumn<NotifyLog>[] = [
     {
       title: 'ID',
       dataIndex: 'id',
       key: 'id',
-      width: 80,
+      width: '80px',
+      render: (id) => <span className="font-mono text-sm">{id as number}</span>,
     },
     {
       title: '告警ID',
       dataIndex: 'alertRecordId',
       key: 'alertRecordId',
-      width: 100,
+      width: '100px',
+      render: (id) => <span className="font-mono text-sm">{id as number}</span>,
     },
     {
       title: '通知方式',
       dataIndex: 'notifyType',
       key: 'notifyType',
-      width: 100,
-      render: (type: string) => {
-        const typeObj = NOTIFY_TYPES.find(t => t.value === type)
-        return <Tag color={typeObj?.color}>{typeObj?.label || type}</Tag>
+      width: '100px',
+      render: (type) => {
+        const typeObj = NOTIFY_TYPES.find((t) => t.value === type)
+        return <Tag color={getNotifyTypeColor(type as string)}>{typeObj?.label || (type as string)}</Tag>
       },
     },
     {
       title: '接收人',
       dataIndex: 'notifyUserName',
       key: 'notifyUserName',
-      width: 120,
-      render: (name: string, record: NotifyLog) => name || record.notifyTarget,
+      width: '120px',
+      render: (name, record) => (
+        <span className="text-sm text-gray-600">
+          {(name as string) || record.notifyTarget}
+        </span>
+      ),
     },
     {
       title: '通知目标',
       dataIndex: 'notifyTarget',
       key: 'notifyTarget',
-      width: 180,
+      width: '180px',
+      render: (target) => <span className="text-sm text-gray-600">{target as string}</span>,
     },
     {
       title: '通知内容',
       dataIndex: 'notifyContent',
       key: 'notifyContent',
-      ellipsis: true,
+      render: (content) => (
+        <span className="text-sm text-gray-600 line-clamp-2">{content as string}</span>
+      ),
     },
     {
       title: '状态',
       dataIndex: 'notifyStatus',
       key: 'notifyStatus',
-      width: 100,
-      render: (status: string) => {
-        const statusObj = NOTIFY_STATUS.find(s => s.value === status)
-        return <Tag color={statusObj?.color}>{statusObj?.label || status}</Tag>
+      width: '100px',
+      render: (status) => {
+        const statusObj = NOTIFY_STATUS.find((s) => s.value === status)
+        return (
+          <Tag color={getNotifyStatusColor(status as string)}>
+            {statusObj?.label || (status as string)}
+          </Tag>
+        )
       },
     },
     {
       title: '重试次数',
       dataIndex: 'retryCount',
       key: 'retryCount',
-      width: 100,
+      width: '100px',
+      render: (count) => <span className="text-sm text-gray-600">{count as number}</span>,
     },
     {
       title: '发送时间',
       dataIndex: 'sendTime',
       key: 'sendTime',
-      width: 180,
-      render: (time: string) => time || '-',
+      width: '180px',
+      render: (time) => (
+        <span className="text-sm text-gray-600">{time ? (time as string) : '-'}</span>
+      ),
     },
     {
       title: '创建时间',
       dataIndex: 'createTime',
       key: 'createTime',
-      width: 180,
+      width: '180px',
+      render: (time) => <span className="text-sm text-gray-600">{time as string}</span>,
     },
     {
       title: '操作',
       key: 'action',
-      width: 120,
-      fixed: 'right',
-      render: (_: any, record: NotifyLog) => (
-        <Space>
-          <Button type="link" icon={<EyeOutlined />} onClick={() => viewDetail(record)}>
+      width: '150px',
+      render: (_, record) => (
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<EyeIcon className="w-4 h-4" />}
+            onClick={() => viewDetail(record)}
+          >
             详情
           </Button>
           {record.notifyStatus === 'FAILED' && record.retryCount < 3 && (
-            <Button type="link" icon={<ReloadOutlined />}>
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<ArrowPathIcon className="w-4 h-4" />}
+              onClick={() => toast.info('重试功能开发中')}
+            >
               重试
             </Button>
           )}
-        </Space>
+        </div>
       ),
     },
   ]
 
   return (
-    <Card title="消息通知管理">
-      <Form form={searchForm} layout="inline" style={{ marginBottom: 16 }}>
-        <Row gutter={16} style={{ width: '100%' }}>
-          <Col span={6}>
-            <Form.Item name="notifyStatus" label="状态">
-              <Select placeholder="请选择状态" allowClear options={NOTIFY_STATUS} />
-            </Form.Item>
-          </Col>
-          <Col span={6}>
-            <Form.Item name="notifyType" label="通知方式">
-              <Select placeholder="请选择通知方式" allowClear options={NOTIFY_TYPES} />
-            </Form.Item>
-          </Col>
-          <Col span={8}>
-            <Form.Item name="timeRange" label="时间范围">
-              <RangePicker showTime />
-            </Form.Item>
-          </Col>
-          <Col span={4}>
-            <Space>
-              <Button type="primary" icon={<SearchOutlined />} onClick={handleSearch}>
-                查询
-              </Button>
-              <Button onClick={handleReset}>重置</Button>
-            </Space>
-          </Col>
-        </Row>
-      </Form>
+    <div className="p-6 space-y-6">
+      <Card className="shadow-md hover:shadow-lg transition-shadow">
+        <CardHeader>
+          <h2 className="text-xl font-semibold text-gray-900">消息通知管理</h2>
+        </CardHeader>
+        <CardBody>
+          <Form form={searchForm} onSubmit={handleSearch}>
+            <div className="mb-6 grid grid-cols-4 gap-4">
+              <FormField name="notifyStatus" label="状态">
+                {({ field }) => (
+                  <Select {...field} placeholder="请选择状态" options={NOTIFY_STATUS} />
+                )}
+              </FormField>
 
-      <Table
-        columns={columns}
-        dataSource={logs}
-        rowKey="id"
-        loading={loading}
-        scroll={{ x: 1500 }}
-        pagination={{
-          ...pagination,
-          showSizeChanger: true,
-          showTotal: (total) => `共 ${total} 条`,
-          onChange: (page, pageSize) => loadLogs(page, pageSize),
-        }}
-      />
+              <FormField name="notifyType" label="通知方式">
+                {({ field }) => (
+                  <Select {...field} placeholder="请选择通知方式" options={NOTIFY_TYPES} />
+                )}
+              </FormField>
+
+              <FormField name="timeRange" label="时间范围">
+                {({ field }) => <RangePicker {...field} placeholder={['开始时间', '结束时间']} />}
+              </FormField>
+
+              <div className="flex items-end gap-2">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  icon={<MagnifyingGlassIcon className="w-4 h-4" />}
+                >
+                  查询
+                </Button>
+                <Button variant="outline" onClick={handleReset}>
+                  重置
+                </Button>
+              </div>
+            </div>
+          </Form>
+
+          <Table
+            columns={columns}
+            dataSource={logs}
+            rowKey="id"
+            loading={loading}
+            size="small"
+          />
+
+          <div className="mt-4 flex justify-end">
+            <Pagination
+              current={pagination.current}
+              pageSize={pagination.pageSize}
+              total={pagination.total}
+              onChange={(page, pageSize) => loadLogs(page, pageSize)}
+              showSizeChanger
+              showTotal
+            />
+          </div>
+        </CardBody>
+      </Card>
 
       {/* 详情弹窗 */}
       <Modal
-        title="通知详情"
         open={detailVisible}
-        onCancel={() => setDetailVisible(false)}
-        footer={null}
+        onClose={() => setDetailVisible(false)}
+        title="通知详情"
         width={800}
       >
         {currentLog && (
-          <Descriptions column={2} bordered>
-            <Descriptions.Item label="通知ID">{currentLog.id}</Descriptions.Item>
-            <Descriptions.Item label="告警ID">{currentLog.alertRecordId}</Descriptions.Item>
-            <Descriptions.Item label="通知方式">
-              <Tag color={NOTIFY_TYPES.find(t => t.value === currentLog.notifyType)?.color}>
-                {NOTIFY_TYPES.find(t => t.value === currentLog.notifyType)?.label}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="通知目标">{currentLog.notifyTarget}</Descriptions.Item>
-            <Descriptions.Item label="接收人ID">{currentLog.notifyUserId || '-'}</Descriptions.Item>
-            <Descriptions.Item label="接收人姓名">{currentLog.notifyUserName || '-'}</Descriptions.Item>
-            <Descriptions.Item label="通知内容" span={2}>
-              <div style={{ whiteSpace: 'pre-wrap' }}>{currentLog.notifyContent}</div>
-            </Descriptions.Item>
-            <Descriptions.Item label="状态">
-              <Tag color={NOTIFY_STATUS.find(s => s.value === currentLog.notifyStatus)?.color}>
-                {NOTIFY_STATUS.find(s => s.value === currentLog.notifyStatus)?.label}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="重试次数">{currentLog.retryCount}</Descriptions.Item>
-            <Descriptions.Item label="发送时间">{currentLog.sendTime || '-'}</Descriptions.Item>
-            <Descriptions.Item label="创建时间">{currentLog.createTime}</Descriptions.Item>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <div className="text-sm text-gray-500">通知ID</div>
+                <div className="text-sm font-medium">{currentLog.id}</div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-sm text-gray-500">告警ID</div>
+                <div className="text-sm font-medium">{currentLog.alertRecordId}</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <div className="text-sm text-gray-500">通知方式</div>
+                <div>
+                  <Tag color={getNotifyTypeColor(currentLog.notifyType)}>
+                    {NOTIFY_TYPES.find((t) => t.value === currentLog.notifyType)?.label}
+                  </Tag>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-sm text-gray-500">通知目标</div>
+                <div className="text-sm font-medium">{currentLog.notifyTarget}</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <div className="text-sm text-gray-500">接收人ID</div>
+                <div className="text-sm font-medium">{currentLog.notifyUserId || '-'}</div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-sm text-gray-500">接收人姓名</div>
+                <div className="text-sm font-medium">{currentLog.notifyUserName || '-'}</div>
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <div className="text-sm text-gray-500">通知内容</div>
+              <div className="text-sm font-medium bg-gray-50 p-3 rounded-lg whitespace-pre-wrap">
+                {currentLog.notifyContent}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <div className="text-sm text-gray-500">状态</div>
+                <div>
+                  <Tag color={getNotifyStatusColor(currentLog.notifyStatus)}>
+                    {NOTIFY_STATUS.find((s) => s.value === currentLog.notifyStatus)?.label}
+                  </Tag>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-sm text-gray-500">重试次数</div>
+                <div className="text-sm font-medium">{currentLog.retryCount}</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <div className="text-sm text-gray-500">发送时间</div>
+                <div className="text-sm font-medium">{currentLog.sendTime || '-'}</div>
+              </div>
+              <div className="space-y-1">
+                <div className="text-sm text-gray-500">创建时间</div>
+                <div className="text-sm font-medium">{currentLog.createTime}</div>
+              </div>
+            </div>
+
             {currentLog.errorMessage && (
-              <Descriptions.Item label="错误信息" span={2}>
-                <div style={{ color: 'red', whiteSpace: 'pre-wrap' }}>{currentLog.errorMessage}</div>
-              </Descriptions.Item>
+              <div className="space-y-1">
+                <div className="text-sm text-gray-500">错误信息</div>
+                <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg whitespace-pre-wrap">
+                  {currentLog.errorMessage}
+                </div>
+              </div>
             )}
-          </Descriptions>
+          </div>
         )}
+
+        <div className="mt-6 flex justify-end">
+          <Button variant="outline" onClick={() => setDetailVisible(false)}>
+            关闭
+          </Button>
+        </div>
       </Modal>
-    </Card>
+    </div>
   )
 }
 

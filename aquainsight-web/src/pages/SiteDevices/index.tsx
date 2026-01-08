@@ -1,27 +1,30 @@
 import React, { useState, useEffect } from 'react'
 import {
+  PlusIcon,
+  TrashIcon,
+  PencilIcon,
+  MagnifyingGlassIcon,
+} from '@heroicons/react/24/outline'
+import { useForm } from 'react-hook-form'
+import {
   Card,
+  CardHeader,
+  CardBody,
   Table,
+  type TableColumn,
   Button,
-  Space,
   Modal,
   Form,
+  FormField,
   Input,
   Select,
-  message,
+  type SelectOption,
   Popconfirm,
   DatePicker,
-  Row,
-  Col,
-} from 'antd'
-import {
-  PlusOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  SearchOutlined,
-} from '@ant-design/icons'
-import type { ColumnsType } from 'antd/es/table'
-import dayjs from 'dayjs'
+  Pagination,
+} from '@/components/ui'
+import { toast } from '@/utils/toast'
+import { format } from 'date-fns'
 import {
   getDeviceList,
   createDevice,
@@ -42,13 +45,15 @@ const SiteDevices: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false)
   const [editingDevice, setEditingDevice] = useState<Device | null>(null)
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 10 })
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 })
   const [filters, setFilters] = useState({
     enterpriseName: '',
     siteId: undefined as number | undefined,
     deviceModelId: undefined as number | undefined,
   })
-  const [form] = Form.useForm()
+
+  const searchForm = useForm()
+  const deviceForm = useForm()
 
   // Load devices
   const loadDevices = async (pageNum: number = 1, pageSize: number = 10) => {
@@ -61,10 +66,10 @@ const SiteDevices: React.FC = () => {
         filters.deviceModelId
       )
       setDevices(data.list)
-      setPagination({ current: data.pageNum, pageSize: data.pageSize })
+      setPagination({ current: data.pageNum, pageSize: data.pageSize, total: data.total })
     } catch (error) {
       console.error('加载设备列表失败:', error)
-      message.error('加载设备列表失败')
+      toast.error('加载设备列表失败')
     } finally {
       setLoading(false)
     }
@@ -100,7 +105,7 @@ const SiteDevices: React.FC = () => {
   const openModal = (device?: Device) => {
     setEditingDevice(device || null)
     if (device) {
-      form.setFieldsValue({
+      deviceForm.reset({
         deviceCode: device.deviceCode,
         deviceName: device.deviceName,
         siteId: device.siteId,
@@ -108,36 +113,46 @@ const SiteDevices: React.FC = () => {
         serialNumber: device.serialNumber || undefined,
         installLocation: device.installLocation || undefined,
         status: device.status,
-        installDate: device.installDate ? dayjs(device.installDate) : undefined,
-        maintenanceDate: device.maintenanceDate ? dayjs(device.maintenanceDate) : undefined,
+        installDate: device.installDate ? new Date(device.installDate) : undefined,
+        maintenanceDate: device.maintenanceDate ? new Date(device.maintenanceDate) : undefined,
       })
     } else {
-      form.resetFields()
+      deviceForm.reset({
+        deviceCode: '',
+        deviceName: '',
+        siteId: undefined,
+        deviceModelId: undefined,
+        serialNumber: '',
+        installLocation: '',
+        status: 1,
+        installDate: undefined,
+        maintenanceDate: undefined,
+      })
     }
     setModalVisible(true)
   }
 
   // Save device
-  const handleSaveDevice = async () => {
+  const handleSaveDevice = async (values: any) => {
     try {
-      const values = await form.validateFields()
       const data = {
         ...values,
-        installDate: values.installDate ? values.installDate.format('YYYY-MM-DD') : undefined,
-        maintenanceDate: values.maintenanceDate ? values.maintenanceDate.format('YYYY-MM-DD') : undefined,
+        installDate: values.installDate ? format(values.installDate, 'yyyy-MM-dd') : undefined,
+        maintenanceDate: values.maintenanceDate ? format(values.maintenanceDate, 'yyyy-MM-dd') : undefined,
       }
 
       if (editingDevice) {
         await updateDevice(editingDevice.id, data)
-        message.success('更新成功')
+        toast.success('更新成功')
       } else {
         await createDevice(data)
-        message.success('创建成功')
+        toast.success('创建成功')
       }
       setModalVisible(false)
       loadDevices(pagination.current, pagination.pageSize)
     } catch (error) {
       console.error('保存设备失败:', error)
+      toast.error('保存设备失败')
     }
   }
 
@@ -145,273 +160,320 @@ const SiteDevices: React.FC = () => {
   const handleDeleteDevice = async (id: number) => {
     try {
       await deleteDevice(id)
-      message.success('删除成功')
+      toast.success('删除成功')
       loadDevices(pagination.current, pagination.pageSize)
     } catch (error) {
       console.error('删除设备失败:', error)
+      toast.error('删除设备失败')
     }
   }
 
   // Delete multiple devices
   const handleBatchDelete = async () => {
     if (selectedRowKeys.length === 0) {
-      message.warning('请选择要删除的设备')
+      toast.warning('请选择要删除的设备')
       return
     }
     try {
       for (const id of selectedRowKeys) {
         await deleteDevice(id as number)
       }
-      message.success('批量删除成功')
+      toast.success('批量删除成功')
       setSelectedRowKeys([])
       loadDevices(pagination.current, pagination.pageSize)
     } catch (error) {
       console.error('批量删除失败:', error)
+      toast.error('批量删除失败')
     }
   }
 
   // Handle filter
   const handleFilter = () => {
+    const values = searchForm.getValues()
+    setFilters({
+      enterpriseName: values.enterpriseName,
+      siteId: values.siteId,
+      deviceModelId: values.deviceModelId,
+    })
     loadDevices(1, 10)
   }
 
+  // Site options
+  const siteOptions: SelectOption[] = sites.map((s) => ({
+    label: s.siteName,
+    value: s.id,
+  }))
+
+  // Device model options
+  const deviceModelOptions: SelectOption[] = deviceModels.map((m) => ({
+    label: m.modelName,
+    value: m.id,
+  }))
+
+  // Status options
+  const statusOptions: SelectOption[] = [
+    { label: '在线', value: 1 },
+    { label: '离线', value: 0 },
+    { label: '故障', value: 2 },
+  ]
+
   // Table columns
-  const columns: ColumnsType<Device> = [
+  const columns: TableColumn<Device>[] = [
     {
       title: '序号',
       key: 'index',
-      width: 60,
-      render: (_, __, index) => index + 1,
+      width: '60px',
+      render: (_, __, index) => <span className="text-sm text-gray-600">{index + 1}</span>,
     },
     {
       title: '操作',
       key: 'action',
-      width: 120,
+      width: '150px',
       render: (_, record) => (
-        <Space>
-          <a onClick={() => openModal(record)}>
-            <EditOutlined /> 编辑
-          </a>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<PencilIcon className="w-4 h-4" />}
+            onClick={() => openModal(record)}
+          >
+            编辑
+          </Button>
           <Popconfirm
             title="确认删除"
             description="确定要删除该设备吗？"
             onConfirm={() => handleDeleteDevice(record.id)}
-            okText="确定"
-            cancelText="取消"
           >
-            <a style={{ color: '#ff4d4f' }}>
-              <DeleteOutlined /> 删除
-            </a>
+            <Button variant="ghost" size="sm" danger icon={<TrashIcon className="w-4 h-4" />}>
+              删除
+            </Button>
           </Popconfirm>
-        </Space>
+        </div>
       ),
     },
     {
       title: '设备编号',
       dataIndex: 'deviceCode',
       key: 'deviceCode',
-      width: 120,
+      width: '120px',
+      render: (code) => <span className="font-mono text-sm">{code as string}</span>,
     },
     {
       title: '所在站点',
       dataIndex: 'siteName',
       key: 'siteName',
-      render: (text) => text || '-',
+      render: (text) => <span className="text-sm text-gray-600">{(text as string) || '-'}</span>,
     },
     {
       title: '设备类型',
       dataIndex: 'modelName',
       key: 'modelName',
-      render: (text) => text || '-',
+      render: (text) => <span className="text-sm text-gray-600">{(text as string) || '-'}</span>,
     },
     {
       title: '量程',
       dataIndex: 'range',
       key: 'range',
-      render: (text) => text || '-',
+      render: (text) => <span className="text-sm text-gray-600">{(text as string) || '-'}</span>,
     },
     {
       title: '关联因子',
       dataIndex: 'factorName',
       key: 'factorName',
-      render: (text) => text || '-',
+      render: (text) => <span className="text-sm text-gray-600">{(text as string) || '-'}</span>,
     },
     {
       title: '规格参数',
       dataIndex: 'serialNumber',
       key: 'serialNumber',
-      render: (text) => text || '-',
+      render: (text) => <span className="text-sm text-gray-600">{(text as string) || '-'}</span>,
     },
     {
       title: '制造商',
       dataIndex: 'manufacturer',
       key: 'manufacturer',
-      render: (text) => text || '-',
+      render: (text) => <span className="text-sm text-gray-600">{(text as string) || '-'}</span>,
     },
   ]
 
-  const rowSelection = {
-    selectedRowKeys,
-    onChange: (keys: React.Key[]) => {
-      setSelectedRowKeys(keys)
-    },
-  }
-
   return (
-    <div>
-      <Card size="small" bodyStyle={{ padding: 16 }}>
-        {/* 搜索栏 */}
-        <Row gutter={16} style={{ marginBottom: 16 }}>
-          <Col span={6}>
-            <Input
-              placeholder="企业名称"
-              value={filters.enterpriseName}
-              onChange={(e) => setFilters({ ...filters, enterpriseName: e.target.value })}
-            />
-          </Col>
-          <Col span={6}>
-            <Select
-              placeholder="选择站点"
-              allowClear
-              value={filters.siteId}
-              onChange={(value) => setFilters({ ...filters, siteId: value })}
-              options={sites.map(s => ({
-                label: s.siteName,
-                value: s.id,
-              }))}
-            />
-          </Col>
-          <Col span={6}>
-            <Select
-              placeholder="选择设备类型"
-              allowClear
-              value={filters.deviceModelId}
-              onChange={(value) => setFilters({ ...filters, deviceModelId: value })}
-              options={deviceModels.map(m => ({
-                label: m.modelName,
-                value: m.id,
-              }))}
-            />
-          </Col>
-          <Col span={6}>
-            <Button type="primary" icon={<SearchOutlined />} onClick={handleFilter}>
-              查询
-            </Button>
-          </Col>
-        </Row>
+    <div className="p-6 space-y-6">
+      <Card className="shadow-md hover:shadow-lg transition-shadow">
+        <CardHeader>
+          <h2 className="text-xl font-semibold text-gray-900">设备信息管理</h2>
+        </CardHeader>
+        <CardBody>
+          {/* Search bar */}
+          <Form form={searchForm} onSubmit={handleFilter}>
+            <div className="mb-6 grid grid-cols-4 gap-4">
+              <FormField name="enterpriseName" label="企业名称">
+                {({ field }) => <Input {...field} placeholder="请输入企业名称" />}
+              </FormField>
 
-        {/* 操作按钮 */}
-        <div style={{ marginBottom: 16 }}>
-          <Space>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => openModal()}>
+              <FormField name="siteId" label="选择站点">
+                {({ field }) => (
+                  <Select {...field} placeholder="请选择站点" options={siteOptions} allowClear />
+                )}
+              </FormField>
+
+              <FormField name="deviceModelId" label="设备类型">
+                {({ field }) => (
+                  <Select
+                    {...field}
+                    placeholder="请选择设备类型"
+                    options={deviceModelOptions}
+                    allowClear
+                  />
+                )}
+              </FormField>
+
+              <div className="flex items-end gap-2">
+                <Button
+                  type="submit"
+                  variant="primary"
+                  icon={<MagnifyingGlassIcon className="w-4 h-4" />}
+                >
+                  查询
+                </Button>
+              </div>
+            </div>
+          </Form>
+
+          {/* Action buttons */}
+          <div className="mb-4 flex items-center gap-2">
+            <Button
+              variant="primary"
+              icon={<PlusIcon className="w-4 h-4" />}
+              onClick={() => openModal()}
+            >
               新增
             </Button>
             <Popconfirm
               title="确认删除"
               description="确定要删除选中的设备吗？"
               onConfirm={handleBatchDelete}
-              okText="确定"
-              cancelText="取消"
             >
-              <Button danger icon={<DeleteOutlined />}>
+              <Button variant="outline" danger icon={<TrashIcon className="w-4 h-4" />}>
                 删除
               </Button>
             </Popconfirm>
-          </Space>
-        </div>
+          </div>
 
-        {/* 设备表格 */}
-        <Table
-          columns={columns}
-          dataSource={devices}
-          rowKey="id"
-          loading={loading}
-          rowSelection={rowSelection}
-          size="small"
-          pagination={{
-            current: pagination.current,
-            pageSize: pagination.pageSize,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total) => `共 ${total} 条`,
-            onChange: (page, pageSize) => {
-              loadDevices(page, pageSize)
-              setPagination({ current: page, pageSize })
-            },
-          }}
-        />
+          {/* Table */}
+          <Table
+            columns={columns}
+            dataSource={devices}
+            rowKey="id"
+            loading={loading}
+            rowSelection={{
+              selectedRowKeys,
+              onChange: setSelectedRowKeys,
+            }}
+            size="small"
+          />
+
+          <div className="mt-4 flex justify-end">
+            <Pagination
+              current={pagination.current}
+              pageSize={pagination.pageSize}
+              total={pagination.total}
+              onChange={(page, pageSize) => {
+                loadDevices(page, pageSize)
+                setPagination({ ...pagination, current: page, pageSize })
+              }}
+              showSizeChanger
+              showTotal
+            />
+          </div>
+        </CardBody>
       </Card>
 
-      {/* 新增/编辑弹窗 */}
+      {/* Create/Edit Modal */}
       <Modal
         title={editingDevice ? '编辑设备' : '新增设备'}
         open={modalVisible}
-        onOk={handleSaveDevice}
-        onCancel={() => setModalVisible(false)}
+        onClose={() => setModalVisible(false)}
         width={600}
       >
-        <Form form={form} layout="vertical">
-          <Form.Item
-            name="deviceCode"
-            label="设备编号"
-            rules={[{ required: true, message: '请输入设备编号' }]}
-          >
-            <Input placeholder="请输入设备编号" />
-          </Form.Item>
-          <Form.Item
-            name="deviceName"
-            label="设备名称"
-            rules={[{ required: true, message: '请输入设备名称' }]}
-          >
-            <Input placeholder="请输入设备名称" />
-          </Form.Item>
-          <Form.Item
-            name="siteId"
-            label="所在站点"
-            rules={[{ required: true, message: '请选择站点' }]}
-          >
-            <Select
-              placeholder="请选择站点"
-              options={sites.map(s => ({
-                label: s.siteName,
-                value: s.id,
-              }))}
-            />
-          </Form.Item>
-          <Form.Item
-            name="deviceModelId"
-            label="设备类型"
-            rules={[{ required: true, message: '请选择设备类型' }]}
-          >
-            <Select
-              placeholder="请选择设备类型"
-              options={deviceModels.map(m => ({
-                label: m.modelName,
-                value: m.id,
-              }))}
-            />
-          </Form.Item>
-          <Form.Item name="serialNumber" label="序列号">
-            <Input placeholder="请输入序列号" />
-          </Form.Item>
-          <Form.Item name="installLocation" label="安装位置">
-            <Input placeholder="请输入安装位置" />
-          </Form.Item>
-          <Form.Item name="status" label="状态" initialValue={1}>
-            <Select
-              options={[
-                { label: '在线', value: 1 },
-                { label: '离线', value: 0 },
-                { label: '故障', value: 2 },
-              ]}
-            />
-          </Form.Item>
-          <Form.Item name="installDate" label="安装日期">
-            <DatePicker style={{ width: '100%' }} />
-          </Form.Item>
-          <Form.Item name="maintenanceDate" label="维护日期">
-            <DatePicker style={{ width: '100%' }} />
-          </Form.Item>
+        <Form form={deviceForm} onSubmit={handleSaveDevice}>
+          <div className="space-y-4">
+            <FormField
+              name="deviceCode"
+              label="设备编号"
+              rules={{ required: '请输入设备编号' }}
+            >
+              {({ field }) => <Input {...field} placeholder="请输入设备编号" />}
+            </FormField>
+
+            <FormField
+              name="deviceName"
+              label="设备名称"
+              rules={{ required: '请输入设备名称' }}
+            >
+              {({ field }) => <Input {...field} placeholder="请输入设备名称" />}
+            </FormField>
+
+            <FormField name="siteId" label="所在站点" rules={{ required: '请选择站点' }}>
+              {({ field }) => (
+                <Select {...field} placeholder="请选择站点" options={siteOptions} />
+              )}
+            </FormField>
+
+            <FormField
+              name="deviceModelId"
+              label="设备类型"
+              rules={{ required: '请选择设备类型' }}
+            >
+              {({ field }) => (
+                <Select {...field} placeholder="请选择设备类型" options={deviceModelOptions} />
+              )}
+            </FormField>
+
+            <FormField name="serialNumber" label="序列号">
+              {({ field }) => <Input {...field} placeholder="请输入序列号" />}
+            </FormField>
+
+            <FormField name="installLocation" label="安装位置">
+              {({ field }) => <Input {...field} placeholder="请输入安装位置" />}
+            </FormField>
+
+            <FormField name="status" label="状态">
+              {({ field }) => (
+                <Select {...field} placeholder="请选择状态" options={statusOptions} />
+              )}
+            </FormField>
+
+            <FormField name="installDate" label="安装日期">
+              {({ field }) => (
+                <DatePicker
+                  {...field}
+                  placeholder="请选择安装日期"
+                  format="yyyy-MM-dd"
+                  allowClear
+                />
+              )}
+            </FormField>
+
+            <FormField name="maintenanceDate" label="维护日期">
+              {({ field }) => (
+                <DatePicker
+                  {...field}
+                  placeholder="请选择维护日期"
+                  format="yyyy-MM-dd"
+                  allowClear
+                />
+              )}
+            </FormField>
+          </div>
+
+          <div className="mt-6 flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setModalVisible(false)}>
+              取消
+            </Button>
+            <Button type="submit" variant="primary">
+              确定
+            </Button>
+          </div>
         </Form>
       </Modal>
     </div>
