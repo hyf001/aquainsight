@@ -13,7 +13,6 @@
     "@headlessui/react": "^2.2.9",
     "@heroicons/react": "^2.2.0",
     "ahooks": "^3.9.6",
-    "antd": "^6.0.0",
     "axios": "^1.13.2",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",

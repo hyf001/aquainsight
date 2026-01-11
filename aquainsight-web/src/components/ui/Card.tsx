@@ -38,21 +38,24 @@ Card.displayName = 'Card'
 
 export interface CardHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
   bordered?: boolean
+  /** 额外内容 */
+  extra?: React.ReactNode
 }
 
 export const CardHeader = React.forwardRef<HTMLDivElement, CardHeaderProps>(
-  ({ className, bordered = true, children, ...props }, ref) => {
+  ({ className, bordered = true, extra, children, ...props }, ref) => {
     return (
       <div
         ref={ref}
         className={cn(
-          'px-6 py-4',
+          'px-6 py-4 flex items-center justify-between',
           bordered && 'border-b border-gray-200',
           className
         )}
         {...props}
       >
-        {children}
+        <div>{children}</div>
+        {extra && <div>{extra}</div>}
       </div>
     )
   }

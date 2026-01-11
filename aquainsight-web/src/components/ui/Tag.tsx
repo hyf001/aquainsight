@@ -17,6 +17,7 @@ export interface TagProps {
     | 'red'
     | 'orange'
     | 'purple'
+    | 'gray'
   /** 是否可关闭 */
   closable?: boolean
   /** 关闭回调 */
@@ -43,6 +44,7 @@ const Tag: React.FC<TagProps> = ({
     red: 'bg-red-50 text-red-700 border-red-200',
     orange: 'bg-orange-50 text-orange-700 border-orange-200',
     purple: 'bg-purple-50 text-purple-700 border-purple-200',
+    gray: 'bg-gray-100 text-gray-700 border-gray-200',
   }
 
   const handleClose = (e: React.MouseEvent) => {

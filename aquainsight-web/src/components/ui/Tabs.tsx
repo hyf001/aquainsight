@@ -18,6 +18,8 @@ export interface TabsProps {
   size?: 'sm' | 'md' | 'lg'
   className?: string
   tabBarExtraContent?: React.ReactNode
+  /** 子元素模式（使用 TabItem 作为子组件） */
+  children?: React.ReactNode
 }
 
 const Tabs: React.FC<TabsProps> = ({

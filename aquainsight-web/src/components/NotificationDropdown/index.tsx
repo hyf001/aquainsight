@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Badge, Dropdown, DropdownItem, Spin, Empty, Button } from '@/components/ui'
+import { Badge, Dropdown, Spin, Empty, Button } from '@/components/ui'
 import { BellIcon } from '@heroicons/react/24/outline'
 import { useNavigate } from 'react-router-dom'
 import { getAlertRecords } from '@/services/alert'

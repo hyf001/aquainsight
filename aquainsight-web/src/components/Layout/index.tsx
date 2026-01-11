@@ -12,7 +12,6 @@ import {
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
   UserIcon,
-  Bars3Icon,
 } from '@heroicons/react/24/outline'
 import { useUserStore } from '@/stores/useUserStore'
 import { useTabsStore } from '@/stores/useTabsStore'

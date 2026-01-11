@@ -1,27 +1,27 @@
 import React, { useState, useEffect } from 'react'
+import { useForm } from 'react-hook-form'
+import {
+  BuildingOfficeIcon,
+  MapPinIcon,
+  PlusIcon,
+  MagnifyingGlassIcon,
+} from '@heroicons/react/24/outline'
 import {
   Card,
+  CardHeader,
+  CardBody,
   Table,
   Input,
   Select,
   Button,
-  Row,
-  Col,
   Tree,
-  message,
-  Space,
   Tag,
   Modal,
-  DatePicker,
+  RangePicker,
   Form,
-} from 'antd'
-import {
-  BuildOutlined,
-  EnvironmentOutlined,
-  PlusOutlined,
-} from '@ant-design/icons'
-import type { ColumnsType } from 'antd/es/table'
-import type { DataNode } from 'antd/es/tree'
+  Pagination,
+} from '@/components/ui'
+import { toast } from '@/utils/toast'
 import {
   getTaskSchedulerPage,
   backfillTask,
@@ -34,8 +34,6 @@ import {
   type Site,
 } from '@/services/monitoring'
 import { getAllDepartments, type Department } from '@/services/organization'
-
-const { RangePicker } = DatePicker
 
 // 星期映射
 const WEEKDAYS_MAP: { [key: number]: string } = {
@@ -55,6 +53,14 @@ type TaskSchedulerExtended = TaskScheduler & {
   siteCode?: string
 }
 
+// 树节点类型
+interface TreeDataNode {
+  key: string
+  title: React.ReactNode
+  children?: TreeDataNode[]
+  isLeaf?: boolean
+}
+
 const TaskScheduler: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [taskSchedulers, setTaskSchedulers] = useState<TaskSchedulerExtended[]>([])
@@ -63,7 +69,7 @@ const TaskScheduler: React.FC = () => {
   const [pageSize, setPageSize] = useState(20)
 
   // 树形数据
-  const [treeData, setTreeData] = useState<DataNode[]>([])
+  const [treeData, setTreeData] = useState<TreeDataNode[]>([])
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([])
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([])
 
@@ -85,7 +91,7 @@ const TaskScheduler: React.FC = () => {
   const [backfillModalVisible, setBackfillModalVisible] = useState(false)
   const [backfillLoading, setBackfillLoading] = useState(false)
   const [currentTaskScheduler, setCurrentTaskScheduler] = useState<TaskSchedulerExtended | null>(null)
-  const [backfillForm] = Form.useForm()
+  const backfillForm = useForm()
 
   // 加载企业-站点树
   const loadEnterpriseTree = async () => {
@@ -93,19 +99,19 @@ const TaskScheduler: React.FC = () => {
       const data = await getEnterpriseSiteTree(filters.enterpriseName, filters.siteName)
 
       // 转换为树形结构数据
-      const treeNodes: DataNode[] = data.map((enterprise: EnterpriseSiteTree) => ({
+      const treeNodes: TreeDataNode[] = data.map((enterprise: EnterpriseSiteTree) => ({
         key: `enterprise-${enterprise.enterpriseId}`,
         title: (
-          <span>
-            <BuildOutlined style={{ marginRight: 8 }} />
+          <span className="flex items-center">
+            <BuildingOfficeIcon className="w-4 h-4 mr-2" />
             {enterprise.enterpriseName}
           </span>
         ),
         children: enterprise.sites.map((site: Site) => ({
           key: `site-${site.id}`,
           title: (
-            <span>
-              <EnvironmentOutlined style={{ marginRight: 8 }} />
+            <span className="flex items-center">
+              <MapPinIcon className="w-4 h-4 mr-2" />
               {site.siteName}
             </span>
           ),
@@ -121,7 +127,7 @@ const TaskScheduler: React.FC = () => {
       }
     } catch (error) {
       console.error('加载企业站点树失败:', error)
-      message.error('加载企业站点树失败')
+      toast.error('加载企业站点树失败')
     }
   }
 
@@ -142,7 +148,7 @@ const TaskScheduler: React.FC = () => {
       setTotal(response.total || 0)
     } catch (error) {
       console.error('加载任务调度列表失败:', error)
-      message.error('加载任务调度列表失败')
+      toast.error('加载任务调度列表失败')
     } finally {
       setLoading(false)
     }
@@ -234,101 +240,103 @@ const TaskScheduler: React.FC = () => {
   const handleOpenBackfill = (record: TaskSchedulerExtended) => {
     setCurrentTaskScheduler(record)
     setBackfillModalVisible(true)
-    backfillForm.resetFields()
+    backfillForm.reset()
   }
 
   // 提交补任务
   const handleBackfillSubmit = async () => {
     try {
-      const values = await backfillForm.validateFields()
+      const values = await backfillForm.trigger()
+
+      if (!values) return
 
       if (!currentTaskScheduler) {
-        message.error('未选择任务调度')
+        toast.error('未选择任务调度')
+        return
+      }
+
+      const formValues = backfillForm.getValues()
+      const startTime = formValues.dateRange?.[0]
+      const endTime = formValues.dateRange?.[1]
+
+      if (!startTime || !endTime) {
+        toast.error('请选择时间范围')
         return
       }
 
       setBackfillLoading(true)
 
-      const [startTime, endTime] = values.dateRange
+      // 格式化时间
+      const formatDate = (date: Date) => {
+        const y = date.getFullYear()
+        const m = String(date.getMonth() + 1).padStart(2, '0')
+        const d = String(date.getDate()).padStart(2, '0')
+        const h = String(date.getHours()).padStart(2, '0')
+        const min = String(date.getMinutes()).padStart(2, '0')
+        const s = String(date.getSeconds()).padStart(2, '0')
+        return `${y}-${m}-${d} ${h}:${min}:${s}`
+      }
+
       const request: BackfillTaskRequest = {
         taskSchedulerId: currentTaskScheduler.id,
-        startTime: startTime.format('YYYY-MM-DD HH:mm:ss'),
-        endTime: endTime.format('YYYY-MM-DD HH:mm:ss'),
+        startTime: formatDate(startTime),
+        endTime: formatDate(endTime),
       }
 
       const result = await backfillTask(request)
 
-      message.success(`成功补齐 ${result.totalCount} 个任务`)
+      toast.success(`成功补齐 ${result.totalCount} 个任务`)
       setBackfillModalVisible(false)
-      backfillForm.resetFields()
+      backfillForm.reset()
 
     } catch (error: any) {
       console.error('补任务失败:', error)
-      if (error.errorFields) {
-        // 表单验证错误
-        return
-      }
-      message.error(error.message || '补任务失败')
+      toast.error(error.message || '补任务失败')
     } finally {
       setBackfillLoading(false)
     }
   }
 
   // 表格列定义
-  const columns: ColumnsType<TaskSchedulerExtended> = [
+  const columns = [
     {
       title: '序号',
       width: 80,
-      render: (_, __, index) => (pageNum - 1) * pageSize + index + 1,
+      render: (_: any, __: any, index: number) => (pageNum - 1) * pageSize + index + 1,
     },
     {
       title: '运维周期',
       width: 150,
-      ellipsis: {
-        showTitle: true,
-      },
-      render: (_, record) => formatPeriodConfig(record),
+      render: (_: any, record: TaskSchedulerExtended) => formatPeriodConfig(record),
     },
     {
       title: '站点名称',
       dataIndex: 'siteName',
       width: 180,
-      ellipsis: {
-        showTitle: true,
-      },
     },
     {
       title: '所属客户',
       dataIndex: 'enterpriseName',
       width: 200,
-      ellipsis: {
-        showTitle: true,
-      },
-      render: (text) => text || '-',
+      render: (text: string) => text || '-',
     },
     {
       title: '运维任务模版',
       dataIndex: 'taskTemplateName',
       width: 150,
-      ellipsis: {
-        showTitle: true,
-      },
-      render: (text) => text || '-',
+      render: (text: string) => text || '-',
     },
     {
       title: '运维小组',
       dataIndex: 'departmentName',
       width: 150,
-      ellipsis: {
-        showTitle: true,
-      },
-      render: (text) => text || '-',
+      render: (text: string) => text || '-',
     },
     {
       title: '状态',
       dataIndex: 'taskSchedulerState',
       width: 100,
-      render: (state) => {
+      render: (state: string) => {
         if (state === '进行中') {
           return <Tag color="success">{state}</Tag>
         }
@@ -341,18 +349,17 @@ const TaskScheduler: React.FC = () => {
     {
       title: '操作',
       width: 120,
-      fixed: 'right',
-      render: (_, record) => (
-        <Space>
+      render: (_: any, record: TaskSchedulerExtended) => (
+        <div className="flex items-center gap-2">
           <Button
-            type="link"
-            size="small"
-            icon={<PlusOutlined />}
+            variant="ghost"
+            size="sm"
+            icon={<PlusIcon className="w-4 h-4" />}
             onClick={() => handleOpenBackfill(record)}
           >
             补任务
           </Button>
-        </Space>
+        </div>
       ),
     },
   ]
@@ -365,143 +372,159 @@ const TaskScheduler: React.FC = () => {
   }
 
   return (
-    <div style={{ padding: '0 24px' }}>
-      <Card title="任务调度" bodyStyle={{ padding: 0 }}>
-        <Row gutter={0} style={{ minHeight: 'calc(100vh - 200px)' }}>
-          {/* 左侧：企业-站点树 */}
-          <Col span={5} style={{ borderRight: '1px solid #f0f0f0' }}>
-            <div style={{ padding: '16px' }}>
-              <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 16 }}>全部站点</div>
+    <div className="p-6">
+      <Card>
+        <CardHeader bordered={false}>
+          <div className="text-lg font-semibold">任务调度</div>
+        </CardHeader>
+        <CardBody>
+          <div className="flex min-h-[calc(100vh-200px)]">
+            {/* 左侧：企业-站点树 */}
+            <div className="w-1/5 border-r border-gray-200">
+              <div className="p-4">
+                <div className="text-base font-medium mb-4">全部站点</div>
 
-              {/* 搜索框 */}
-              <Space direction="vertical" style={{ width: '100%', marginBottom: 16 }}>
-                <Input
-                  placeholder="请输入企业名称"
-                  value={filters.enterpriseName}
-                  onChange={(e) => setFilters({ ...filters, enterpriseName: e.target.value })}
-                  onPressEnter={handleSearch}
-                />
-                <Input
-                  placeholder="请输入站点名称"
-                  value={filters.siteName}
-                  onChange={(e) => setFilters({ ...filters, siteName: e.target.value })}
-                  onPressEnter={handleSearch}
-                />
-              </Space>
+                {/* 搜索框 */}
+                <div className="space-y-3 mb-4">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="请输入企业名称"
+                      value={filters.enterpriseName}
+                      onChange={(e) => setFilters({ ...filters, enterpriseName: e.target.value })}
+                    />
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={<MagnifyingGlassIcon className="w-4 h-4" />}
+                      onClick={handleSearch}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="请输入站点名称"
+                      value={filters.siteName}
+                      onChange={(e) => setFilters({ ...filters, siteName: e.target.value })}
+                    />
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={<MagnifyingGlassIcon className="w-4 h-4" />}
+                      onClick={handleSearch}
+                    />
+                  </div>
+                </div>
 
-              {/* 树形结构 */}
-              <div style={{ maxHeight: 'calc(100vh - 380px)', overflow: 'auto' }}>
-                <Tree
-                  treeData={treeData}
-                  expandedKeys={expandedKeys}
-                  selectedKeys={selectedKeys}
-                  onExpand={(keys) => setExpandedKeys(keys)}
-                  onSelect={handleTreeSelect}
-                  showLine
-                />
+                {/* 树形结构 */}
+                <div className="max-h-[calc(100vh-380px)] overflow-auto">
+                  <Tree
+                    treeData={treeData}
+                    expandedKeys={expandedKeys}
+                    selectedKeys={selectedKeys}
+                    onExpand={(keys) => setExpandedKeys(keys)}
+                    onSelect={handleTreeSelect}
+                    showLine
+                  />
+                </div>
               </div>
             </div>
-          </Col>
 
-          {/* 右侧：任务调度列表 */}
-          <Col span={19}>
-            <div style={{ padding: '16px' }}>
-              {/* 筛选条件 */}
-              <Row gutter={16} style={{ marginBottom: 16 }}>
-                <Col span={8}>
-                  <Select
-                    placeholder="请选择运维小组"
-                    allowClear
-                    value={filters.departmentId}
-                    onChange={(value) => {
-                      setFilters({ ...filters, departmentId: value })
-                      setPageNum(1)
+            {/* 右侧：任务调度列表 */}
+            <div className="flex-1">
+              <div className="p-4">
+                {/* 筛选条件 */}
+                <div className="mb-4 flex gap-4">
+                  <div className="w-1/3">
+                    <Select
+                      placeholder="请选择运维小组"
+                      value={filters.departmentId}
+                      onChange={(value: number | undefined) => {
+                        setFilters({ ...filters, departmentId: value })
+                        setPageNum(1)
+                      }}
+                      options={departments.map((dept) => ({
+                        label: dept.name,
+                        value: dept.id,
+                      }))}
+                    />
+                  </div>
+                </div>
+
+                {/* 任务调度表格 */}
+                <Table
+                  columns={columns}
+                  dataSource={taskSchedulers}
+                  rowKey="id"
+                  loading={loading}
+                  size="small"
+                  scroll={{ x: 1200 }}
+                />
+                {/* 分页 */}
+                <div className="mt-4 flex justify-end">
+                  <Pagination
+                    current={pageNum}
+                    pageSize={pageSize}
+                    total={total}
+                    pageSizeOptions={['10', '20', '50', '100']}
+                    showSizeChanger
+                    showQuickJumper
+                    onChange={(page, size) => {
+                      setPageNum(page)
+                      setPageSize(size || 20)
                     }}
-                    style={{ width: '100%' }}
-                  >
-                    {departments.map((dept) => (
-                      <Select.Option key={dept.id} value={dept.id}>
-                        {dept.name}
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Col>
-              </Row>
-
-              {/* 任务调度表格 */}
-              <Table
-                columns={columns}
-                dataSource={taskSchedulers}
-                rowKey="id"
-                loading={loading}
-                pagination={{
-                  current: pageNum,
-                  pageSize,
-                  total,
-                  showSizeChanger: true,
-                  showQuickJumper: true,
-                  showTotal: (total) => `共 ${total} 条`,
-                  onChange: (page, size) => {
-                    setPageNum(page)
-                    setPageSize(size || 20)
-                  },
-                }}
-                size="small"
-                scroll={{ x: 1200, y: 'calc(100vh - 340px)' }}
-              />
+                  />
+                </div>
+              </div>
             </div>
-          </Col>
-        </Row>
+          </div>
+        </CardBody>
       </Card>
 
       {/* 补任务弹窗 */}
       <Modal
-        title="补齐任务"
         open={backfillModalVisible}
-        onOk={handleBackfillSubmit}
-        onCancel={() => {
+        onClose={() => {
           setBackfillModalVisible(false)
-          backfillForm.resetFields()
+          backfillForm.reset()
         }}
+        onOk={handleBackfillSubmit}
         confirmLoading={backfillLoading}
+        title="补齐任务"
         width={600}
       >
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ marginBottom: 8, color: '#666' }}>
+        <div className="mb-4">
+          <div className="mb-2 text-gray-600">
             <strong>站点名称：</strong>{currentTaskScheduler?.siteName || '-'}
           </div>
-          <div style={{ marginBottom: 8, color: '#666' }}>
+          <div className="mb-2 text-gray-600">
             <strong>运维周期：</strong>{currentTaskScheduler ? formatPeriodConfig(currentTaskScheduler) : '-'}
           </div>
-          <div style={{ marginBottom: 8, color: '#666' }}>
+          <div className="mb-2 text-gray-600">
             <strong>运维任务模版：</strong>{currentTaskScheduler?.taskTemplateName || '-'}
           </div>
         </div>
 
-        <Form
-          form={backfillForm}
-          layout="vertical"
-        >
-          <Form.Item
-            label="时间范围"
-            name="dateRange"
-            rules={[{ required: true, message: '请选择时间范围' }]}
-          >
+        <Form form={backfillForm} layout="vertical">
+          <div className="mb-4">
+            <label className="block mb-1 text-sm font-medium text-gray-700">
+              时间范围 <span className="text-red-500">*</span>
+            </label>
             <RangePicker
-              style={{ width: '100%' }}
-              showTime
-              format="YYYY-MM-DD HH:mm:ss"
+              value={backfillForm.getValues('dateRange')}
+              onChange={(dates) => {
+                backfillForm.setValue('dateRange', dates)
+              }}
               placeholder={['开始时间', '结束时间']}
+              showTime
             />
-          </Form.Item>
+          </div>
 
-          <div style={{ padding: '12px', background: '#f0f2f5', borderRadius: 4, marginTop: 16 }}>
-            <div style={{ fontSize: 12, color: '#666', lineHeight: '20px' }}>
-              <div>💡 说明：</div>
-              <div>• 系统会根据任务调度的周期配置，自动计算时间范围内应存在的所有任务</div>
-              <div>• 仅会补齐缺失的任务，已存在的任务不会重复生成</div>
-              <div>• 生成的任务状态为"待处理"，过期时间根据任务模版配置自动计算</div>
-            </div>
+          <div className="p-3 bg-gray-50 rounded text-sm text-gray-600">
+            <div className="font-medium mb-1">说明：</div>
+            <ul className="space-y-1 text-xs">
+              <li>系统会根据任务调度的周期配置，自动计算时间范围内应存在的所有任务</li>
+              <li>仅会补齐缺失的任务，已存在的任务不会重复生成</li>
+              <li>生成的任务状态为"待处理"，过期时间根据任务模版配置自动计算</li>
+            </ul>
           </div>
         </Form>
       </Modal>

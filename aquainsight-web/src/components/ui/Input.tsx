@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { cn } from '@/utils/cn'
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
 
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'prefix'> {
   error?: boolean
   prefix?: React.ReactNode
   suffix?: React.ReactNode

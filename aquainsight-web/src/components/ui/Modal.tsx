@@ -8,7 +8,7 @@ export interface ModalProps {
   /** 是否显示 */
   open: boolean
   /** 关闭回调 */
-  onClose: () => void
+  onClose?: () => void
   /** 标题 */
   title?: React.ReactNode
   /** 内容 */
@@ -52,7 +52,7 @@ const Modal: React.FC<ModalProps> = ({
   confirmLoading = false,
 }) => {
   const handleClose = () => {
-    if (maskClosable) {
+    if (maskClosable && onClose) {
       onClose()
     }
   }
@@ -60,7 +60,7 @@ const Modal: React.FC<ModalProps> = ({
   const handleCancel = () => {
     if (onCancel) {
       onCancel()
-    } else {
+    } else if (onClose) {
       onClose()
     }
   }
@@ -68,7 +68,7 @@ const Modal: React.FC<ModalProps> = ({
   const handleOk = async () => {
     if (onOk) {
       await onOk()
-    } else {
+    } else if (onClose) {
       onClose()
     }
   }
@@ -130,7 +130,8 @@ const Modal: React.FC<ModalProps> = ({
                     {closable && (
                       <button
                         onClick={onClose}
-                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                        disabled={!onClose}
+                        className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
                       >
                         <XMarkIcon className="w-5 h-5" />
                       </button>

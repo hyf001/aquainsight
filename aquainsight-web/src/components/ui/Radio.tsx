@@ -51,42 +51,55 @@ export interface RadioProps {
   label?: React.ReactNode
   /** 是否禁用 */
   disabled?: boolean
+  /** 是否选中 (受控模式) */
+  checked?: boolean
   /** 自定义类名 */
   className?: string
 }
 
-export const Radio: React.FC<RadioProps> = ({ value, label, disabled, className }) => {
+export const Radio: React.FC<RadioProps> = ({ value, label, disabled, checked: checkedProp, className }) => {
   const context = useContext(RadioGroupContext)
 
+  // 如果没有传入 checked，则使用 context 中的值
+  const isChecked = checkedProp ?? (context?.value === value)
+
   return (
-    <HeadlessRadioGroup.Option value={value} disabled={disabled || context?.disabled}>
-      {({ checked, disabled: optionDisabled }) => (
-        <label
+    <label
+      className={cn(
+        'flex items-center gap-2 cursor-pointer',
+        disabled && 'cursor-not-allowed opacity-50',
+        className
+      )}
+    >
+      <div className="relative">
+        <input
+          type="radio"
+          value={value}
+          checked={isChecked}
+          disabled={disabled}
+          onChange={() => {
+            if (!disabled) {
+              context?.onChange?.(value)
+            }
+          }}
+          className="sr-only"
+        />
+        <div
           className={cn(
-            'flex items-center gap-2 cursor-pointer',
-            optionDisabled && 'cursor-not-allowed opacity-50',
-            className
+            'w-5 h-5 rounded-full border-2 transition-colors',
+            isChecked
+              ? 'border-ocean-teal bg-white'
+              : 'border-gray-300 bg-white',
+            !disabled && 'hover:border-ocean-teal'
           )}
         >
-          <div className="relative">
-            <div
-              className={cn(
-                'w-5 h-5 rounded-full border-2 transition-colors',
-                checked
-                  ? 'border-ocean-teal bg-white'
-                  : 'border-gray-300 bg-white',
-                !optionDisabled && 'hover:border-ocean-teal'
-              )}
-            >
-              {checked && (
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-ocean-teal" />
-              )}
-            </div>
-          </div>
-          {label && <span className="text-sm text-gray-700">{label}</span>}
-        </label>
-      )}
-    </HeadlessRadioGroup.Option>
+          {isChecked && (
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full bg-ocean-teal" />
+          )}
+        </div>
+      </div>
+      {label && <span className="text-sm text-gray-700">{label}</span>}
+    </label>
   )
 }
 

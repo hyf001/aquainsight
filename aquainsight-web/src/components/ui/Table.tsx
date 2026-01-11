@@ -3,6 +3,7 @@ import { cn } from '@/utils/cn'
 import Spin from './Spin'
 import Empty from './Empty'
 import Checkbox from './Checkbox'
+import Pagination from './Pagination'
 
 export interface TableColumn<T = any> {
   /** 列标题 */
@@ -41,6 +42,17 @@ export interface TableProps<T = any> {
     selectedRowKeys?: React.Key[]
     onChange?: (selectedRowKeys: React.Key[], selectedRows: T[]) => void
   }
+  /** 分页配置（设为 false 隐藏分页） */
+  pagination?: boolean | {
+    current?: number
+    pageSize?: number
+    total?: number
+    pageSizeOptions?: (string | number)[]
+    showSizeChanger?: boolean
+    showQuickJumper?: boolean
+    showTotal?: (total: number) => React.ReactNode
+    onChange?: (page: number, pageSize: number) => void
+  }
   /** 自定义类名 */
   className?: string
   /** 行点击事件 */
@@ -57,6 +69,7 @@ function Table<T extends Record<string, any> = any>({
   bordered = false,
   size = 'middle',
   rowSelection,
+  pagination,
   className,
   onRow,
 }: TableProps<T>) {
@@ -108,6 +121,10 @@ function Table<T extends Record<string, any> = any>({
     large: 'px-6 py-3',
   }
 
+  // 判断是否显示分页
+  const showPagination = pagination !== false && pagination !== undefined
+  const paginationConfig = typeof pagination === 'object' ? pagination : {}
+
   if (loading) {
     return (
       <div className="flex justify-center items-center py-12">
@@ -117,98 +134,113 @@ function Table<T extends Record<string, any> = any>({
   }
 
   return (
-    <div className={cn('overflow-x-auto', className)}>
-      <table className={cn('w-full', sizeClasses[size])}>
-        <thead className="bg-gray-50 border-b border-gray-200">
-          <tr>
-            {rowSelection && (
-              <th className={cn('border-gray-200', paddingClasses[size], bordered && 'border')}>
-                <Checkbox
-                  checked={allSelected}
-                  indeterminate={someSelected}
-                  onChange={(e) => handleSelectAll(e.target.checked)}
-                />
-              </th>
-            )}
-            {columns.map((column, index) => (
-              <th
-                key={column.key || column.dataIndex || index}
-                className={cn(
-                  'font-semibold text-gray-700 border-gray-200',
-                  paddingClasses[size],
-                  column.align === 'center' && 'text-center',
-                  column.align === 'right' && 'text-right',
-                  bordered && 'border',
-                  column.className
-                )}
-                style={{ width: column.width }}
-              >
-                {column.title}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {dataSource.length === 0 ? (
+    <div className={cn(className)}>
+      <div className="overflow-x-auto">
+        <table className={cn('w-full', sizeClasses[size])}>
+          <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <td colSpan={columns.length + (rowSelection ? 1 : 0)} className="py-8">
-                <Empty />
-              </td>
-            </tr>
-          ) : (
-            dataSource.map((record, rowIndex) => {
-              const key = getRowKey(record, rowIndex)
-              const isSelected = selectedKeys.includes(key)
-              const rowProps = onRow?.(record, rowIndex)
-
-              return (
-                <tr
-                  key={key}
+              {rowSelection && (
+                <th className={cn('border-gray-200', paddingClasses[size], bordered && 'border')}>
+                  <Checkbox
+                    checked={allSelected}
+                    indeterminate={someSelected}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                  />
+                </th>
+              )}
+              {columns.map((column, index) => (
+                <th
+                  key={column.key || column.dataIndex || index}
                   className={cn(
-                    'hover:bg-gray-50 transition-colors',
-                    isSelected && 'bg-blue-50',
-                    rowProps?.onClick && 'cursor-pointer'
+                    'font-semibold text-gray-700 border-gray-200',
+                    paddingClasses[size],
+                    column.align === 'center' && 'text-center',
+                    column.align === 'right' && 'text-right',
+                    bordered && 'border',
+                    column.className
                   )}
-                  onClick={rowProps?.onClick}
+                  style={{ width: column.width }}
                 >
-                  {rowSelection && (
-                    <td
-                      className={cn('border-gray-200', paddingClasses[size], bordered && 'border')}
-                    >
-                      <Checkbox
-                        checked={isSelected}
-                        onChange={(e) => handleSelectRow(record, rowIndex, e.target.checked)}
-                      />
-                    </td>
-                  )}
-                  {columns.map((column, colIndex) => {
-                    const value = column.dataIndex ? record[column.dataIndex] : undefined
-                    const content = column.render
-                      ? column.render(value, record, rowIndex)
-                      : value
+                  {column.title}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {dataSource.length === 0 ? (
+              <tr>
+                <td colSpan={columns.length + (rowSelection ? 1 : 0)} className="py-8">
+                  <Empty />
+                </td>
+              </tr>
+            ) : (
+              dataSource.map((record, rowIndex) => {
+                const key = getRowKey(record, rowIndex)
+                const isSelected = selectedKeys.includes(key)
+                const rowProps = onRow?.(record, rowIndex)
 
-                    return (
+                return (
+                  <tr
+                    key={key}
+                    className={cn(
+                      'hover:bg-gray-50 transition-colors',
+                      isSelected && 'bg-blue-50',
+                      rowProps?.onClick && 'cursor-pointer'
+                    )}
+                    onClick={rowProps?.onClick}
+                  >
+                    {rowSelection && (
                       <td
-                        key={column.key || column.dataIndex || colIndex}
-                        className={cn(
-                          'text-gray-900 border-gray-200',
-                          paddingClasses[size],
-                          column.align === 'center' && 'text-center',
-                          column.align === 'right' && 'text-right',
-                          bordered && 'border',
-                          column.className
-                        )}
+                        className={cn('border-gray-200', paddingClasses[size], bordered && 'border')}
                       >
-                        {content}
+                        <Checkbox
+                          checked={isSelected}
+                          onChange={(e) => handleSelectRow(record, rowIndex, e.target.checked)}
+                        />
                       </td>
-                    )
-                  })}
-                </tr>
-              )
-            })
-          )}
-        </tbody>
-      </table>
+                    )}
+                    {columns.map((column, colIndex) => {
+                      const value = column.dataIndex ? record[column.dataIndex] : undefined
+                      const content = column.render
+                        ? column.render(value, record, rowIndex)
+                        : value
+
+                      return (
+                        <td
+                          key={column.key || column.dataIndex || colIndex}
+                          className={cn(
+                            'text-gray-900 border-gray-200',
+                            paddingClasses[size],
+                            column.align === 'center' && 'text-center',
+                            column.align === 'right' && 'text-right',
+                            bordered && 'border',
+                            column.className
+                          )}
+                        >
+                          {content}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                )
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+      {showPagination && (
+        <div className="mt-4 flex justify-end">
+          <Pagination
+            current={paginationConfig.current}
+            pageSize={paginationConfig.pageSize}
+            total={paginationConfig.total}
+            pageSizeOptions={paginationConfig.pageSizeOptions}
+            showSizeChanger={paginationConfig.showSizeChanger}
+            showQuickJumper={paginationConfig.showQuickJumper}
+            onChange={paginationConfig.onChange}
+          />
+        </div>
+      )}
     </div>
   )
 }

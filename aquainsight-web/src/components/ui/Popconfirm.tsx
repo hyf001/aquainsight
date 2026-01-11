@@ -1,4 +1,4 @@
-import React, { Fragment, useState, useRef, useEffect } from 'react'
+import React, { Fragment, useState } from 'react'
 import { Popover, Transition } from '@headlessui/react'
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 import { cn } from '@/utils/cn'
@@ -40,7 +40,6 @@ const Popconfirm: React.FC<PopconfirmProps> = ({
   placement = 'top',
 }) => {
   const [loading, setLoading] = useState(false)
-  const buttonRef = useRef<HTMLButtonElement>(null)
 
   const handleConfirm = async (close: () => void) => {
     if (onConfirm) {

@@ -1,7 +1,7 @@
 import React from 'react'
-import { Form, Input, Select, Radio, Checkbox, Upload, Space } from 'antd'
-import { UploadOutlined } from '@ant-design/icons'
-import type { FormInstance } from 'antd'
+import { Input, Select, Checkbox } from '@/components/ui'
+import { RadioGroup, Radio } from '@/components/ui/Radio'
+import { CloudArrowUpIcon } from '@heroicons/react/24/outline'
 import type { JobParameter } from '@/services/maintenance'
 
 interface StepParameterFormProps {
@@ -13,10 +13,6 @@ interface StepParameterFormProps {
    * 步骤模板ID（用于生成唯一的字段名）
    */
   stepTemplateId: number
-  /**
-   * 表单实例（可选，用于在表单中渲染）
-   */
-  form?: FormInstance
   /**
    * 是否为预览模式（预览模式下不渲染实际控件，只显示配置）
    */
@@ -33,40 +29,38 @@ interface StepParameterFormProps {
  */
 export const StepParameterFormItem: React.FC<StepParameterFormProps> = ({
   parameter,
-  stepTemplateId,
-  form,
   preview = false,
   showLabel = true,
 }) => {
-  const fieldName = `step_${stepTemplateId}_${parameter.name}`
-
   // 渲染表单控件
   const renderControl = () => {
     if (preview) {
       // 预览模式：显示参数配置信息
       return (
-        <div style={{ padding: '8px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
-          <div><strong>类型:</strong> {getTypeLabel(parameter.type)}</div>
-          {parameter.placeholder && <div><strong>占位符:</strong> {parameter.placeholder}</div>}
-          {parameter.defaultValue && <div><strong>默认值:</strong> {parameter.defaultValue}</div>}
-          {parameter.maxLength && <div><strong>最大长度:</strong> {parameter.maxLength}</div>}
-          {parameter.minLength && <div><strong>最小长度:</strong> {parameter.minLength}</div>}
-          {parameter.maxSelect && <div><strong>最多选择:</strong> {parameter.maxSelect}项</div>}
-          {parameter.minSelect && <div><strong>最少选择:</strong> {parameter.minSelect}项</div>}
-          {parameter.options && parameter.options.length > 0 && (
-            <div>
-              <strong>选项:</strong>
-              <ul style={{ marginTop: 4, marginBottom: 0, paddingLeft: 20 }}>
-                {parameter.options.map((opt, idx) => (
-                  <li key={idx}>
-                    {opt.label} ({opt.value})
-                    {opt.defaultSelected && <span style={{ color: '#1890ff' }}> [默认]</span>}
-                    {opt.disabled && <span style={{ color: '#999' }}> [禁用]</span>}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+        <div className="p-2 bg-gray-50 rounded">
+          <div className="text-sm">
+            <div><strong>类型:</strong> {getTypeLabel(parameter.type)}</div>
+            {parameter.placeholder && <div><strong>占位符:</strong> {parameter.placeholder}</div>}
+            {parameter.defaultValue && <div><strong>默认值:</strong> {parameter.defaultValue}</div>}
+            {parameter.maxLength && <div><strong>最大长度:</strong> {parameter.maxLength}</div>}
+            {parameter.minLength && <div><strong>最小长度:</strong> {parameter.minLength}</div>}
+            {parameter.maxSelect && <div><strong>最多选择:</strong> {parameter.maxSelect}项</div>}
+            {parameter.minSelect && <div><strong>最少选择:</strong> {parameter.minSelect}项</div>}
+            {parameter.options && parameter.options.length > 0 && (
+              <div className="mt-2">
+                <strong>选项:</strong>
+                <ul className="mt-1 pl-5 list-disc">
+                  {parameter.options.map((opt, idx) => (
+                    <li key={idx}>
+                      {opt.label} ({opt.value})
+                      {opt.defaultSelected && <span className="text-ocean-teal"> [默认]</span>}
+                      {opt.disabled && <span className="text-gray-400"> [禁用]</span>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
         </div>
       )
     }
@@ -78,22 +72,23 @@ export const StepParameterFormItem: React.FC<StepParameterFormProps> = ({
           <Input
             placeholder={parameter.placeholder || '请输入'}
             maxLength={parameter.maxLength}
-            showCount={!!parameter.maxLength}
           />
         )
 
       case 'IMAGE':
         return (
-          <Upload
-            listType="picture-card"
-            maxCount={1}
-            beforeUpload={() => false} // 阻止自动上传，需要手动处理
-          >
-            <div>
-              <UploadOutlined />
-              <div style={{ marginTop: 8 }}>上传图片</div>
-            </div>
-          </Upload>
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              className="flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg hover:border-ocean-teal transition-colors cursor-pointer"
+              onClick={() => {
+                // 图片上传逻辑
+              }}
+            >
+              <CloudArrowUpIcon className="w-6 h-6 text-gray-400" />
+              <span className="mt-1 text-xs text-gray-500">上传图片</span>
+            </button>
+          </div>
         )
 
       case 'SELECT':
@@ -104,34 +99,33 @@ export const StepParameterFormItem: React.FC<StepParameterFormProps> = ({
               label: opt.label,
               value: opt.value,
               disabled: opt.disabled,
-            }))}
+            })) || []}
           />
         )
 
       case 'RADIO':
         return (
-          <Radio.Group>
-            <Space direction="vertical">
-              {parameter.options?.map(opt => (
-                <Radio key={opt.value} value={opt.value} disabled={opt.disabled}>
-                  {opt.label}
-                </Radio>
-              ))}
-            </Space>
-          </Radio.Group>
+          <RadioGroup>
+            {parameter.options?.map(opt => (
+              <Radio
+                key={opt.value}
+                value={opt.value}
+                label={opt.label}
+                disabled={opt.disabled}
+              />
+            ))}
+          </RadioGroup>
         )
 
       case 'CHECKBOX':
         return (
-          <Checkbox.Group>
-            <Space direction="vertical">
-              {parameter.options?.map(opt => (
-                <Checkbox key={opt.value} value={opt.value} disabled={opt.disabled}>
-                  {opt.label}
-                </Checkbox>
-              ))}
-            </Space>
-          </Checkbox.Group>
+          <div className="space-y-2">
+            {parameter.options?.map(opt => (
+              <Checkbox key={opt.value} value={opt.value} disabled={opt.disabled}>
+                {opt.label}
+              </Checkbox>
+            ))}
+          </div>
         )
 
       default:
@@ -139,61 +133,19 @@ export const StepParameterFormItem: React.FC<StepParameterFormProps> = ({
     }
   }
 
-  // 构建验证规则
-  const getRules = () => {
-    if (preview) return []
-
-    const rules: any[] = []
-
-    // 必填验证
-    if (parameter.required) {
-      rules.push({
-        required: true,
-        message: `请${parameter.type === 'TEXT' ? '输入' : '选择'}${parameter.label || parameter.name}`,
-      })
-    }
-
-    // 最小长度验证
-    if (parameter.minLength) {
-      rules.push({
-        min: parameter.minLength,
-        message: `最少输入${parameter.minLength}个字符`,
-      })
-    }
-
-    // 复选框选择数量验证
-    if (parameter.type === 'CHECKBOX' && (parameter.minSelect || parameter.maxSelect)) {
-      rules.push({
-        validator: (_: any, value: any) => {
-          if (value && Array.isArray(value)) {
-            if (parameter.minSelect && value.length < parameter.minSelect) {
-              return Promise.reject(new Error(`至少选择${parameter.minSelect}项`))
-            }
-            if (parameter.maxSelect && value.length > parameter.maxSelect) {
-              return Promise.reject(new Error(`最多选择${parameter.maxSelect}项`))
-            }
-          }
-          return Promise.resolve()
-        },
-      })
-    }
-
-    return rules
-  }
-
   if (preview) {
     // 预览模式：不使用Form.Item包裹
     return (
-      <div style={{ marginBottom: 16 }}>
+      <div className="mb-4">
         {showLabel && (
-          <div style={{ marginBottom: 8, fontWeight: 500 }}>
+          <div className="mb-2 font-medium">
             {parameter.label || parameter.name}
-            {parameter.required && <span style={{ color: 'red' }}> *</span>}
+            {parameter.required && <span className="text-red-500"> *</span>}
           </div>
         )}
         {renderControl()}
         {parameter.hint && (
-          <div style={{ marginTop: 4, fontSize: '12px', color: '#999' }}>
+          <div className="mt-1 text-xs text-gray-500">
             {parameter.hint}
           </div>
         )}
@@ -201,17 +153,28 @@ export const StepParameterFormItem: React.FC<StepParameterFormProps> = ({
     )
   }
 
-  // 正常模式：使用Form.Item
+  // 正常模式
   return (
-    <Form.Item
-      key={fieldName}
-      label={showLabel ? (parameter.label || parameter.name) : undefined}
-      name={fieldName}
-      rules={getRules()}
-      extra={parameter.hint}
-    >
-      {renderControl()}
-    </Form.Item>
+    <div className="mb-4">
+      {showLabel ? (
+        <>
+          <label className="block mb-1 text-sm font-medium text-gray-700">
+            {parameter.label || parameter.name}
+            {parameter.required && <span className="text-red-500 ml-1">*</span>}
+          </label>
+          <div className="relative">
+            {renderControl()}
+          </div>
+          {parameter.hint && (
+            <div className="mt-1 text-xs text-gray-500">
+              {parameter.hint}
+            </div>
+          )}
+        </>
+      ) : (
+        renderControl()
+      )}
+    </div>
   )
 }
 

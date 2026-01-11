@@ -1,6 +1,6 @@
 import React, { createContext, useContext } from 'react'
 import { useForm } from 'react-hook-form'
-import type { UseFormReturn, FieldValues, SubmitHandler, UseFormProps } from 'react-hook-form'
+import type { UseFormReturn, FieldValues, SubmitHandler } from 'react-hook-form'
 import { cn } from '@/utils/cn'
 
 type FormContextValue<TFieldValues extends FieldValues = FieldValues> = UseFormReturn<TFieldValues>
@@ -76,10 +76,10 @@ function FormInner<TFieldValues extends FieldValues = FieldValues>(
 }
 
 // 使用泛型 forwardRef
-const Form = React.forwardRef(FormInner) as <TFieldValues extends FieldValues = FieldValues>(
+const FormComponent = React.forwardRef(FormInner) as <TFieldValues extends FieldValues = FieldValues>(
   props: FormProps<TFieldValues> & { ref?: React.Ref<HTMLFormElement> }
 ) => React.ReactElement
 
-Form.displayName = 'Form'
+FormComponent.displayName = 'Form'
 
-export default Form
+export default FormComponent

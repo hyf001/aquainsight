@@ -154,7 +154,6 @@ export const RangePicker = forwardRef<HTMLDivElement, RangePickerProps>(
       className,
       format: dateFormat = 'yyyy-MM-dd',
       allowClear = true,
-      showTime = false, // Accept showTime prop (time picker not implemented yet)
     },
     ref
   ) => {
