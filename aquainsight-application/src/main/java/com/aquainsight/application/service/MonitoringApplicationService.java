@@ -70,8 +70,8 @@ public class MonitoringApplicationService {
         return siteDomainService.deleteSite(siteId);
     }
 
-    public IPage<Site> getSitePage(Integer pageNum, Integer pageSize, String siteType, Integer enterpriseId) {
-        return siteDomainService.getSitePage(pageNum, pageSize, siteType, enterpriseId);
+    public IPage<Site> getSitePage(Integer pageNum, Integer pageSize, String siteType, Integer enterpriseId, String siteName) {
+        return siteDomainService.getSitePage(pageNum, pageSize, siteType, enterpriseId, siteName);
     }
 
     /**

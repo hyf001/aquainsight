@@ -1,65 +1,41 @@
-import React, { useState } from 'react'
+import { forwardRef } from 'react'
 import { cn } from '@/utils/cn'
-import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
 
-export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'prefix'> {
-  error?: boolean
-  prefix?: React.ReactNode
-  suffix?: React.ReactNode
+interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+  label?: string
+  error?: string
+  icon?: React.ReactNode
 }
 
-const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, error, prefix, suffix, disabled, ...props }, ref) => {
-    const hasPrefix = !!prefix
-    const hasSuffix = !!suffix
-
-    const inputElement = (
-      <input
-        ref={ref}
-        className={cn(
-          'w-full px-4 py-2 text-base text-gray-900 bg-white border rounded-lg transition-base',
-          'placeholder:text-gray-400',
-          'focus:outline-none focus:ring-2 focus:ring-ocean-teal focus:border-transparent',
-          'disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed',
-          error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300',
-          (hasPrefix || hasSuffix) && 'px-3',
-          className
-        )}
-        disabled={disabled}
-        {...props}
-      />
-    )
-
-    if (!hasPrefix && !hasSuffix) {
-      return inputElement
-    }
-
+export const Input = forwardRef<HTMLInputElement, InputProps>(
+  ({ className, label, error, icon, ...props }, ref) => {
     return (
-      <div className="relative flex items-center">
-        {prefix && (
-          <div className="absolute left-3 flex items-center pointer-events-none text-gray-400">
-            {prefix}
-          </div>
+      <div className="w-full">
+        {label && (
+          <label className="block text-sm text-clean-600 mb-2">{label}</label>
         )}
-        <input
-          ref={ref}
-          className={cn(
-            'w-full px-4 py-2 text-base text-gray-900 bg-white border rounded-lg transition-base',
-            'placeholder:text-gray-400',
-            'focus:outline-none focus:ring-2 focus:ring-ocean-teal focus:border-transparent',
-            'disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed',
-            error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300',
-            hasPrefix && 'pl-10',
-            hasSuffix && 'pr-10',
-            className
+        <div className="relative">
+          {icon && (
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-clean-400">
+              {icon}
+            </div>
           )}
-          disabled={disabled}
-          {...props}
-        />
-        {suffix && (
-          <div className="absolute right-3 flex items-center pointer-events-none text-gray-400">
-            {suffix}
-          </div>
+          <input
+            ref={ref}
+            className={cn(
+              'w-full px-4 py-3 bg-white border rounded-xl',
+              'text-clean-800 placeholder-clean-400 border-clean-300',
+              'focus:outline-none focus:border-nature-400 focus:ring-2 focus:ring-nature-100',
+              'transition-all duration-200',
+              icon && 'pl-10',
+              error && 'border-red-400 focus:border-red-400 focus:ring-red-100',
+              className
+            )}
+            {...props}
+          />
+        </div>
+        {error && (
+          <p className="mt-1 text-sm text-red-500">{error}</p>
         )}
       </div>
     )
@@ -67,72 +43,3 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
 )
 
 Input.displayName = 'Input'
-
-export interface TextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
-  error?: boolean
-}
-
-export const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
-  ({ className, error, disabled, ...props }, ref) => {
-    return (
-      <textarea
-        ref={ref}
-        className={cn(
-          'w-full px-4 py-2 text-base text-gray-900 bg-white border rounded-lg transition-base resize-none',
-          'placeholder:text-gray-400',
-          'focus:outline-none focus:ring-2 focus:ring-ocean-teal focus:border-transparent',
-          'disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed',
-          error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300',
-          className
-        )}
-        disabled={disabled}
-        {...props}
-      />
-    )
-  }
-)
-
-TextArea.displayName = 'TextArea'
-
-export interface PasswordProps extends Omit<InputProps, 'type'> {
-  visibilityToggle?: boolean
-}
-
-export const Password = React.forwardRef<HTMLInputElement, PasswordProps>(
-  ({ visibilityToggle = true, prefix, ...props }, ref) => {
-    const [visible, setVisible] = useState(false)
-
-    const toggleVisibility = () => {
-      setVisible(!visible)
-    }
-
-    const suffix = visibilityToggle ? (
-      <button
-        type="button"
-        onClick={toggleVisibility}
-        className="cursor-pointer hover:text-gray-600 transition-colors"
-        tabIndex={-1}
-      >
-        {visible ? (
-          <EyeSlashIcon className="w-5 h-5" />
-        ) : (
-          <EyeIcon className="w-5 h-5" />
-        )}
-      </button>
-    ) : undefined
-
-    return (
-      <Input
-        ref={ref}
-        type={visible ? 'text' : 'password'}
-        prefix={prefix}
-        suffix={suffix}
-        {...props}
-      />
-    )
-  }
-)
-
-Password.displayName = 'Password'
-
-export default Input

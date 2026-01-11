@@ -130,7 +130,7 @@ public interface SiteDao extends BaseMapper<SitePO> {
     List<SitePO> selectByEnterpriseIdWithEnterprise(Integer enterpriseId);
 
     /**
-     * 分页查询站点（包含企业信息）
+     * 分页查询站点（包含企业信息，支持站点名称模糊查询）
      */
     @SelectProvider(type = SiteSqlProvider.class, method = "selectPageWithEnterprise")
     @Results({
@@ -150,7 +150,7 @@ public interface SiteDao extends BaseMapper<SitePO> {
             @Result(property = "enterprise", column = "enterprise_id",
                     one = @One(select = "com.aquainsight.infrastructure.db.dao.EnterpriseDao.selectById"))
     })
-    IPage<SitePO> selectPageWithEnterprise(Page<SitePO> page, @Param("siteType") String siteType, @Param("enterpriseId") Integer enterpriseId);
+    IPage<SitePO> selectPageWithEnterprise(Page<SitePO> page, @Param("siteType") String siteType, @Param("enterpriseId") Integer enterpriseId, @Param("siteName") String siteName);
 
     /**
      * 根据企业ID和站点名称查询站点（包含企业信息）
@@ -179,13 +179,16 @@ public interface SiteDao extends BaseMapper<SitePO> {
      * SQL Provider for dynamic queries
      */
     class SiteSqlProvider {
-        public String selectPageWithEnterprise(@Param("siteType") String siteType, @Param("enterpriseId") Integer enterpriseId) {
+        public String selectPageWithEnterprise(@Param("siteType") String siteType, @Param("enterpriseId") Integer enterpriseId, @Param("siteName") String siteName) {
             StringBuilder sql = new StringBuilder("SELECT * FROM site WHERE deleted = 0");
             if (siteType != null && !siteType.trim().isEmpty()) {
                 sql.append(" AND site_type = #{siteType}");
             }
             if (enterpriseId != null) {
                 sql.append(" AND enterprise_id = #{enterpriseId}");
+            }
+            if (siteName != null && !siteName.trim().isEmpty()) {
+                sql.append(" AND site_name LIKE CONCAT('%', #{siteName}, '%')");
             }
             return sql.toString();
         }

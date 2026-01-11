@@ -86,10 +86,10 @@ public class SiteRepositoryImpl implements SiteRepository {
     }
 
     @Override
-    public IPage<Site> findPage(Integer pageNum, Integer pageSize, String siteType, Integer enterpriseId) {
+    public IPage<Site> findPage(Integer pageNum, Integer pageSize, String siteType, Integer enterpriseId, String siteName) {
         Page<SitePO> page = new Page<>(pageNum, pageSize);
-        // 使用带企业信息的分页查询
-        IPage<SitePO> poPage = siteDao.selectPageWithEnterprise(page, siteType, enterpriseId);
+        // 使用带企业信息的分页查询，支持站点名称模糊查询
+        IPage<SitePO> poPage = siteDao.selectPageWithEnterprise(page, siteType, enterpriseId, siteName);
         Page<Site> sitePage = new Page<>(poPage.getCurrent(), poPage.getSize(), poPage.getTotal());
         sitePage.setRecords(SiteConverter.INSTANCE.toEntityList(poPage.getRecords()));
         return sitePage;

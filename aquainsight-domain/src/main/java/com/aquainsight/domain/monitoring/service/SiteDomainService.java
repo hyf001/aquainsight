@@ -143,7 +143,7 @@ public class SiteDomainService {
     /**
      * 分页查询站点
      */
-    public IPage<Site> getSitePage(Integer pageNum, Integer pageSize, String siteType, Integer enterpriseId) {
-        return siteRepository.findPage(pageNum, pageSize, siteType, enterpriseId);
+    public IPage<Site> getSitePage(Integer pageNum, Integer pageSize, String siteType, Integer enterpriseId, String siteName) {
+        return siteRepository.findPage(pageNum, pageSize, siteType, enterpriseId, siteName);
     }
 }

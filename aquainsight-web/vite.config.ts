@@ -2,10 +2,9 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
-// https://vite.dev/config/
 export default defineConfig({
-  base: '/aquainsight/',
   plugins: [react()],
+  base: '/aquainsight/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -13,18 +12,6 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-      },
-    },
-  },
-  css: {
-    preprocessorOptions: {
-      less: {
-        javascriptEnabled: true,
-      },
-    },
+    open: true,
   },
 })

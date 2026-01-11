@@ -1,51 +1,38 @@
-import React from 'react'
+import { forwardRef } from 'react'
 import { cn } from '@/utils/cn'
+import { Loader2 } from 'lucide-react'
 
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'accent' | 'outline' | 'ghost' | 'danger'
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger'
   size?: 'sm' | 'md' | 'lg'
   loading?: boolean
-  icon?: React.ReactNode
 }
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = 'primary', size = 'md', loading, disabled, icon, children, ...props }, ref) => {
-    const baseStyles = 'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-base focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed'
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant = 'primary', size = 'md', loading, children, disabled, ...props }, ref) => {
+    const baseStyles = 'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-200 active:scale-[0.98]'
 
-    const variantStyles = {
-      primary: 'bg-ocean-navy text-ocean-cream hover:bg-opacity-90 focus:ring-ocean-navy',
-      secondary: 'bg-ocean-teal text-white hover:bg-opacity-90 focus:ring-ocean-teal',
-      accent: 'bg-ocean-seafoam text-ocean-navy hover:bg-opacity-90 focus:ring-ocean-seafoam',
-      outline: 'border-2 border-ocean-navy text-ocean-navy hover:bg-ocean-navy hover:text-ocean-cream focus:ring-ocean-navy',
-      ghost: 'text-ocean-navy hover:bg-ocean-cream focus:ring-ocean-navy',
-      danger: 'bg-red-500 text-white hover:bg-red-600 focus:ring-red-500',
+    const variants = {
+      primary: 'bg-gradient-to-r from-nature-500 to-nature-600 text-white hover:from-nature-400 hover:to-nature-500 shadow-leaf hover:shadow-lg hover:shadow-nature-200',
+      secondary: 'bg-white text-clean-800 border border-clean-200 hover:bg-clean-50 hover:border-clean-300',
+      ghost: 'bg-transparent text-clean-600 hover:text-nature-600 hover:bg-nature-50',
+      danger: 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100',
     }
 
-    const sizeStyles = {
+    const sizes = {
       sm: 'px-3 py-1.5 text-sm',
-      md: 'px-4 py-2 text-base',
-      lg: 'px-6 py-3 text-lg',
+      md: 'px-5 py-2.5 text-sm',
+      lg: 'px-6 py-3 text-base',
     }
 
     return (
       <button
         ref={ref}
-        className={cn(
-          baseStyles,
-          variantStyles[variant],
-          sizeStyles[size],
-          className
-        )}
+        className={cn(baseStyles, variants[variant], sizes[size], className)}
         disabled={disabled || loading}
         {...props}
       >
-        {loading && (
-          <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-        )}
-        {icon && !loading && icon}
+        {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
         {children}
       </button>
     )
@@ -53,5 +40,3 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 )
 
 Button.displayName = 'Button'
-
-export default Button

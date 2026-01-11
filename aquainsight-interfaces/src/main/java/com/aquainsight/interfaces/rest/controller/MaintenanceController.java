@@ -601,7 +601,7 @@ public class MaintenanceController {
             @RequestParam(required = false) Integer enterpriseId) {
         try {
             // 获取站点分页列表
-            IPage<Site> page = siteDomainService.getSitePage(pageNum, pageSize, siteType, enterpriseId);
+            IPage<Site> page = siteDomainService.getSitePage(pageNum, pageSize, siteType, enterpriseId,null);
 
             // 转换为带任务调度的VO列表
             List<SiteWithTaskSchedulerVO> voList = page.getRecords().stream()

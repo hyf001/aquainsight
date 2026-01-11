@@ -1,18 +1,20 @@
-import axios, { type AxiosRequestConfig } from 'axios'
-import { toast } from '@/utils/toast'
+import axios from 'axios'
 
-const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+
+const request = axios.create({
+  baseURL: `${API_URL}/aquainsight/api`,
   timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 })
 
-// 请求拦截器
-axiosInstance.interceptors.request.use(
+// Request interceptor
+request.interceptors.request.use(
   (config) => {
-    // 从localStorage获取token
     const token = localStorage.getItem('token')
     if (token) {
-      // 使用X-TOKEN作为请求头
       config.headers['X-TOKEN'] = token
     }
     return config
@@ -22,59 +24,23 @@ axiosInstance.interceptors.request.use(
   }
 )
 
-// 响应拦截器
-axiosInstance.interceptors.response.use(
+// Response interceptor
+request.interceptors.response.use(
   (response) => {
-    const { code, data, message: msg } = response.data
-    if (code === '0000') {
-      return data
-    } else if (code === '401') {
-      // token过期或无效，跳转到登录页
-      toast.error(msg || '登录已过期，请重新登录')
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-      window.location.href = '/aquainsight/login'
-      return Promise.reject(new Error(msg))
-    } else {
-      toast.error(msg || '请求失败')
-      return Promise.reject(new Error(msg))
+    const { data } = response
+    if (data.code === 200 || data.code === '0000' || data.code === undefined) {
+      return data.data ?? data
     }
+    return Promise.reject(new Error(data.message || '请求失败'))
   },
   (error) => {
-    // HTTP状态码401，未授权
     if (error.response?.status === 401) {
-      const msg = error.response?.data?.message || '登录已过期，请重新登录'
-      toast.error(msg)
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       window.location.href = '/aquainsight/login'
-    } else {
-      toast.error(error.message || '网络错误')
     }
     return Promise.reject(error)
   }
 )
-
-// 包装 request 函数，返回 data 的类型而不是 AxiosResponse
-const request = <T = unknown>(config: AxiosRequestConfig): Promise<T> => {
-  return axiosInstance.request(config)
-}
-
-// 为兼容性添加快捷方法
-request.get = <T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> => {
-  return request<T>({ ...config, method: 'GET', url })
-}
-
-request.post = <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> => {
-  return request<T>({ ...config, method: 'POST', url, data })
-}
-
-request.put = <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T> => {
-  return request<T>({ ...config, method: 'PUT', url, data })
-}
-
-request.delete = <T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> => {
-  return request<T>({ ...config, method: 'DELETE', url })
-}
 
 export default request

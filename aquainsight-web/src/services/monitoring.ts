@@ -1,36 +1,35 @@
 import request from './request'
 
-// ==================== 站点管理 ====================
-
-export type Site = {
+// 类型定义
+export interface SiteVO {
   id: number
   siteCode: string
   siteName: string
-  siteType: string | null
-  siteTag: string | null
-  longitude: string | null
-  latitude: string | null
-  address: string | null
-  enterpriseId: number | null
-  enterpriseName: string | null
-  isAutoUpload: number
+  siteType: string
+  siteTag: string
+  longitude: string
+  latitude: string
+  address: string
+  enterpriseId: number
+  enterpriseName: string
+  isAutoUpload: boolean
   createTime: string
   updateTime: string
 }
 
-export type CreateSiteRequest = {
+export interface CreateSiteRequest {
   siteCode: string
   siteName: string
-  siteType?: string
+  siteType: string
   siteTag?: string
   longitude?: string
   latitude?: string
   address?: string
   enterpriseId?: number
-  isAutoUpload?: number
+  isAutoUpload?: boolean
 }
 
-export type UpdateSiteRequest = {
+export interface UpdateSiteRequest {
   siteName?: string
   siteType?: string
   siteTag?: string
@@ -38,142 +37,76 @@ export type UpdateSiteRequest = {
   latitude?: string
   address?: string
   enterpriseId?: number
-  isAutoUpload?: number
+  isAutoUpload?: boolean
 }
 
-export type PageResult<T> = {
-  list: T[]
-  total: number
-  pageNum: number
-  pageSize: number
-  pages: number
-}
-
-// 获取站点列表（分页）
-export const getSiteList = (pageNum: number = 1, pageSize: number = 10, siteType?: string, enterpriseId?: number) => {
-  return request.get<PageResult<Site>>('/monitoring/sites', {
-    params: { pageNum, pageSize, siteType, enterpriseId }
-  })
-}
-
-// 创建站点
-export const createSite = (data: CreateSiteRequest) => {
-  return request.post<Site>('/monitoring/sites', data)
-}
-
-// 更新站点
-export const updateSite = (id: number, data: UpdateSiteRequest) => {
-  return request.put<Site>(`/monitoring/sites/${id}`, data)
-}
-
-// 删除站点
-export const deleteSite = (id: number) => {
-  return request.delete(`/monitoring/sites/${id}`)
-}
-
-// 获取站点详情
-export const getSiteDetail = (id: number) => {
-  return request.get<Site>(`/monitoring/sites/${id}`)
-}
-
-// ==================== 设备型号管理 ====================
-
-export type DeviceModel = {
+export interface DeviceModelVO {
   id: number
   modelCode: string
   modelName: string
-  deviceType: string | null
-  manufacturer: string | null
-  description: string | null
-  specifications?: string | null  // 规格参数
-  factorId?: number  // 关联的因子ID (多对一关系)
-  factor?: Factor  // 关联的因子对象（用于显示）
+  deviceType: string
+  manufacturer: string
+  description: string
+  specifications?: string
+  factorId: number
+  factor?: FactorVO
   createTime: string
   updateTime: string
 }
 
-export type CreateDeviceModelRequest = {
+export interface CreateDeviceModelRequest {
   modelCode: string
   modelName: string
-  deviceType?: string
-  manufacturer?: string
+  deviceType: string
+  manufacturer: string
   description?: string
-  specifications?: string  // 规格参数
-  factorId?: number  // 关联因子ID (多对一关系)
+  specifications?: string
+  factorId?: number
 }
 
-export type UpdateDeviceModelRequest = {
+export interface UpdateDeviceModelRequest {
   modelName?: string
   deviceType?: string
   manufacturer?: string
   description?: string
-  specifications?: string  // 规格参数
-  factorId?: number  // 关联因子ID (多对一关系)
+  specifications?: string
+  factorId?: number
 }
 
-// 获取设备型号列表（分页）
-export const getDeviceModelList = (pageNum: number = 1, pageSize: number = 10, deviceType?: string) => {
-  return request.get<PageResult<DeviceModel>>('/monitoring/device-models', {
-    params: { pageNum, pageSize, deviceType }
-  })
-}
-
-// 获取所有设备型号（不分页）
-export const getAllDeviceModels = () => {
-  return request.get<DeviceModel[]>('/monitoring/device-models/all')
-}
-
-// 创建设备型号
-export const createDeviceModel = (data: CreateDeviceModelRequest) => {
-  return request.post<DeviceModel>('/monitoring/device-models', data)
-}
-
-// 更新设备型号
-export const updateDeviceModel = (id: number, data: UpdateDeviceModelRequest) => {
-  return request.put<DeviceModel>(`/monitoring/device-models/${id}`, data)
-}
-
-// 删除设备型号
-export const deleteDeviceModel = (id: number) => {
-  return request.delete(`/monitoring/device-models/${id}`)
-}
-
-// ==================== 设备实例管理 ====================
-
-export type Device = {
+export interface DeviceVO {
   id: number
   deviceCode: string
   deviceName: string
   siteId: number
-  siteName: string | null
+  siteName: string
   deviceModelId: number
-  modelName: string | null
-  serialNumber: string | null
-  installLocation: string | null
+  modelName: string
+  serialNumber?: string
+  installLocation?: string
   status: number
-  installDate: string | null
-  maintenanceDate: string | null
+  installDate?: string
+  maintenanceDate?: string
   createTime: string
   updateTime: string
-  manufacturer: string | null  // 制造商
-  range: string | null  // 量程
-  factorId: number | null  // 关联因子ID
-  factorName: string | null  // 关联因子名称
+  manufacturer?: string
+  range?: string
+  factorId?: number
+  factorName?: string
 }
 
-export type CreateDeviceRequest = {
+export interface CreateDeviceRequest {
   deviceCode: string
   deviceName: string
   siteId: number
   deviceModelId: number
   serialNumber?: string
   installLocation?: string
-  status?: number
+  status?: string
   installDate?: string
   maintenanceDate?: string
 }
 
-export type UpdateDeviceRequest = {
+export interface UpdateDeviceRequest {
   deviceName?: string
   serialNumber?: string
   installLocation?: string
@@ -181,126 +114,227 @@ export type UpdateDeviceRequest = {
   maintenanceDate?: string
 }
 
-// 获取设备列表（分页）
-export const getDeviceList = (pageNum: number = 1, pageSize: number = 10, siteId?: number, deviceModelId?: number) => {
-  return request.get<PageResult<Device>>('/monitoring/devices', {
-    params: { pageNum, pageSize, siteId, deviceModelId }
-  })
-}
-
-// 创建设备
-export const createDevice = (data: CreateDeviceRequest) => {
-  return request.post<Device>('/monitoring/devices', data)
-}
-
-// 更新设备
-export const updateDevice = (id: number, data: UpdateDeviceRequest) => {
-  return request.put<Device>(`/monitoring/devices/${id}`, data)
-}
-
-// 删除设备
-export const deleteDevice = (id: number) => {
-  return request.delete(`/monitoring/devices/${id}`)
-}
-
-// 设置设备在线
-export const setDeviceOnline = (id: number) => {
-  return request.put<Device>(`/monitoring/devices/${id}/status/online`)
-}
-
-// 设置设备离线
-export const setDeviceOffline = (id: number) => {
-  return request.put<Device>(`/monitoring/devices/${id}/status/offline`)
-}
-
-// 设置设备故障
-export const setDeviceFault = (id: number) => {
-  return request.put<Device>(`/monitoring/devices/${id}/status/fault`)
-}
-
-// ==================== 监测因子管理 ====================
-
-export type Factor = {
+export interface FactorVO {
   id: number
-  factorCode: string
-  nationalCode: string | null
-  factorName: string
-  shortName: string | null
-  deviceModelId: number
-  modelName: string | null
-  category: string | null
-  unit: string | null
-  upperLimit: string | null
-  lowerLimit: string | null
-  precisionDigits: number
-  createTime: string
-  updateTime: string
-}
-
-export type CreateFactorRequest = {
   factorCode: string
   nationalCode?: string
   factorName: string
   shortName?: string
   deviceModelId: number
+  modelName?: string
   category?: string
   unit?: string
-  upperLimit?: string
-  lowerLimit?: string
+  upperLimit?: number
+  lowerLimit?: number
+  precisionDigits?: number
+  createTime: string
+  updateTime: string
+}
+
+export interface CreateFactorRequest {
+  factorCode: string
+  nationalCode?: string
+  factorName: string
+  shortName?: string
+  deviceModelId?: number
+  category?: string
+  unit?: string
+  upperLimit?: number
+  lowerLimit?: number
   precisionDigits?: number
 }
 
-export type UpdateFactorRequest = {
+export interface UpdateFactorRequest {
   factorName?: string
   shortName?: string
   category?: string
   unit?: string
-  upperLimit?: string
-  lowerLimit?: string
+  upperLimit?: number
+  lowerLimit?: number
   precisionDigits?: number
 }
 
-// 获取监测因子列表（分页）
-export const getFactorList = (pageNum: number = 1, pageSize: number = 10, category?: string, deviceModelId?: number) => {
-  return request.get<PageResult<Factor>>('/monitoring/factors', {
-    params: { pageNum, pageSize, category, deviceModelId }
-  })
-}
-
-// 获取所有监测因子（不分页）
-export const getAllFactors = () => {
-  return request.get<Factor[]>('/monitoring/factors/all')
-}
-
-// 创建监测因子
-export const createFactor = (data: CreateFactorRequest) => {
-  return request.post<Factor>('/monitoring/factors', data)
-}
-
-// 更新监测因子
-export const updateFactor = (id: number, data: UpdateFactorRequest) => {
-  return request.put<Factor>(`/monitoring/factors/${id}`, data)
-}
-
-// 删除监测因子
-export const deleteFactor = (id: number) => {
-  return request.delete(`/monitoring/factors/${id}`)
-}
-
-// ==================== 企业-站点树 ====================
-
-export type EnterpriseSiteTree = {
+export interface EnterpriseSiteTreeVO {
   enterpriseId: number
   enterpriseName: string
   enterpriseCode: string
-  enterpriseTag: string | null
+  enterpriseTag?: string
+  sites: SiteVO[]
   siteCount: number
-  sites: Site[]
 }
 
-// 获取企业-站点树（支持按企业名称和站点名称过滤）
-export const getEnterpriseSiteTree = (enterpriseName?: string, siteName?: string) => {
-  return request.get<EnterpriseSiteTree[]>('/monitoring/sites/tree', {
-    params: { enterpriseName, siteName }
-  })
+// 分页结果
+export interface PageResult<T> {
+  list: T[]
+  total: number
+  pageNum: number
+  pageSize: number
+}
+
+// ==================== Site API ====================
+
+export const siteApi = {
+  // 获取站点分页列表
+  getSites: (params: {
+    pageNum?: number
+    pageSize?: number
+    siteType?: string
+    enterpriseId?: number
+    name?: string
+  }) => {
+    return request.get<PageResult<SiteVO>>('/monitoring/sites', { params })
+  },
+
+  // 获取站点详情
+  getSiteById: (id: number) => {
+    return request.get<SiteVO>(`/monitoring/sites/${id}`)
+  },
+
+  // 创建站点
+  createSite: (data: CreateSiteRequest) => {
+    return request.post<SiteVO>('/monitoring/sites', data)
+  },
+
+  // 更新站点
+  updateSite: (id: number, data: UpdateSiteRequest) => {
+    return request.put<SiteVO>(`/monitoring/sites/${id}`, data)
+  },
+
+  // 删除站点
+  deleteSite: (id: number) => {
+    return request.delete(`/monitoring/sites/${id}`)
+  },
+
+  // 获取企业-站点树形结构
+  getEnterpriseSiteTree: (params?: {
+    enterpriseName?: string
+    siteName?: string
+  }) => {
+    return request.get<EnterpriseSiteTreeVO[]>('/monitoring/sites/tree', { params })
+  },
+}
+
+// ==================== DeviceModel API ====================
+
+export const deviceModelApi = {
+  // 获取设备型号分页列表
+  getDeviceModels: (params: {
+    pageNum?: number
+    pageSize?: number
+    deviceType?: string
+  }) => {
+    return request.get<PageResult<DeviceModelVO>>('/monitoring/device-models', { params })
+  },
+
+  // 获取所有设备型号（不分页）
+  getAllDeviceModels: () => {
+    return request.get<DeviceModelVO[]>('/monitoring/device-models/all')
+  },
+
+  // 获取设备型号详情
+  getDeviceModelById: (id: number) => {
+    return request.get<DeviceModelVO>(`/monitoring/device-models/${id}`)
+  },
+
+  // 创建设备型号
+  createDeviceModel: (data: CreateDeviceModelRequest) => {
+    return request.post<DeviceModelVO>('/monitoring/device-models', data)
+  },
+
+  // 更新设备型号
+  updateDeviceModel: (id: number, data: UpdateDeviceModelRequest) => {
+    return request.put<DeviceModelVO>(`/monitoring/device-models/${id}`, data)
+  },
+
+  // 删除设备型号
+  deleteDeviceModel: (id: number) => {
+    return request.delete(`/monitoring/device-models/${id}`)
+  },
+}
+
+// ==================== Device API ====================
+
+export const deviceApi = {
+  // 获取设备分页列表
+  getDevices: (params: {
+    pageNum?: number
+    pageSize?: number
+    siteId?: number
+    deviceModelId?: number
+  }) => {
+    return request.get<PageResult<DeviceVO>>('/monitoring/devices', { params })
+  },
+
+  // 获取设备详情
+  getDeviceById: (id: number) => {
+    return request.get<DeviceVO>(`/monitoring/devices/${id}`)
+  },
+
+  // 创建设备
+  createDevice: (data: CreateDeviceRequest) => {
+    return request.post<DeviceVO>('/monitoring/devices', data)
+  },
+
+  // 更新设备
+  updateDevice: (id: number, data: UpdateDeviceRequest) => {
+    return request.put<DeviceVO>(`/monitoring/devices/${id}`, data)
+  },
+
+  // 设置设备在线
+  setDeviceOnline: (id: number) => {
+    return request.put<DeviceVO>(`/monitoring/devices/${id}/status/online`)
+  },
+
+  // 设置设备离线
+  setDeviceOffline: (id: number) => {
+    return request.put<DeviceVO>(`/monitoring/devices/${id}/status/offline`)
+  },
+
+  // 设置设备故障
+  setDeviceFault: (id: number) => {
+    return request.put<DeviceVO>(`/monitoring/devices/${id}/status/fault`)
+  },
+
+  // 删除设备
+  deleteDevice: (id: number) => {
+    return request.delete(`/monitoring/devices/${id}`)
+  },
+}
+
+// ==================== Factor API ====================
+
+export const factorApi = {
+  // 获取因子分页列表
+  getFactors: (params: {
+    pageNum?: number
+    pageSize?: number
+    category?: string
+  }) => {
+    return request.get<PageResult<FactorVO>>('/monitoring/factors', { params })
+  },
+
+  // 获取所有因子（不分页）
+  getAllFactors: () => {
+    return request.get<FactorVO[]>('/monitoring/factors/all')
+  },
+
+  // 获取因子详情
+  getFactorById: (id: number) => {
+    return request.get<FactorVO>(`/monitoring/factors/${id}`)
+  },
+
+  // 创建因子
+  createFactor: (data: CreateFactorRequest) => {
+    return request.post<FactorVO>('/monitoring/factors', data)
+  },
+
+  // 更新因子
+  updateFactor: (id: number, data: UpdateFactorRequest) => {
+    return request.put<FactorVO>(`/monitoring/factors/${id}`, data)
+  },
+
+  // 删除因子
+  deleteFactor: (id: number) => {
+    return request.delete(`/monitoring/factors/${id}`)
+  },
 }

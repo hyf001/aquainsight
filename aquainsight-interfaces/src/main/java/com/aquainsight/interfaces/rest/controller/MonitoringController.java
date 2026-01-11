@@ -144,6 +144,7 @@ public class MonitoringController {
      * @param pageSize      每页大小
      * @param siteType      站点类型
      * @param enterpriseId  企业ID
+     * @param name          站点名称（模糊查询）
      * @return 分页站点列表
      */
     @GetMapping("/sites")
@@ -151,9 +152,10 @@ public class MonitoringController {
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize,
             @RequestParam(required = false) String siteType,
-            @RequestParam(required = false) Integer enterpriseId) {
+            @RequestParam(required = false) Integer enterpriseId,
+            @RequestParam(required = false) String name) {
         try {
-            IPage<Site> page = monitoringApplicationService.getSitePage(pageNum, pageSize, siteType, enterpriseId);
+            IPage<Site> page = monitoringApplicationService.getSitePage(pageNum, pageSize, siteType, enterpriseId, name);
 
             List<SiteVO> voList = page.getRecords().stream()
                     .map(this::convertToSiteVO)
