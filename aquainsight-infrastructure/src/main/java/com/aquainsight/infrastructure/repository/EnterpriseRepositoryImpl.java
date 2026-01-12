@@ -33,21 +33,23 @@ public class EnterpriseRepositoryImpl implements EnterpriseRepository {
 
     @Override
     public Optional<Enterprise> findById(Integer id) {
-        EnterprisePO enterprisePO = enterpriseDao.selectById(id);
-        return Optional.ofNullable(enterprisePO).map(EnterpriseConverter.INSTANCE::toEntity);
+        LambdaQueryWrapper<EnterprisePO> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(EnterprisePO::getId, id);
+        List<EnterprisePO> list = enterpriseDao.selectListWithSiteCount(wrapper);
+        return list.isEmpty() ? Optional.empty() : Optional.of(EnterpriseConverter.INSTANCE.toEntity(list.get(0)));
     }
 
     @Override
     public Optional<Enterprise> findByEnterpriseCode(String enterpriseCode) {
         LambdaQueryWrapper<EnterprisePO> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(EnterprisePO::getEnterpriseCode, enterpriseCode);
-        EnterprisePO enterprisePO = enterpriseDao.selectOne(wrapper);
-        return Optional.ofNullable(enterprisePO).map(EnterpriseConverter.INSTANCE::toEntity);
+        List<EnterprisePO> list = enterpriseDao.selectListWithSiteCount(wrapper);
+        return list.isEmpty() ? Optional.empty() : Optional.of(EnterpriseConverter.INSTANCE.toEntity(list.get(0)));
     }
 
     @Override
     public List<Enterprise> findAll() {
-        List<EnterprisePO> enterprisePOList = enterpriseDao.selectList(null);
+        List<EnterprisePO> enterprisePOList = enterpriseDao.selectListWithSiteCount(null);
         return enterprisePOList.stream()
                 .map(EnterpriseConverter.INSTANCE::toEntity)
                 .collect(Collectors.toList());
@@ -57,7 +59,7 @@ public class EnterpriseRepositoryImpl implements EnterpriseRepository {
     public List<Enterprise> findByEnterpriseTag(String enterpriseTag) {
         LambdaQueryWrapper<EnterprisePO> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(EnterprisePO::getEnterpriseTag, enterpriseTag);
-        List<EnterprisePO> enterprisePOList = enterpriseDao.selectList(wrapper);
+        List<EnterprisePO> enterprisePOList = enterpriseDao.selectListWithSiteCount(wrapper);
         return enterprisePOList.stream()
                 .map(EnterpriseConverter.INSTANCE::toEntity)
                 .collect(Collectors.toList());
@@ -94,7 +96,7 @@ public class EnterpriseRepositoryImpl implements EnterpriseRepository {
             wrapper.eq(EnterprisePO::getEnterpriseTag, enterpriseTag);
         }
 
-        IPage<EnterprisePO> poPage = enterpriseDao.selectPage(page, wrapper);
+        IPage<EnterprisePO> poPage = enterpriseDao.selectPageWithSiteCount(page, wrapper);
         Page<Enterprise> enterprisePage = new Page<>(poPage.getCurrent(), poPage.getSize(), poPage.getTotal());
         List<Enterprise> enterprises = poPage.getRecords().stream()
                 .map(EnterpriseConverter.INSTANCE::toEntity)
@@ -109,7 +111,7 @@ public class EnterpriseRepositoryImpl implements EnterpriseRepository {
         if (enterpriseName != null && !enterpriseName.trim().isEmpty()) {
             wrapper.like(EnterprisePO::getEnterpriseName, enterpriseName);
         }
-        List<EnterprisePO> enterprisePOList = enterpriseDao.selectList(wrapper);
+        List<EnterprisePO> enterprisePOList = enterpriseDao.selectListWithSiteCount(wrapper);
         return enterprisePOList.stream()
                 .map(EnterpriseConverter.INSTANCE::toEntity)
                 .collect(Collectors.toList());

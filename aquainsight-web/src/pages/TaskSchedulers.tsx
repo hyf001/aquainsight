@@ -12,6 +12,8 @@ import {
   PeriodConfig,
   periodTypeMap,
 } from '@/services/maintenance'
+import { siteApi, SiteVO } from '@/services/monitoring'
+import { organizationApi, DepartmentVO } from '@/services/organization'
 
 // 周期类型选项
 const periodTypeOptions = [
@@ -23,6 +25,8 @@ const periodTypeOptions = [
 export default function TaskSchedulers() {
   const [schedulers, setSchedulers] = useState<TaskScheduler[]>([])
   const [taskTemplates, setTaskTemplates] = useState<TaskTemplate[]>([])
+  const [sites, setSites] = useState<SiteVO[]>([])
+  const [departments, setDepartments] = useState<DepartmentVO[]>([])
   const [loading, setLoading] = useState(false)
   const [searchSiteName, setSearchSiteName] = useState('')
   const [showModal, setShowModal] = useState(false)
@@ -76,10 +80,32 @@ export default function TaskSchedulers() {
     }
   }, [])
 
+  // 获取站点列表
+  const fetchSites = useCallback(async () => {
+    try {
+      const data = await siteApi.getSites({ pageNum: 1, pageSize: 1000 }) as any
+      setSites(data.list)
+    } catch (error) {
+      console.error('获取站点列表失败:', error)
+    }
+  }, [])
+
+  // 获取部门列表
+  const fetchDepartments = useCallback(async () => {
+    try {
+      const data = await organizationApi.getDepartments() as any
+      setDepartments(data)
+    } catch (error) {
+      console.error('获取部门列表失败:', error)
+    }
+  }, [])
+
   useEffect(() => {
     fetchSchedulers()
     fetchTaskTemplates()
-  }, [fetchSchedulers, fetchTaskTemplates])
+    fetchSites()
+    fetchDepartments()
+  }, [fetchSchedulers, fetchTaskTemplates, fetchSites, fetchDepartments])
 
   // 搜索
   const handleSearch = () => {
@@ -116,7 +142,7 @@ export default function TaskSchedulers() {
   // 保存配置
   const handleSave = async () => {
     if (!configForm.siteId) {
-      alert('请输入站点ID')
+      alert('请选择站点')
       return
     }
     if (!configForm.taskTemplateId) {
@@ -299,31 +325,35 @@ export default function TaskSchedulers() {
             </div>
 
             <div className="p-6 space-y-4">
-              <Input
-                label="站点ID"
-                type="number"
-                value={configForm.siteId || ''}
-                onChange={(e) => setConfigForm({ ...configForm, siteId: parseInt(e.target.value) || 0 })}
-                placeholder="请输入站点ID"
+              <Select
+                label="站点"
+                value={String(configForm.siteId)}
+                onChange={(val) => setConfigForm({ ...configForm, siteId: Number(val) })}
+                options={[
+                  { value: '0', label: '请选择站点' },
+                  ...sites.map(s => ({ value: String(s.id), label: `${s.siteName} (${s.siteCode})` })),
+                ]}
                 disabled={!!editingItem}
               />
 
               <Select
                 label="任务模版"
                 value={String(configForm.taskTemplateId)}
-                onChange={(e) => setConfigForm({ ...configForm, taskTemplateId: parseInt(e.target.value) })}
+                onChange={(val) => setConfigForm({ ...configForm, taskTemplateId: Number(val) })}
                 options={[
                   { value: '0', label: '请选择任务模版' },
                   ...taskTemplates.map(tt => ({ value: String(tt.id), label: tt.name })),
                 ]}
               />
 
-              <Input
-                label="运维小组ID"
-                type="number"
-                value={configForm.departmentId || ''}
-                onChange={(e) => setConfigForm({ ...configForm, departmentId: parseInt(e.target.value) || undefined })}
-                placeholder="请输入运维小组ID（可选）"
+              <Select
+                label="运维小组"
+                value={String(configForm.departmentId || '0')}
+                onChange={(val) => setConfigForm({ ...configForm, departmentId: Number(val) || undefined })}
+                options={[
+                  { value: '0', label: '请选择运维小组（可选）' },
+                  ...departments.map(d => ({ value: String(d.id), label: d.name })),
+                ]}
               />
 
               <div className="space-y-3">

@@ -148,7 +148,6 @@ public class EnterpriseController {
      * 将企业实体转换为VO
      */
     private EnterpriseVO convertToVO(Enterprise enterprise) {
-        Long siteCount = enterpriseApplicationService.countEnterpriseSites(enterprise.getId());
         return EnterpriseVO.builder()
                 .id(enterprise.getId())
                 .enterpriseName(enterprise.getEnterpriseName())
@@ -158,7 +157,7 @@ public class EnterpriseController {
                 .contactPhone(enterprise.getContactPhone())
                 .address(enterprise.getAddress())
                 .description(enterprise.getDescription())
-                .siteCount(siteCount)
+                .siteCount(enterprise.getSiteCount())
                 .createTime(enterprise.getCreateTime() != null ? enterprise.getCreateTime().format(DATE_FORMATTER) : null)
                 .updateTime(enterprise.getUpdateTime() != null ? enterprise.getUpdateTime().format(DATE_FORMATTER) : null)
                 .build();

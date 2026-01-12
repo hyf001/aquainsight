@@ -72,6 +72,11 @@ public class Enterprise {
     private Integer deleted;
 
     /**
+     * 站点数量
+     */
+    private Long siteCount;
+
+    /**
      * 更新企业信息
      */
     public void updateInfo(String enterpriseName, String enterpriseTag,

@@ -118,12 +118,4 @@ public class EnterpriseApplicationService {
 
         enterpriseRepository.deleteById(id);
     }
-
-    /**
-     * 获取企业的站点数量
-     */
-    public long countEnterpriseSites(Integer enterpriseId) {
-        List<com.aquainsight.domain.monitoring.entity.Site> sites = siteRepository.findByEnterpriseId(enterpriseId);
-        return sites.size();
-    }
 }

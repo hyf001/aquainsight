@@ -43,4 +43,10 @@ public class EnterprisePO {
 
     @TableLogic
     private Integer deleted;
+
+    /**
+     * 站点数量(查询关联)
+     */
+    @TableField(exist = false)
+    private Long siteCount;
 }

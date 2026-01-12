@@ -7,10 +7,14 @@ import { Card, CardContent } from '@/components/ui/Card'
 import { Select } from '@/components/ui/Select'
 import {
   taskApi,
+  taskTemplateApi,
   Task,
+  TaskTemplate,
   TaskStatus,
   taskStatusMap,
 } from '@/services/maintenance'
+import { siteApi, SiteVO } from '@/services/monitoring'
+import { organizationApi, DepartmentVO } from '@/services/organization'
 
 export default function Tasks() {
   const navigate = useNavigate()
@@ -20,10 +24,22 @@ export default function Tasks() {
   const [pageNum, setPageNum] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
+  // 手动创建任务相关状态
+  const [showManualModal, setShowManualModal] = useState(false)
+  const [sites, setSites] = useState<SiteVO[]>([])
+  const [taskTemplates, setTaskTemplates] = useState<TaskTemplate[]>([])
+  const [departments, setDepartments] = useState<DepartmentVO[]>([])
+  const [manualForm, setManualForm] = useState({
+    siteId: 0,
+    taskTemplateId: 0,
+    departmentId: 0,
+  })
+
   // 筛选条件
   const [filters, setFilters] = useState({
     siteName: '',
     status: '',
+    departmentId: '',
     startTime: '',
     endTime: '',
   })
@@ -37,6 +53,12 @@ export default function Tasks() {
     })),
   ]
 
+  // 部门选项
+  const departmentOptions = [
+    { value: '', label: '全部运维小组' },
+    ...departments.map(d => ({ value: String(d.id), label: d.name }))
+  ]
+
   // 获取任务列表
   const fetchTasks = useCallback(async () => {
     setLoading(true)
@@ -46,6 +68,7 @@ export default function Tasks() {
         pageSize,
         siteName: filters.siteName || undefined,
         status: filters.status as TaskStatus || undefined,
+        departmentId: filters.departmentId ? Number(filters.departmentId) : undefined,
         startTime: filters.startTime || undefined,
         endTime: filters.endTime || undefined,
       }) as any
@@ -58,9 +81,27 @@ export default function Tasks() {
     }
   }, [pageNum, pageSize, filters])
 
+  // 获取基础数据
+  const fetchBaseData = useCallback(async () => {
+    try {
+      const [sitesData, templatesData, deptsData] = await Promise.all([
+        siteApi.getSites({ pageNum: 1, pageSize: 1000 }),
+        taskTemplateApi.list(),
+        organizationApi.getDepartments()
+      ]) as any[]
+
+      setSites(sitesData.list)
+      setTaskTemplates(templatesData)
+      setDepartments(deptsData)
+    } catch (error) {
+      console.error('获取基础数据失败:', error)
+    }
+  }, [])
+
   useEffect(() => {
     fetchTasks()
-  }, [fetchTasks])
+    fetchBaseData()
+  }, [fetchTasks, fetchBaseData])
 
   // 搜索
   const handleSearch = () => {
@@ -73,6 +114,7 @@ export default function Tasks() {
     setFilters({
       siteName: '',
       status: '',
+      departmentId: '',
       startTime: '',
       endTime: '',
     })
@@ -83,6 +125,32 @@ export default function Tasks() {
   // 查看任务详情
   const handleViewDetail = (id: number) => {
     navigate(`/tasks/${id}`)
+  }
+
+  // 手动创建任务
+  const handleCreateManual = async () => {
+    if (!manualForm.siteId) {
+      alert('请选择站点')
+      return
+    }
+    if (!manualForm.taskTemplateId) {
+      alert('请选择任务模版')
+      return
+    }
+    if (!manualForm.departmentId) {
+      alert('请选择运维小组')
+      return
+    }
+
+    try {
+      await taskApi.createManual(manualForm)
+      setShowManualModal(false)
+      setManualForm({ siteId: 0, taskTemplateId: 0, departmentId: 0 })
+      fetchTasks()
+    } catch (error) {
+      console.error('创建失败:', error)
+      alert('创建失败')
+    }
   }
 
   // 获取状态样式
@@ -116,13 +184,16 @@ export default function Tasks() {
           <h1 className="text-2xl font-bold text-clean-900">运维任务</h1>
           <p className="text-clean-500 mt-1">查看和管理运维任务执行情况</p>
         </div>
-        {/* 手动创建任务功能暂时隐藏，后续实现 */}
+        <Button onClick={() => setShowManualModal(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          手动添加任务
+        </Button>
       </div>
 
       {/* 筛选栏 */}
       <Card>
         <CardContent className="py-4">
-          <div className="grid grid-cols-5 gap-4">
+          <div className="grid grid-cols-6 gap-4">
             <Input
               placeholder="站点名称"
               value={filters.siteName}
@@ -131,8 +202,13 @@ export default function Tasks() {
             />
             <Select
               value={filters.status}
-              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+              onChange={(val) => setFilters({ ...filters, status: val })}
               options={statusOptions}
+            />
+            <Select
+              value={filters.departmentId}
+              onChange={(val) => setFilters({ ...filters, departmentId: val })}
+              options={departmentOptions}
             />
             <Input
               type="datetime-local"
@@ -196,6 +272,12 @@ export default function Tasks() {
                           <MapPin className="w-4 h-4" />
                           {task.siteName}
                         </span>
+                        {task.departmentName && (
+                          <span className="flex items-center gap-1">
+                            <User className="w-4 h-4" />
+                            运维小组: {task.departmentName}
+                          </span>
+                        )}
                         <span className="flex items-center gap-1">
                           <Calendar className="w-4 h-4" />
                           触发: {formatTime(task.triggerTime)}
@@ -250,6 +332,65 @@ export default function Tasks() {
           </>
         )}
       </div>
+
+      {/* 手动创建任务模态框 */}
+      {showManualModal && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-soft-lg w-full max-w-md">
+            <div className="px-6 py-4 border-b border-clean-100 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-clean-900">手动添加任务</h2>
+              <button
+                onClick={() => setShowManualModal(false)}
+                className="text-clean-400 hover:text-clean-600"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <Select
+                label="站点"
+                value={String(manualForm.siteId)}
+                onChange={(val) => setManualForm({ ...manualForm, siteId: Number(val) })}
+                options={[
+                  { value: '0', label: '请选择站点' },
+                  ...sites.map(s => ({ value: String(s.id), label: `${s.siteName} (${s.siteCode})` })),
+                ]}
+              />
+
+              <Select
+                label="任务模版"
+                value={String(manualForm.taskTemplateId)}
+                onChange={(val) => setManualForm({ ...manualForm, taskTemplateId: Number(val) })}
+                options={[
+                  { value: '0', label: '请选择任务模版' },
+                  ...taskTemplates.map(tt => ({ value: String(tt.id), label: tt.name })),
+                ]}
+              />
+
+              <Select
+                label="运维小组"
+                value={String(manualForm.departmentId)}
+                onChange={(val) => setManualForm({ ...manualForm, departmentId: Number(val) })}
+                options={[
+                  { value: '0', label: '请选择运维小组' },
+                  ...departments.map(d => ({ value: String(d.id), label: d.name })),
+                ]}
+              />
+            </div>
+
+            <div className="px-6 py-4 border-t border-clean-100 flex justify-end gap-3">
+              <Button variant="secondary" onClick={() => setShowManualModal(false)}>
+                取消
+              </Button>
+              <Button onClick={handleCreateManual}>
+                创建
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+
