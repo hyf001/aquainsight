@@ -32,6 +32,10 @@ const DeviceManagement: LazyExoticComponent<() => JSX.Element> = lazy(() => impo
 const SiteManagement: LazyExoticComponent<() => JSX.Element> = lazy(() => import('@/pages/monitoring/SiteManagement'))
 const EnterpriseManagement: LazyExoticComponent<() => JSX.Element> = lazy(() => import('@/pages/monitoring/EnterpriseManagement'))
 
+// 系统管理模块
+const UserManagement: LazyExoticComponent<() => JSX.Element> = lazy(() => import('@/pages/system/UserManagement'))
+const OrganizationManagement: LazyExoticComponent<() => JSX.Element> = lazy(() => import('@/pages/system/OrganizationManagement'))
+
 const publicRoutes = ['/login']
 
 const routes: RouteObject[] = [
@@ -204,6 +208,27 @@ const routes: RouteObject[] = [
       </Suspense>
     ),
   },
+  // 系统管理模块
+  {
+    path: '/system/users',
+    element: (
+      <Layout>
+        <Suspense fallback={<LoadingScreen />}>
+          <UserManagement />
+        </Suspense>
+      </Layout>
+    ),
+  },
+  {
+    path: '/system/organization',
+    element: (
+      <Layout>
+        <Suspense fallback={<LoadingScreen />}>
+          <OrganizationManagement />
+        </Suspense>
+      </Layout>
+    ),
+  },
 ]
 
 export const navItems = [
@@ -233,6 +258,14 @@ export const navItems = [
     ],
   },
   { path: '/settings', label: '系统设置', icon: 'settings' },
+  {
+    label: '系统管理',
+    icon: 'users',
+    children: [
+      { path: '/system/users', label: '用户管理' },
+      { path: '/system/organization', label: '组织管理' },
+    ],
+  },
 ]
 
 export { routes, publicRoutes }

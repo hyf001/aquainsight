@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -12,9 +12,13 @@ import {
   Leaf,
   Search,
   User,
+  Users,
   LogOut,
   ChevronDown,
   ChevronRight,
+  X,
+  PanelLeftClose,
+  PanelLeft,
 } from 'lucide-react'
 import { cn } from '@/utils/cn'
 import { navItems } from '@/config/routes'
@@ -35,7 +39,9 @@ export function Layout({ children }: LayoutProps) {
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [userInfo, setUserInfo] = useState<UserInfo>({ name: '', email: '', role: '' })
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set())
+  const [searchFocused, setSearchFocused] = useState(false)
   const userMenuRef = useRef<HTMLDivElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -79,13 +85,31 @@ export function Layout({ children }: LayoutProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // 键盘快捷键
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl + K 打开搜索
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        searchInputRef.current?.focus()
+      }
+      // Escape 关闭移动端菜单
+      if (e.key === 'Escape') {
+        setMobileMenuOpen(false)
+        setUserMenuOpen(false)
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
   const handleLogout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     navigate('/login')
   }
 
-  const toggleMenu = (label: string) => {
+  const toggleMenu = useCallback((label: string) => {
     setExpandedMenus(prev => {
       const newSet = new Set(prev)
       if (newSet.has(label)) {
@@ -95,7 +119,7 @@ export function Layout({ children }: LayoutProps) {
       }
       return newSet
     })
-  }
+  }, [])
 
   const iconMap: Record<string, React.ReactNode> = {
     dashboard: <LayoutDashboard className="w-5 h-5" />,
@@ -104,22 +128,43 @@ export function Layout({ children }: LayoutProps) {
     chart: <BarChart3 className="w-5 h-5" />,
     device: <Cpu className="w-5 h-5" />,
     settings: <Settings className="w-5 h-5" />,
+    users: <Users className="w-5 h-5" />,
+  }
+
+  // 子菜单动画配置
+  const submenuVariants = {
+    hidden: {
+      opacity: 0,
+      height: 0,
+      transition: { duration: 0.2, ease: 'easeInOut' }
+    },
+    visible: {
+      opacity: 1,
+      height: 'auto',
+      transition: { duration: 0.2, ease: 'easeInOut' }
+    }
   }
 
   return (
     <div className="min-h-screen bg-clean-50">
       {/* Mobile menu overlay */}
-      {mobileMenuOpen && (
-        <div
-          className="fixed inset-0 bg-clean-900/20 backdrop-blur-sm z-40 lg:hidden"
-          onClick={() => setMobileMenuOpen(false)}
-        />
-      )}
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-clean-900/30 backdrop-blur-sm z-40 lg:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed top-0 left-0 h-full z-50 transition-all duration-300',
+          'fixed top-0 left-0 h-full z-50 transition-all duration-300 ease-in-out',
           sidebarOpen ? 'w-64' : 'w-20',
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
@@ -128,24 +173,39 @@ export function Layout({ children }: LayoutProps) {
           {/* Logo */}
           <div className="p-6 border-b border-clean-100">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-nature-500 flex items-center justify-center shadow-leaf">
+              <motion.div
+                className="w-10 h-10 rounded-xl bg-gradient-to-br from-nature-400 to-nature-600 flex items-center justify-center shadow-leaf"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
                 <Leaf className="w-6 h-6 text-white" />
-              </div>
-              {sidebarOpen && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="overflow-hidden"
-                >
-                  <h1 className="font-display font-bold text-lg text-clean-900">AquaInsight</h1>
-                  <p className="text-clean-500 text-xs">智慧环境监测平台</p>
-                </motion.div>
-              )}
+              </motion.div>
+              <AnimatePresence mode="wait">
+                {sidebarOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <h1 className="font-display font-bold text-lg text-clean-900">AquaInsight</h1>
+                    <p className="text-clean-500 text-xs">智慧环境监测平台</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              {/* 移动端关闭按钮 */}
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="lg:hidden ml-auto p-2 rounded-lg text-clean-400 hover:text-clean-600 hover:bg-clean-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+          <nav className="flex-1 p-4 space-y-1 overflow-y-auto scrollbar-hide">
             {navItems.map((item: any) => {
               // 有子菜单的项
               if (item.children) {
@@ -159,44 +219,73 @@ export function Layout({ children }: LayoutProps) {
                     <button
                       onClick={() => toggleMenu(item.label)}
                       className={cn(
-                        'nav-item w-full',
+                        'nav-item w-full group',
                         hasActiveChild && 'text-nature-600 bg-nature-50'
                       )}
                     >
-                      {iconMap[item.icon]}
-                      {sidebarOpen && (
-                        <>
-                          <span className="flex-1 text-left truncate">{item.label}</span>
-                          <ChevronRight
-                            className={cn(
-                              'w-4 h-4 transition-transform',
-                              isExpanded && 'rotate-90'
-                            )}
-                          />
-                        </>
-                      )}
+                      <span className={cn(
+                        'transition-colors',
+                        hasActiveChild ? 'text-nature-600' : 'text-clean-500 group-hover:text-nature-500'
+                      )}>
+                        {iconMap[item.icon]}
+                      </span>
+                      <AnimatePresence mode="wait">
+                        {sidebarOpen && (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="flex-1 flex items-center justify-between"
+                          >
+                            <span className="text-left truncate">{item.label}</span>
+                            <motion.div
+                              animate={{ rotate: isExpanded ? 90 : 0 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              <ChevronRight className="w-4 h-4" />
+                            </motion.div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </button>
 
                     {/* 子菜单 */}
-                    {sidebarOpen && isExpanded && (
-                      <div className="ml-9 mt-1 space-y-1">
-                        {item.children.map((child: any) => (
-                          <NavLink
-                            key={child.path}
-                            to={child.path}
-                            className={({ isActive }) =>
-                              cn(
-                                'block px-3 py-2 rounded-lg text-sm text-clean-600 hover:text-nature-600 hover:bg-nature-50 transition-all duration-200',
-                                isActive && 'text-nature-600 bg-nature-50 font-medium'
-                              )
-                            }
-                            onClick={() => setMobileMenuOpen(false)}
-                          >
-                            {child.label}
-                          </NavLink>
-                        ))}
-                      </div>
-                    )}
+                    <AnimatePresence>
+                      {sidebarOpen && isExpanded && (
+                        <motion.div
+                          variants={submenuVariants}
+                          initial="hidden"
+                          animate="visible"
+                          exit="hidden"
+                          className="ml-9 mt-1 space-y-1 overflow-hidden"
+                        >
+                          {item.children.map((child: any, index: number) => (
+                            <motion.div
+                              key={child.path}
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: index * 0.05 }}
+                            >
+                              <NavLink
+                                to={child.path}
+                                className={({ isActive }) =>
+                                  cn(
+                                    'block px-3 py-2 rounded-lg text-sm transition-all duration-200',
+                                    'hover:text-nature-600 hover:bg-nature-50 hover:translate-x-1',
+                                    isActive
+                                      ? 'text-nature-600 bg-nature-50 font-medium'
+                                      : 'text-clean-600'
+                                  )
+                                }
+                                onClick={() => setMobileMenuOpen(false)}
+                              >
+                                {child.label}
+                              </NavLink>
+                            </motion.div>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 )
               }
@@ -208,15 +297,31 @@ export function Layout({ children }: LayoutProps) {
                   to={item.path}
                   className={({ isActive }) =>
                     cn(
-                      'nav-item',
+                      'nav-item group',
                       isActive && 'active',
                       !sidebarOpen && 'justify-center px-2'
                     )
                   }
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  {iconMap[item.icon]}
-                  {sidebarOpen && <span className="truncate">{item.label}</span>}
+                  <span className={cn(
+                    'transition-colors',
+                    'text-clean-500 group-hover:text-nature-500'
+                  )}>
+                    {iconMap[item.icon]}
+                  </span>
+                  <AnimatePresence mode="wait">
+                    {sidebarOpen && (
+                      <motion.span
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="truncate"
+                      >
+                        {item.label}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
                 </NavLink>
               )
             })}
@@ -224,13 +329,26 @@ export function Layout({ children }: LayoutProps) {
 
           {/* Sidebar toggle */}
           <div className="p-4 border-t border-clean-100">
-            <button
+            <motion.button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-clean-50 text-clean-500 hover:text-nature-600 hover:bg-nature-50 transition-all duration-200"
+              className={cn(
+                'w-full flex items-center gap-2 px-4 py-2.5 rounded-xl',
+                'bg-clean-50 text-clean-500 hover:text-nature-600 hover:bg-nature-50',
+                'transition-all duration-200',
+                !sidebarOpen && 'justify-center'
+              )}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <Menu className="w-5 h-5" />
-              {sidebarOpen && <span className="text-sm">收起</span>}
-            </button>
+              {sidebarOpen ? (
+                <>
+                  <PanelLeftClose className="w-5 h-5" />
+                  <span className="text-sm">收起侧栏</span>
+                </>
+              ) : (
+                <PanelLeft className="w-5 h-5" />
+              )}
+            </motion.button>
           </div>
         </div>
       </aside>
@@ -238,7 +356,7 @@ export function Layout({ children }: LayoutProps) {
       {/* Main content */}
       <div
         className={cn(
-          'transition-all duration-300',
+          'transition-all duration-300 ease-in-out',
           sidebarOpen ? 'lg:ml-64' : 'lg:ml-20'
         )}
       >
@@ -246,77 +364,115 @@ export function Layout({ children }: LayoutProps) {
         <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-clean-200">
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center gap-4">
-              <button
+              <motion.button
                 onClick={() => setMobileMenuOpen(true)}
                 className="lg:hidden p-2 rounded-lg text-clean-500 hover:text-nature-600 hover:bg-nature-50 transition-all"
+                whileTap={{ scale: 0.95 }}
               >
                 <Menu className="w-5 h-5" />
-              </button>
+              </motion.button>
 
               {/* Search */}
-              <div className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl bg-clean-100 border border-clean-200 focus-within:border-nature-300 transition-all">
-                <Search className="w-4 h-4 text-clean-400" />
+              <div className={cn(
+                'hidden md:flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all duration-200',
+                searchFocused
+                  ? 'bg-white border-nature-300 ring-2 ring-nature-100 shadow-sm'
+                  : 'bg-clean-50 border-clean-200 hover:border-clean-300'
+              )}>
+                <Search className={cn(
+                  'w-4 h-4 transition-colors',
+                  searchFocused ? 'text-nature-500' : 'text-clean-400'
+                )} />
                 <input
+                  ref={searchInputRef}
                   type="text"
                   placeholder="搜索监测点、设备、告警..."
                   className="bg-transparent border-none outline-none text-sm text-clean-700 placeholder-clean-400 w-64"
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setSearchFocused(false)}
                 />
-                <kbd className="px-2 py-0.5 text-xs text-clean-400 bg-white rounded border border-clean-200">⌘K</kbd>
+                <kbd className={cn(
+                  'px-2 py-0.5 text-xs rounded border transition-colors',
+                  searchFocused
+                    ? 'text-nature-600 bg-nature-50 border-nature-200'
+                    : 'text-clean-400 bg-white border-clean-200'
+                )}>
+                  ⌘K
+                </kbd>
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               {/* Notifications */}
-              <button className="relative p-2 rounded-xl text-clean-500 hover:text-nature-600 hover:bg-nature-50 transition-all">
+              <motion.button
+                className="relative p-2.5 rounded-xl text-clean-500 hover:text-nature-600 hover:bg-nature-50 transition-all"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
                 <Bell className="w-5 h-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-nature-500 rounded-full" />
-              </button>
+                <motion.span
+                  className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full"
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ repeat: Infinity, duration: 2 }}
+                />
+              </motion.button>
 
               {/* User menu */}
               <div className="relative" ref={userMenuRef}>
-                <button
+                <motion.button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-3 px-3 py-2 rounded-xl bg-clean-50 border border-clean-200 hover:border-clean-300 transition-all"
+                  className={cn(
+                    'flex items-center gap-3 px-3 py-2 rounded-xl border transition-all',
+                    userMenuOpen
+                      ? 'bg-nature-50 border-nature-200'
+                      : 'bg-clean-50 border-clean-200 hover:border-clean-300'
+                  )}
+                  whileTap={{ scale: 0.98 }}
                 >
-                  <div className="w-8 h-8 rounded-lg bg-nature-500 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-nature-400 to-nature-600 flex items-center justify-center shadow-sm">
                     <User className="w-4 h-4 text-white" />
                   </div>
                   <div className="hidden sm:block text-left">
                     <p className="text-sm font-medium text-clean-700">{userInfo.name}</p>
                     <p className="text-xs text-clean-500">{userInfo.role === 'admin' ? '管理员' : '用户'}</p>
                   </div>
-                  <ChevronDown className={cn(
-                    'w-4 h-4 text-clean-400 transition-transform hidden sm:block',
-                    userMenuOpen && 'rotate-180'
-                  )} />
-                </button>
+                  <motion.div
+                    animate={{ rotate: userMenuOpen ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChevronDown className="w-4 h-4 text-clean-400 hidden sm:block" />
+                  </motion.div>
+                </motion.button>
 
                 <AnimatePresence>
                   {userMenuOpen && (
                     <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      className="absolute right-0 mt-2 w-48 py-2 bg-white rounded-xl shadow-soft-lg border border-clean-200"
+                      initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                      transition={{ duration: 0.15, ease: 'easeOut' }}
+                      className="absolute right-0 mt-2 w-48 py-2 bg-white rounded-xl shadow-soft-lg border border-clean-200 overflow-hidden"
                     >
-                      <button
+                      <motion.button
                         onClick={() => {
                           navigate('/settings')
                           setUserMenuOpen(false)
                         }}
-                        className="w-full flex items-center gap-3 px-4 py-2 text-left text-clean-600 hover:text-clean-900 hover:bg-clean-50 transition-all"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-clean-600 hover:text-clean-900 hover:bg-clean-50 transition-all"
+                        whileHover={{ x: 4 }}
                       >
                         <Settings className="w-4 h-4" />
                         <span className="text-sm">设置</span>
-                      </button>
+                      </motion.button>
                       <hr className="my-2 border-clean-100" />
-                      <button
+                      <motion.button
                         onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-4 py-2 text-left text-red-500 hover:bg-red-50 transition-all"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-red-500 hover:bg-red-50 transition-all"
+                        whileHover={{ x: 4 }}
                       >
                         <LogOut className="w-4 h-4" />
                         <span className="text-sm">退出登录</span>
-                      </button>
+                      </motion.button>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -328,9 +484,10 @@ export function Layout({ children }: LayoutProps) {
         {/* Page content */}
         <main className="p-6">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            key={location.pathname}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
           >
             {children}
           </motion.div>

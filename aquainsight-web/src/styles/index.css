@@ -13,7 +13,7 @@
   }
 
   body {
-    @apply bg-clean-50 text-clean-900;
+    @apply bg-clean-50 text-clean-900 antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
@@ -24,15 +24,30 @@
   }
 
   ::-webkit-scrollbar-track {
-    @apply bg-clean-100;
+    @apply bg-transparent;
   }
 
   ::-webkit-scrollbar-thumb {
-    @apply bg-clean-300 rounded-full;
+    @apply bg-clean-300/60 rounded-full transition-colors;
   }
 
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-clean-400;
+  }
+
+  /* 平滑滚动 */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* 选中文本颜色 */
+  ::selection {
+    @apply bg-nature-200 text-nature-900;
+  }
+
+  /* 焦点可见性 */
+  :focus-visible {
+    @apply outline-none ring-2 ring-nature-400 ring-offset-2;
   }
 }
 
@@ -53,29 +68,37 @@
     @apply px-6 py-3 bg-gradient-to-r from-nature-500 to-nature-600 text-white font-medium rounded-xl
            hover:from-nature-400 hover:to-nature-500 transition-all duration-300
            shadow-leaf hover:shadow-lg hover:shadow-nature-200 hover:scale-[1.02]
-           active:scale-[0.98];
+           active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-nature-400 focus-visible:ring-offset-2;
   }
 
   .btn-secondary {
     @apply px-6 py-3 bg-white text-clean-800 font-medium rounded-xl border border-clean-200
            hover:bg-clean-50 hover:border-clean-300 transition-all duration-300
-           active:scale-[0.98];
+           active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-clean-400 focus-visible:ring-offset-2;
+  }
+
+  .btn-ghost {
+    @apply px-6 py-3 bg-transparent text-clean-600 font-medium rounded-xl
+           hover:bg-clean-100 hover:text-clean-800 transition-all duration-200
+           active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-clean-400;
   }
 
   .input-field {
     @apply w-full px-4 py-3 bg-white border border-clean-300 rounded-xl
            text-clean-800 placeholder-clean-400
            focus:outline-none focus:border-nature-400 focus:ring-2 focus:ring-nature-100
+           hover:border-clean-400
            transition-all duration-200;
   }
 
   .card-stat {
-    @apply glass-card p-6 hover:shadow-soft-lg transition-all duration-300;
+    @apply glass-card p-6 hover:shadow-soft-lg hover:-translate-y-0.5 transition-all duration-300;
   }
 
   .nav-item {
     @apply flex items-center gap-3 px-4 py-3 rounded-xl text-clean-600
-           hover:text-nature-600 hover:bg-nature-50 transition-all duration-200;
+           hover:text-nature-600 hover:bg-nature-50 transition-all duration-200
+           focus:outline-none focus-visible:ring-2 focus-visible:ring-nature-400;
   }
 
   .nav-item.active {
@@ -101,9 +124,46 @@
   .badge-info {
     @apply badge bg-sky-100 text-sky-700 border border-sky-200;
   }
+
+  /* 链接样式 */
+  .link {
+    @apply text-nature-600 hover:text-nature-700 underline-offset-2 hover:underline transition-colors;
+  }
+
+  /* 分割线 */
+  .divider {
+    @apply border-t border-clean-200 my-4;
+  }
+
+  /* 页面标题 */
+  .page-title {
+    @apply text-2xl font-display font-bold text-clean-900;
+  }
+
+  .page-subtitle {
+    @apply text-clean-500 mt-1;
+  }
+
+  /* 表单组 */
+  .form-group {
+    @apply space-y-2;
+  }
+
+  .form-label {
+    @apply block text-sm font-medium text-clean-700;
+  }
+
+  .form-hint {
+    @apply text-xs text-clean-500 mt-1;
+  }
+
+  .form-error {
+    @apply text-xs text-red-500 mt-1;
+  }
 }
 
 @layer utilities {
+  /* 动画入场效果 */
   .animate-in {
     animation: animateIn 0.5s ease-out forwards;
   }
@@ -119,9 +179,85 @@
     }
   }
 
+  /* 涟漪动画 */
+  @keyframes ripple {
+    0% {
+      transform: scale(0);
+      opacity: 0.5;
+    }
+    100% {
+      transform: scale(40);
+      opacity: 0;
+    }
+  }
+
+  /* 渐入延迟 */
   .stagger-1 { animation-delay: 0.1s; }
   .stagger-2 { animation-delay: 0.2s; }
   .stagger-3 { animation-delay: 0.3s; }
   .stagger-4 { animation-delay: 0.4s; }
   .stagger-5 { animation-delay: 0.5s; }
+
+  /* 闪烁动画 */
+  .animate-shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.4) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  /* 文字省略 */
+  .line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+  }
+
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  /* 无滚动条但可滚动 */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* 安全区域 padding */
+  .safe-area-inset-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  /* 触摸高亮禁用 */
+  .tap-highlight-none {
+    -webkit-tap-highlight-color: transparent;
+  }
 }
