@@ -21,6 +21,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * 公共接口控制器
@@ -28,7 +29,7 @@ import java.util.Map;
  */
 @Slf4j
 @RestController
-@RequestMapping("/common")
+@RequestMapping("/api/common")
 public class CommonController {
 
     /**
@@ -38,10 +39,16 @@ public class CommonController {
     private String uploadPath;
 
     /**
+     * 服务器端口，从配置文件读取
+     */
+    @Value("${server.port:8080}")
+    private String serverPort;
+
+    /**
      * 上传图片
      *
      * @param file 图片文件
-     * @return 上传结果，包含图片访问路径
+     * @return 上传结果，包含图片访问的完整URL
      */
     @PostMapping("/upload/image")
     public Response<Map<String, String>> uploadImage(@RequestParam("file") MultipartFile file) {
@@ -76,30 +83,27 @@ public class CommonController {
             String fileExtension = "";
             int dotIndex = originalFilename.lastIndexOf(".");
             if (dotIndex > 0) {
-                fileExtension = originalFilename.substring(dotIndex);
+                fileExtension = originalFilename.substring(dotIndex).toLowerCase();
             }
 
-            // 获取不带扩展名的原始文件名
-            String baseFilename = dotIndex > 0 ? originalFilename.substring(0, dotIndex) : originalFilename;
-
-            // 生成新文件名: 原始文件名 + 绝对毫秒值 + 扩展名
-            String filename = baseFilename + "_" + System.currentTimeMillis() + fileExtension;
+            // 生成新文件名: UUID + 扩展名（避免中文和特殊字符问题）
+            String filename = UUID.randomUUID().toString().replace("-", "") + fileExtension;
             Path filePath = directoryPath.resolve(filename);
 
             // 保存文件
             file.transferTo(filePath.toFile());
 
-            // 构建访问URL路径
-            String accessPath = "/common/image/" + relativePath + "/" + filename;
+            // 构建完整的访问URL: http://localhost:端口/aquainsight/api/common/image/...
+            String fullUrl = "http://localhost:" + serverPort + "/aquainsight/api/common/image/" + relativePath + "/" + filename;
 
             // 返回结果
             Map<String, String> result = new HashMap<>();
-            result.put("url", accessPath);
+            result.put("url", fullUrl);
             result.put("filename", filename);
             result.put("originalName", originalFilename);
             result.put("size", String.valueOf(file.getSize()));
 
-            log.info("文件上传成功: {} -> {}", originalFilename, accessPath);
+            log.info("文件上传成功: {} -> {}", originalFilename, fullUrl);
             return Response.success(result);
 
         } catch (IOException e) {
@@ -125,8 +129,9 @@ public class CommonController {
             // 获取请求路径
             String requestPath = request.getRequestURI();
 
-            // 提取文件相对路径（去掉 /common/image/ 前缀）
-            String relativePath = requestPath.substring("/common/image/".length());
+            // 提取文件相对路径（去掉 /aquainsight/api/common/image/ 前缀）
+            String prefix = "/aquainsight/api/common/image/";
+            String relativePath = requestPath.substring(requestPath.indexOf(prefix) + prefix.length());
 
             // 构建完整文件路径
             Path filePath = Paths.get(uploadPath, relativePath);
@@ -148,8 +153,11 @@ public class CommonController {
             // 创建资源
             Resource resource = new FileSystemResource(file);
 
-            // 获取文件类型
-            String contentType = Files.probeContentType(filePath);
+            // 获取文件类型（优先根据扩展名判断图片类型）
+            String contentType = getImageContentType(file.getName());
+            if (contentType == null) {
+                contentType = Files.probeContentType(filePath);
+            }
             if (contentType == null) {
                 contentType = "application/octet-stream";
             }
@@ -161,10 +169,8 @@ public class CommonController {
             // 如果有download参数，设置为下载模式
             if (download != null) {
                 headers.setContentDispositionFormData("attachment", file.getName());
-            } else {
-                // 否则设置为inline模式，可以在浏览器中直接查看
-                headers.add(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + file.getName() + "\"");
             }
+            // 图片默认不设置 Content-Disposition，让浏览器直接显示
 
             return ResponseEntity.ok()
                     .headers(headers)
@@ -178,5 +184,27 @@ public class CommonController {
             log.error("访问图片异常", e);
             return ResponseEntity.internalServerError().build();
         }
+    }
+
+    /**
+     * 根据文件名获取图片的 Content-Type
+     */
+    private String getImageContentType(String filename) {
+        if (filename == null) return null;
+        String lowerName = filename.toLowerCase();
+        if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg")) {
+            return "image/jpeg";
+        } else if (lowerName.endsWith(".png")) {
+            return "image/png";
+        } else if (lowerName.endsWith(".gif")) {
+            return "image/gif";
+        } else if (lowerName.endsWith(".webp")) {
+            return "image/webp";
+        } else if (lowerName.endsWith(".bmp")) {
+            return "image/bmp";
+        } else if (lowerName.endsWith(".svg")) {
+            return "image/svg+xml";
+        }
+        return null;
     }
 }

@@ -1,10 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Plus, Calendar, User, MapPin, Clock, ChevronRight } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { Search, Plus, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Card, CardContent } from '@/components/ui/Card'
 import { Select } from '@/components/ui/Select'
+import { Modal } from '@/components/ui/Modal'
+import { Table, Pagination } from '@/components/ui/Table'
+import { cn } from '@/utils/cn'
 import {
   taskApi,
   taskTemplateApi,
@@ -56,22 +59,22 @@ export default function Tasks() {
   // 部门选项
   const departmentOptions = [
     { value: '', label: '全部运维小组' },
-    ...departments.map(d => ({ value: String(d.id), label: d.name }))
+    ...departments.map((d) => ({ value: String(d.id), label: d.name })),
   ]
 
   // 获取任务列表
   const fetchTasks = useCallback(async () => {
     setLoading(true)
     try {
-      const data = await taskApi.getPage({
+      const data = (await taskApi.getPage({
         pageNum,
         pageSize,
         siteName: filters.siteName || undefined,
-        status: filters.status as TaskStatus || undefined,
+        status: (filters.status as TaskStatus) || undefined,
         departmentId: filters.departmentId ? Number(filters.departmentId) : undefined,
         startTime: filters.startTime || undefined,
         endTime: filters.endTime || undefined,
-      }) as any
+      })) as unknown as { list: Task[]; total: number }
       setTasks(data.list)
       setTotal(data.total)
     } catch (error) {
@@ -84,11 +87,11 @@ export default function Tasks() {
   // 获取基础数据
   const fetchBaseData = useCallback(async () => {
     try {
-      const [sitesData, templatesData, deptsData] = await Promise.all([
+      const [sitesData, templatesData, deptsData] = (await Promise.all([
         siteApi.getSites({ pageNum: 1, pageSize: 1000 }),
         taskTemplateApi.list(),
-        organizationApi.getDepartments()
-      ]) as any[]
+        organizationApi.getDepartments(),
+      ])) as unknown as [{ list: SiteVO[] }, TaskTemplate[], DepartmentVO[]]
 
       setSites(sitesData.list)
       setTaskTemplates(templatesData)
@@ -119,7 +122,6 @@ export default function Tasks() {
       endTime: '',
     })
     setPageNum(1)
-    fetchTasks()
   }
 
   // 查看任务详情
@@ -153,11 +155,6 @@ export default function Tasks() {
     }
   }
 
-  // 获取状态样式
-  const getStatusClass = (status: TaskStatus) => {
-    return taskStatusMap[status]?.color || 'badge-info'
-  }
-
   // 格式化时间
   const formatTime = (time: string | undefined) => {
     if (!time) return '-'
@@ -176,6 +173,93 @@ export default function Tasks() {
     return `${hours}小时${mins}分钟`
   }
 
+  // 表格列定义
+  const columns = [
+    {
+      key: 'id',
+      title: '任务编号',
+      width: 100,
+      render: (value: number) => <span className="text-clean-600">#{value}</span>,
+    },
+    {
+      key: 'status',
+      title: '状态',
+      width: 100,
+      render: (value: TaskStatus) => {
+        const statusInfo = taskStatusMap[value]
+        return (
+          <span className={cn('inline-flex items-center px-2 py-1 text-xs rounded-full', statusInfo?.color)}>
+            {statusInfo?.label || value}
+          </span>
+        )
+      },
+    },
+    {
+      key: 'taskTemplateName',
+      title: '任务模版',
+      width: 180,
+      render: (value: string) => <span className="font-medium text-clean-900">{value}</span>,
+    },
+    {
+      key: 'siteName',
+      title: '站点',
+      width: 150,
+      render: (value: string) => <span className="text-clean-700">{value}</span>,
+    },
+    {
+      key: 'departmentName',
+      title: '运维小组',
+      width: 120,
+      render: (value: string) => <span className="text-clean-600">{value || '-'}</span>,
+    },
+    {
+      key: 'operator',
+      title: '操作人',
+      width: 100,
+      render: (value: string) => <span className="text-clean-600">{value || '-'}</span>,
+    },
+    {
+      key: 'triggerTime',
+      title: '触发时间',
+      width: 150,
+      render: (value: string) => <span className="text-clean-500 text-sm">{formatTime(value)}</span>,
+    },
+    {
+      key: 'startTime',
+      title: '耗时',
+      width: 100,
+      render: (_: string, record: Task) => (
+        <span className="text-clean-500 text-sm">{getDuration(record)}</span>
+      ),
+    },
+    {
+      key: 'taskItemCount',
+      title: '任务项',
+      width: 80,
+      align: 'center' as const,
+      render: (value: number) => (
+        <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-xs rounded-full">
+          {value || 0}
+        </span>
+      ),
+    },
+    {
+      key: 'id',
+      title: '操作',
+      width: 100,
+      render: (_: number, record: Task) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          icon={<Eye className="w-4 h-4" />}
+          onClick={() => handleViewDetail(record.id)}
+        >
+          查看
+        </Button>
+      ),
+    },
+  ]
+
   return (
     <div className="space-y-6">
       {/* 页面标题 */}
@@ -191,206 +275,123 @@ export default function Tasks() {
       </div>
 
       {/* 筛选栏 */}
-      <Card>
-        <CardContent className="py-4">
-          <div className="grid grid-cols-6 gap-4">
-            <Input
-              placeholder="站点名称"
-              value={filters.siteName}
-              onChange={(e) => setFilters({ ...filters, siteName: e.target.value })}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            />
-            <Select
-              value={filters.status}
-              onChange={(val) => setFilters({ ...filters, status: val })}
-              options={statusOptions}
-            />
-            <Select
-              value={filters.departmentId}
-              onChange={(val) => setFilters({ ...filters, departmentId: val })}
-              options={departmentOptions}
-            />
-            <Input
-              type="datetime-local"
-              placeholder="开始时间"
-              value={filters.startTime}
-              onChange={(e) => setFilters({ ...filters, startTime: e.target.value })}
-            />
-            <Input
-              type="datetime-local"
-              placeholder="结束时间"
-              value={filters.endTime}
-              onChange={(e) => setFilters({ ...filters, endTime: e.target.value })}
-            />
-            <div className="flex gap-2">
-              <Button variant="secondary" onClick={handleReset} className="flex-1">
-                重置
-              </Button>
-              <Button onClick={handleSearch} className="flex-1">
-                <Search className="w-4 h-4 mr-2" />
-                搜索
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 任务列表 */}
-      <div className="space-y-4">
-        {loading ? (
-          <div className="text-center py-12 text-clean-400">加载中...</div>
-        ) : tasks.length === 0 ? (
-          <div className="text-center py-12 text-clean-400">暂无数据</div>
-        ) : (
-          <>
-            {tasks.map((task) => (
-              <Card key={task.id} hover className="cursor-pointer" onClick={() => handleViewDetail(task.id)}>
-                <CardContent className="py-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        <span className={`badge ${getStatusClass(task.status)}`}>
-                          {taskStatusMap[task.status]?.label || task.status}
-                        </span>
-                        <span className="text-sm text-clean-500">
-                          任务编号: {task.id}
-                        </span>
-                        {task.operator && (
-                          <span className="text-sm text-clean-400 flex items-center gap-1">
-                            <User className="w-3 h-3" />
-                            {task.operator}
-                          </span>
-                        )}
-                      </div>
-
-                      <h3 className="font-medium text-lg text-clean-900 mb-2">
-                        {task.taskTemplateName}
-                      </h3>
-
-                      <div className="flex items-center gap-6 text-sm text-clean-500">
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
-                          {task.siteName}
-                        </span>
-                        {task.departmentName && (
-                          <span className="flex items-center gap-1">
-                            <User className="w-4 h-4" />
-                            运维小组: {task.departmentName}
-                          </span>
-                        )}
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-4 h-4" />
-                          触发: {formatTime(task.triggerTime)}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          耗时: {getDuration(task)}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="text-sm text-clean-400">任务项</p>
-                        <p className="text-xl font-semibold text-clean-800">
-                          {task.taskItemCount || 0}
-                        </p>
-                      </div>
-                      <ChevronRight className="w-5 h-5 text-clean-400" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-
-            {/* 分页 */}
-            {total > pageSize && (
-              <div className="flex items-center justify-between pt-4">
-                <span className="text-sm text-clean-500">
-                  共 {total} 条记录
-                </span>
-                <div className="flex gap-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    disabled={pageNum === 1}
-                    onClick={() => setPageNum(pageNum - 1)}
-                  >
-                    上一页
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    disabled={pageNum * pageSize >= total}
-                    onClick={() => setPageNum(pageNum + 1)}
-                  >
-                    下一页
-                  </Button>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* 手动创建任务模态框 */}
-      {showManualModal && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-soft-lg w-full max-w-md">
-            <div className="px-6 py-4 border-b border-clean-100 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-clean-900">手动添加任务</h2>
-              <button
-                onClick={() => setShowManualModal(false)}
-                className="text-clean-400 hover:text-clean-600"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <Select
-                label="站点"
-                value={String(manualForm.siteId)}
-                onChange={(val) => setManualForm({ ...manualForm, siteId: Number(val) })}
-                options={[
-                  { value: '0', label: '请选择站点' },
-                  ...sites.map(s => ({ value: String(s.id), label: `${s.siteName} (${s.siteCode})` })),
-                ]}
-              />
-
-              <Select
-                label="任务模版"
-                value={String(manualForm.taskTemplateId)}
-                onChange={(val) => setManualForm({ ...manualForm, taskTemplateId: Number(val) })}
-                options={[
-                  { value: '0', label: '请选择任务模版' },
-                  ...taskTemplates.map(tt => ({ value: String(tt.id), label: tt.name })),
-                ]}
-              />
-
-              <Select
-                label="运维小组"
-                value={String(manualForm.departmentId)}
-                onChange={(val) => setManualForm({ ...manualForm, departmentId: Number(val) })}
-                options={[
-                  { value: '0', label: '请选择运维小组' },
-                  ...departments.map(d => ({ value: String(d.id), label: d.name })),
-                ]}
-              />
-            </div>
-
-            <div className="px-6 py-4 border-t border-clean-100 flex justify-end gap-3">
-              <Button variant="secondary" onClick={() => setShowManualModal(false)}>
-                取消
-              </Button>
-              <Button onClick={handleCreateManual}>
-                创建
-              </Button>
-            </div>
+      <div className="bg-white rounded-xl border border-clean-200 p-4">
+        <div className="grid grid-cols-6 gap-4">
+          <Input
+            placeholder="站点名称"
+            value={filters.siteName}
+            onChange={(e) => setFilters({ ...filters, siteName: e.target.value })}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+          />
+          <Select
+            value={filters.status}
+            onChange={(val) => setFilters({ ...filters, status: val })}
+            options={statusOptions}
+          />
+          <Select
+            value={filters.departmentId}
+            onChange={(val) => setFilters({ ...filters, departmentId: val })}
+            options={departmentOptions}
+          />
+          <Input
+            type="datetime-local"
+            placeholder="开始时间"
+            value={filters.startTime}
+            onChange={(e) => setFilters({ ...filters, startTime: e.target.value })}
+          />
+          <Input
+            type="datetime-local"
+            placeholder="结束时间"
+            value={filters.endTime}
+            onChange={(e) => setFilters({ ...filters, endTime: e.target.value })}
+          />
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={handleReset} className="flex-1">
+              重置
+            </Button>
+            <Button onClick={handleSearch} className="flex-1">
+              <Search className="w-4 h-4 mr-1" />
+              搜索
+            </Button>
           </div>
         </div>
+      </div>
+
+      {/* 表格 */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white rounded-xl border border-clean-200 overflow-hidden"
+      >
+        <Table columns={columns} data={tasks} loading={loading} />
+      </motion.div>
+
+      {/* 分页 */}
+      {total > 0 && (
+        <div className="bg-white rounded-xl border border-clean-200 px-4">
+          <Pagination
+            current={pageNum}
+            total={total}
+            pageSize={pageSize}
+            onChange={setPageNum}
+            onPageSizeChange={(size) => {
+              setPageSize(size)
+              setPageNum(1)
+            }}
+          />
+        </div>
       )}
+
+      {/* 手动创建任务模态框 */}
+      <Modal
+        open={showManualModal}
+        onClose={() => setShowManualModal(false)}
+        title="手动添加任务"
+        size="sm"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowManualModal(false)}>
+              取消
+            </Button>
+            <Button onClick={handleCreateManual}>创建</Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <Select
+            label="站点"
+            value={String(manualForm.siteId)}
+            onChange={(val) => setManualForm({ ...manualForm, siteId: Number(val) })}
+            options={[
+              { value: '0', label: '请选择站点' },
+              ...sites.map((s) => ({
+                value: String(s.id),
+                label: `${s.siteName} (${s.siteCode})`,
+              })),
+            ]}
+          />
+
+          <Select
+            label="任务模版"
+            value={String(manualForm.taskTemplateId)}
+            onChange={(val) => setManualForm({ ...manualForm, taskTemplateId: Number(val) })}
+            options={[
+              { value: '0', label: '请选择任务模版' },
+              ...taskTemplates.map((tt) => ({ value: String(tt.id), label: tt.name })),
+            ]}
+          />
+
+          <Select
+            label="运维小组"
+            value={String(manualForm.departmentId)}
+            onChange={(val) => setManualForm({ ...manualForm, departmentId: Number(val) })}
+            options={[
+              { value: '0', label: '请选择运维小组' },
+              ...departments.map((d) => ({ value: String(d.id), label: d.name })),
+            ]}
+          />
+        </div>
+      </Modal>
     </div>
   )
 }
-

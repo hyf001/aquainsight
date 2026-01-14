@@ -68,7 +68,7 @@ export type TaskStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' |
 export type TaskSchedulerState = 'ENABLED' | 'DISABLED'
 
 // 周期类型
-export type PeriodType = 'HOURLY' | 'DAILY' | 'WEEKLY' | 'MONTHLY'
+export type PeriodType = 'INTERVAL' | 'WEEK' | 'MONTH'
 
 // 周期配置
 export interface PeriodConfig {
@@ -394,8 +394,7 @@ export const taskStatusMap: Record<TaskStatus, { label: string; color: string }>
 
 // 周期类型映射
 export const periodTypeMap: Record<PeriodType, string> = {
-  HOURLY: '每小时',
-  DAILY: '每天',
-  WEEKLY: '每周',
-  MONTHLY: '每月',
+  INTERVAL: '间隔天数',
+  WEEK: '每周',
+  MONTH: '每月',
 }

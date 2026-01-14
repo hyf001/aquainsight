@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, CheckCircle2, Circle, Play, Check, Upload,
-  Calendar, MapPin, User, Clock, FileText
+  Calendar, MapPin, User, Clock, FileText, ImagePlus, X, Loader2
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -15,7 +15,9 @@ import {
   taskStatusMap,
   ParameterValue,
   Step,
+  StepParameter,
 } from '@/services/maintenance'
+import { commonApi } from '@/services/common'
 
 export default function TaskDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -25,6 +27,8 @@ export default function TaskDetailPage() {
   const [processing, setProcessing] = useState(false)
   const [activeStepIndex, setActiveStepIndex] = useState(0)
   const [stepData, setStepData] = useState<Record<number, Record<string, unknown>>>({})
+  const [uploadingImages, setUploadingImages] = useState<Record<string, boolean>>({})
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
   // 获取任务详情
   useEffect(() => {
@@ -125,103 +129,264 @@ export default function TaskDetailPage() {
     return Object.keys(data).length > 0
   }
 
-  // 渲染参数输入
-  const renderParameterInput = (param: {
-    name: string
-    label: string
-    type: string
-    required?: boolean
-    placeholder?: string
-    options?: { value: string; label: string }[]
-  }, stepTemplateId: number) => {
-    const value = getStepData(stepTemplateId)[param.name]
+  // 处理图片上传（支持多张图片）
+  const handleImageUpload = async (
+    stepTemplateId: number,
+    paramName: string,
+    files: FileList
+  ) => {
+    const key = `${stepTemplateId}-${paramName}`
+    setUploadingImages(prev => ({ ...prev, [key]: true }))
+    try {
+      const currentImages = (getStepData(stepTemplateId)[paramName] as string[]) || []
+      const uploadPromises = Array.from(files).map(file => commonApi.uploadImage(file))
+      const results = await Promise.all(uploadPromises)
+      const newUrls = results.map(r => (r as unknown as { url: string }).url)
+      updateStepParam(stepTemplateId, paramName, [...currentImages, ...newUrls])
+    } catch (error) {
+      console.error('图片上传失败:', error)
+      alert('图片上传失败')
+    } finally {
+      setUploadingImages(prev => ({ ...prev, [key]: false }))
+    }
+  }
 
-    switch (param.type) {
-      case 'text':
-        return (
-          <Input
-            label={param.label}
-            value={value as string || ''}
-            onChange={(e) => updateStepParam(stepTemplateId, param.name, e.target.value)}
-            placeholder={param.placeholder}
-          />
-        )
-      case 'textarea':
+  // 删除单张图片
+  const handleRemoveImage = (stepTemplateId: number, paramName: string, index: number) => {
+    const currentImages = (getStepData(stepTemplateId)[paramName] as string[]) || []
+    const newImages = currentImages.filter((_, i) => i !== index)
+    updateStepParam(stepTemplateId, paramName, newImages)
+  }
+
+  // 处理多选框值变化
+  const handleCheckboxChange = (
+    stepTemplateId: number,
+    paramName: string,
+    optionValue: string,
+    checked: boolean
+  ) => {
+    const currentValue = (getStepData(stepTemplateId)[paramName] as string[]) || []
+    let newValue: string[]
+    if (checked) {
+      newValue = [...currentValue, optionValue]
+    } else {
+      newValue = currentValue.filter(v => v !== optionValue)
+    }
+    updateStepParam(stepTemplateId, paramName, newValue)
+  }
+
+  // 渲染参数输入
+  const renderParameterInput = (param: StepParameter, stepTemplateId: number) => {
+    const value = getStepData(stepTemplateId)[param.name]
+    const uploadKey = `${stepTemplateId}-${param.name}`
+    const isUploading = uploadingImages[uploadKey]
+
+    switch (param.type?.toUpperCase()) {
+      case 'TEXT':
         return (
           <div>
-            <label className="block text-sm text-clean-600 mb-2">{param.label}</label>
-            <textarea
-              className="w-full px-4 py-3 bg-white border border-clean-300 rounded-xl text-clean-800 placeholder-clean-400 focus:outline-none focus:border-nature-400 focus:ring-2 focus:ring-nature-100 transition-all duration-200"
-              rows={4}
+            <Input
+              label={param.label || param.name}
               value={value as string || ''}
               onChange={(e) => updateStepParam(stepTemplateId, param.name, e.target.value)}
-              placeholder={param.placeholder}
+              placeholder={param.placeholder || undefined}
             />
+            {param.hint && (
+              <p className="text-xs text-clean-400 mt-1">{param.hint}</p>
+            )}
           </div>
         )
-      case 'number':
-        return (
-          <Input
-            type="number"
-            label={param.label}
-            value={value as number || ''}
-            onChange={(e) => updateStepParam(stepTemplateId, param.name, e.target.value)}
-            placeholder={param.placeholder}
-          />
-        )
-      case 'select':
-        return (
-          <Select
-            label={param.label}
-            value={String(value || '')}
-            onChange={(e) => updateStepParam(stepTemplateId, param.name, e.target.value)}
-            options={[
-              { value: '', label: param.placeholder || '请选择' },
-              ...(param.options?.map(o => ({ value: o.value, label: o.label })) || []),
-            ]}
-          />
-        )
-      case 'date':
-        return (
-          <Input
-            type="date"
-            label={param.label}
-            value={value as string || ''}
-            onChange={(e) => updateStepParam(stepTemplateId, param.name, e.target.value)}
-          />
-        )
-      case 'datetime':
-        return (
-          <Input
-            type="datetime-local"
-            label={param.label}
-            value={value as string || ''}
-            onChange={(e) => updateStepParam(stepTemplateId, param.name, e.target.value)}
-          />
-        )
-      case 'checkbox':
+
+      case 'IMAGE':
+        const images = (Array.isArray(value) ? value : (value ? [value] : [])) as string[]
         return (
           <div>
-            <label className="block text-sm text-clean-600 mb-2">{param.label}</label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={value as boolean || false}
-                onChange={(e) => updateStepParam(stepTemplateId, param.name, e.target.checked)}
-                className="w-5 h-5 rounded border-clean-300 text-nature-500 focus:ring-nature-200"
-              />
-              <span className="text-clean-700">{param.placeholder || '是'}</span>
+            <label className="block text-sm text-clean-600 mb-2">
+              {param.label || param.name}
+              {param.required && <span className="text-red-500 ml-1">*</span>}
             </label>
+            <div className="space-y-3">
+              {/* 已上传的图片缩略图列表 */}
+              {images.length > 0 && (
+                <div className="flex flex-wrap gap-3">
+                  {images.map((imgUrl, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={commonApi.getImageUrl(imgUrl)}
+                        alt={`图片${index + 1}`}
+                        className="w-20 h-20 rounded-lg border border-clean-200 object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => window.open(commonApi.getImageUrl(imgUrl), '_blank')}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(stepTemplateId, param.name, index)}
+                        className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* 上传按钮 */}
+              <div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  ref={(el) => { fileInputRefs.current[uploadKey] = el }}
+                  onChange={(e) => {
+                    const files = e.target.files
+                    if (files && files.length > 0) {
+                      handleImageUpload(stepTemplateId, param.name, files)
+                      e.target.value = ''
+                    }
+                  }}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => fileInputRefs.current[uploadKey]?.click()}
+                  disabled={isUploading}
+                >
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      上传中...
+                    </>
+                  ) : (
+                    <>
+                      <ImagePlus className="w-4 h-4 mr-2" />
+                      上传图片
+                    </>
+                  )}
+                </Button>
+                <span className="text-xs text-clean-400 ml-2">支持多张图片</span>
+              </div>
+            </div>
+            {param.hint && (
+              <p className="text-xs text-clean-400 mt-1">{param.hint}</p>
+            )}
           </div>
         )
-      default:
+
+      case 'SELECT':
         return (
-          <Input
-            label={param.label}
-            value={value as string || ''}
-            onChange={(e) => updateStepParam(stepTemplateId, param.name, e.target.value)}
-            placeholder={param.placeholder}
-          />
+          <div>
+            <Select
+              label={param.label || param.name}
+              value={String(value || '')}
+              onChange={(e) => updateStepParam(stepTemplateId, param.name, e.target.value)}
+              options={[
+                { value: '', label: param.placeholder || '请选择' },
+                ...(param.options?.map(o => ({ value: o.value, label: o.label })) || []),
+              ]}
+            />
+            {param.hint && (
+              <p className="text-xs text-clean-400 mt-1">{param.hint}</p>
+            )}
+          </div>
+        )
+
+      case 'CHECKBOX':
+        // 多选框
+        return (
+          <div>
+            <label className="block text-sm text-clean-600 mb-2">
+              {param.label || param.name}
+              {param.required && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            <div className="space-y-2">
+              {param.options?.map(option => {
+                const currentValues = (value as string[]) || []
+                const isChecked = currentValues.includes(option.value)
+                return (
+                  <label
+                    key={option.value}
+                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                      isChecked
+                        ? 'border-nature-400 bg-nature-50'
+                        : 'border-clean-200 hover:border-clean-300'
+                    } ${option.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      disabled={option.disabled}
+                      onChange={(e) => handleCheckboxChange(
+                        stepTemplateId,
+                        param.name,
+                        option.value,
+                        e.target.checked
+                      )}
+                      className="w-5 h-5 rounded border-clean-300 text-nature-500 focus:ring-nature-200"
+                    />
+                    <span className="text-clean-700">{option.label}</span>
+                  </label>
+                )
+              })}
+            </div>
+            {param.hint && (
+              <p className="text-xs text-clean-400 mt-1">{param.hint}</p>
+            )}
+          </div>
+        )
+
+      case 'RADIO':
+        // 单选框
+        return (
+          <div>
+            <label className="block text-sm text-clean-600 mb-2">
+              {param.label || param.name}
+              {param.required && <span className="text-red-500 ml-1">*</span>}
+            </label>
+            <div className="space-y-2">
+              {param.options?.map(option => {
+                const isSelected = value === option.value
+                return (
+                  <label
+                    key={option.value}
+                    className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                      isSelected
+                        ? 'border-nature-400 bg-nature-50'
+                        : 'border-clean-200 hover:border-clean-300'
+                    } ${option.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <input
+                      type="radio"
+                      name={`${stepTemplateId}-${param.name}`}
+                      value={option.value}
+                      checked={isSelected}
+                      disabled={option.disabled}
+                      onChange={() => updateStepParam(stepTemplateId, param.name, option.value)}
+                      className="w-5 h-5 border-clean-300 text-nature-500 focus:ring-nature-200"
+                    />
+                    <span className="text-clean-700">{option.label}</span>
+                  </label>
+                )
+              })}
+            </div>
+            {param.hint && (
+              <p className="text-xs text-clean-400 mt-1">{param.hint}</p>
+            )}
+          </div>
+        )
+
+      default:
+        // 默认作为文本输入框处理
+        return (
+          <div>
+            <Input
+              label={param.label || param.name}
+              value={value as string || ''}
+              onChange={(e) => updateStepParam(stepTemplateId, param.name, e.target.value)}
+              placeholder={param.placeholder || undefined}
+            />
+            {param.hint && (
+              <p className="text-xs text-clean-400 mt-1">{param.hint}</p>
+            )}
+          </div>
         )
     }
   }
@@ -425,15 +590,57 @@ export default function TaskDetailPage() {
                     </span>
                   </div>
                   {step.parameterValues && step.parameterValues.length > 0 && (
-                    <div className="grid grid-cols-2 gap-2 mt-2">
-                      {step.parameterValues.map((pv: ParameterValue) => (
-                        <div key={pv.name} className="text-sm">
-                          <span className="text-clean-500">{pv.name}:</span>
-                          <span className="text-clean-800 ml-2">
-                            {String(pv.value)}
-                          </span>
-                        </div>
-                      ))}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+                      {step.parameterValues.map((pv: ParameterValue) => {
+                        const isArray = Array.isArray(pv.value)
+                        // 检查是否为图片数组
+                        const isImageArray = isArray && (pv.value as string[]).some(v =>
+                          v.startsWith('http') || v.includes('/api/common/image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(v)
+                        )
+                        // 检查是否为单个图片
+                        const valueStr = String(pv.value)
+                        const isSingleImage = !isArray && (
+                          valueStr.startsWith('http') ||
+                          valueStr.includes('/api/common/image/') ||
+                          /\.(jpg|jpeg|png|gif|webp)$/i.test(valueStr)
+                        )
+
+                        return (
+                          <div key={pv.name} className="text-sm">
+                            <span className="text-clean-500">{pv.name}:</span>
+                            {isImageArray ? (
+                              <div className="flex flex-wrap gap-2 mt-1">
+                                {(pv.value as string[]).map((imgUrl, idx) => (
+                                  <img
+                                    key={idx}
+                                    src={commonApi.getImageUrl(imgUrl)}
+                                    alt={`${pv.name}-${idx + 1}`}
+                                    className="w-16 h-16 rounded-lg border border-clean-200 object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={() => window.open(commonApi.getImageUrl(imgUrl), '_blank')}
+                                  />
+                                ))}
+                              </div>
+                            ) : isSingleImage ? (
+                              <div className="mt-1">
+                                <img
+                                  src={commonApi.getImageUrl(valueStr)}
+                                  alt={pv.name}
+                                  className="w-16 h-16 rounded-lg border border-clean-200 object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                                  onClick={() => window.open(commonApi.getImageUrl(valueStr), '_blank')}
+                                />
+                              </div>
+                            ) : isArray ? (
+                              <span className="text-clean-800 ml-2">
+                                {(pv.value as string[]).join(', ')}
+                              </span>
+                            ) : (
+                              <span className="text-clean-800 ml-2">
+                                {valueStr}
+                              </span>
+                            )}
+                          </div>
+                        )
+                      })}
                     </div>
                   )}
                 </div>

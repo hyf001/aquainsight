@@ -14,7 +14,6 @@ const LoadingScreen = () => (
 
 const Login: LazyExoticComponent<() => JSX.Element> = lazy(() => import('@/pages/Login'))
 const Dashboard: LazyExoticComponent<() => JSX.Element> = lazy(() => import('@/pages/Dashboard'))
-const Alerts: LazyExoticComponent<() => JSX.Element> = lazy(() => import('@/pages/Alerts'))
 const Analysis: LazyExoticComponent<() => JSX.Element> = lazy(() => import('@/pages/Analysis'))
 const Settings: LazyExoticComponent<() => JSX.Element> = lazy(() => import('@/pages/Settings'))
 const StepTemplates: LazyExoticComponent<() => JSX.Element> = lazy(() => import('@/pages/StepTemplates'))
@@ -23,6 +22,12 @@ const TaskSchedulers: LazyExoticComponent<() => JSX.Element> = lazy(() => import
 const Tasks: LazyExoticComponent<() => JSX.Element> = lazy(() => import('@/pages/Tasks'))
 const TaskDetail: LazyExoticComponent<() => JSX.Element> = lazy(() => import('@/pages/TaskDetail'))
 const TestPage: LazyExoticComponent<() => JSX.Element> = lazy(() => import('@/pages/TestPage'))
+
+// 告警模块
+const AlertLayout: LazyExoticComponent<() => JSX.Element> = lazy(() => import('@/pages/alert/AlertLayout'))
+const AlertRecords: LazyExoticComponent<() => JSX.Element> = lazy(() => import('@/pages/alert/AlertRecords'))
+const AlertRulesPage: LazyExoticComponent<() => JSX.Element> = lazy(() => import('@/pages/alert/AlertRulesPage'))
+const NotifyLogs: LazyExoticComponent<() => JSX.Element> = lazy(() => import('@/pages/alert/NotifyLogs'))
 
 // 站点监控模块
 const DataPanel: LazyExoticComponent<() => JSX.Element> = lazy(() => import('@/pages/monitoring/DataPanel'))
@@ -57,15 +62,42 @@ const routes: RouteObject[] = [
       </Layout>
     ),
   },
+  // 告警中心模块（带二级导航）
   {
     path: '/alerts',
     element: (
       <Layout>
         <Suspense fallback={<LoadingScreen />}>
-          <Alerts />
+          <AlertLayout />
         </Suspense>
       </Layout>
     ),
+    children: [
+      {
+        index: true,
+        element: (
+          <Suspense fallback={<LoadingScreen />}>
+            <AlertRecords />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'rules',
+        element: (
+          <Suspense fallback={<LoadingScreen />}>
+            <AlertRulesPage />
+          </Suspense>
+        ),
+      },
+      {
+        path: 'notify-logs',
+        element: (
+          <Suspense fallback={<LoadingScreen />}>
+            <NotifyLogs />
+          </Suspense>
+        ),
+      },
+    ],
   },
   {
     path: '/analysis',
